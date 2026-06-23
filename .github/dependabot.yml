@@ -1,0 +1,24 @@
+# Dependabot: weekly dependency-update PRs for the Rust workspace, the GitHub
+# Actions, and the Docker base image. Minor and patch bumps are grouped into one
+# PR per ecosystem to cut noise; major bumps open individually for a closer look.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      cargo-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

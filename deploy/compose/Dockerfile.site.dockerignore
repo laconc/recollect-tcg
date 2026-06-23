@@ -1,0 +1,26 @@
+# Build context for the site-builder (deploy/compose/Dockerfile.site). BuildKit prefers this
+# over the root .dockerignore when the build is `-f deploy/compose/Dockerfile.site`. Unlike the
+# server image (app/ only), the site build needs the website source, the card-page generator, and
+# the wasm web crate — but NOT build output, VCS, node tooling, or nested worktrees.
+#
+# Strategy: ignore everything, then allow back exactly what build-site.sh reads.
+*
+
+# The static website source and the card-catalog page generator.
+!site
+!tools
+
+# The Rust workspace — needed to build the wasm play client (trunk compiles recollect-web, which
+# depends on -core/-bot/-protocol) and to read the generated catalog.json.
+!app
+!Cargo.toml
+
+# The shared build script the image invokes.
+!deploy/compose/build-site.sh
+
+# Re-exclude heavy / irrelevant paths even under the allowed dirs above.
+app/target
+**/node_modules
+**/.git
+.claude
+**/dist

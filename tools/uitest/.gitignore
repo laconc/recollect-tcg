@@ -1,0 +1,8 @@
+# Quarantined Node tooling — keep its install + run artifacts out of git.
+node_modules/
+# Playwright run output (reports, traces, screenshots-on-failure).
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+# Per-OS browser binaries live in the global ms-playwright cache, not here.

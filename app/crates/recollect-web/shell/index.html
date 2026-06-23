@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Recollect — the Memory</title>
+<style>
+  :root {
+    --paper: #efe7d6;
+    --paper-shade: #e3d8c2;
+    --ink-a: #2f4858;      /* Narrator A — a deep teal-slate ink */
+    --ink-b: #7a3b2e;      /* Narrator B — a burnt sienna ink */
+    --ink-a-wash: rgba(47,72,88,0.14);
+    --ink-b-wash: rgba(122,59,46,0.14);
+    --line: #b9a986;
+    --char: #3a3026;       /* charcoal text */
+    --faint: #8c7d61;
+    --dusk: #2b2620;
+    --gild: #b08442;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(ellipse at 50% 0%, #f4ecdb 0%, var(--paper) 55%, var(--paper-shade) 100%);
+    color: var(--char);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 48px;
+  }
+  header { text-align: center; margin-bottom: 18px; }
+  h1 {
+    font-weight: 500; font-size: 30px; letter-spacing: 0.06em;
+    margin: 0 0 2px; color: var(--dusk);
+  }
+  .sub { font-size: 13px; color: var(--faint); letter-spacing: 0.18em; text-transform: uppercase; }
+  .clock {
+    display: flex; gap: 6px; justify-content: center; margin: 14px 0 4px;
+  }
+  .pip { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line); }
+  .pip.lit { background: var(--gild); border-color: var(--gild); }
+  .pip.dusk { background: var(--dusk); border-color: var(--dusk); }
+  .turn { font-size: 13px; color: var(--faint); margin-bottom: 14px; }
+  .turn b { color: var(--char); font-weight: 500; }
+
+  .board {
+    display: grid; gap: 6px;
+    padding: 14px; background: var(--paper-shade);
+    border: 1px solid var(--line); border-radius: 4px;
+    box-shadow: inset 0 0 40px rgba(120,100,60,0.16);
+  }
+  .tile {
+    width: 84px; height: 92px; position: relative;
+    background: #f1e9d8; border: 1px solid #cdbd99; border-radius: 3px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: default; transition: outline-color 0.12s;
+    outline: 2px solid transparent; outline-offset: -2px;
+  }
+  .tile.proj { outline-color: var(--ink-a-wash); background: #efe6d2; }
+  .tile.impression-a { background: var(--ink-a-wash); }
+  .tile.impression-b { background: var(--ink-b-wash); }
+  .tile.faded { background: var(--dusk); border-color: #1c1812; }
+  .tile.held { box-shadow: 0 0 18px 2px rgba(176,132,66,0.5); }
+  .name { font-size: 10.5px; line-height: 1.1; text-align: center; padding: 0 4px;
+          max-height: 34px; overflow: hidden; color: var(--char); }
+  .name.a { color: var(--ink-a); } .name.b { color: var(--ink-b); }
+  .stats { font-size: 11px; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .stats .atk { color: var(--ink-b); } .stats .def { color: var(--ink-a); } .stats .hp { color: #4d7c3a; }
+  .facedown { font-size: 22px; color: var(--faint); }
+  .echo::after { content: "◌"; position: absolute; top: 4px; right: 6px; color: var(--gild); font-size: 12px; }
+  .fading { opacity: 0.5; font-style: italic; }
+  .empty-dot { width: 4px; height: 4px; border-radius: 50%; background: #cdbd99; }
+
+  .hand { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; justify-content: center; max-width: 560px; }
+  .card {
+    width: 76px; height: 100px; background: #f6efdf; border: 1px solid var(--line);
+    border-radius: 5px; padding: 6px; display: flex; flex-direction: column;
+    box-shadow: 1px 2px 0 rgba(120,100,60,0.2); font-size: 10.5px;
+  }
+  .card .cn { font-weight: 500; line-height: 1.15; color: var(--ink-a); }
+  .card .ccost { margin-top: auto; align-self: flex-end; color: var(--gild); font-size: 13px; }
+
+  .legend { margin-top: 22px; font-size: 12px; color: var(--faint); display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+  .legend span b { color: var(--char); font-weight: 500; }
+  footer { margin-top: 26px; font-size: 11px; color: var(--faint); font-style: italic; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Recollect</h1>
+    <div class="sub">a memory, contested</div>
+  </header>
+  <div class="clock" id="clock"></div>
+  <div class="turn" id="turn"></div>
+  <div class="board" id="board"></div>
+  <div class="hand" id="hand"></div>
+  <div class="legend">
+    <span><b style="color:var(--ink-a)">teal</b> Narrator A</span>
+    <span><b style="color:var(--ink-b)">sienna</b> Narrator B</span>
+    <span><b style="color:var(--gild)">◌</b> Echo-eligible</span>
+    <span>lamplit = Held Ground</span>
+  </div>
+  <footer>The Memory keeps what is loved, while it is loved.</footer>
+
+<script type="module">
+// D-18: this shell renders the EXACT JSON shape the WASM core emits
+// (recollect_core::view::view_for → PlayerView). In the wired build,
+// `import init, { LocalGame } from './pkg/recollect_web.js'` replaces the
+// embedded sample below; the renderer is identical either way.
+
+const NAMES = {
+  17: "Vesper-of-Ash", 14: "Tidebound Colossus", 7: "Vertigo",
+  8: "Saudade", 9: "Crucible", 10: "Dawnling", 22: "Bullroarer",
+  3: "Droplet", 5: "Jitters",
+};
+const cardName = (id) => id === 65535 ? "" : (NAMES[id] || `Spirit ${id}`);
+
+// A representative mid-match view (shape-identical to view_for's output).
+const SAMPLE = {
+  seat: "A", round: 3, active: "A",
+  tiles: makeSample(),
+  you: { hand: [17, 14, 7, 8, 22], deck_count: 11, anima: 4 },
+};
+function makeSample() {
+  const t = Array.from({length:25}, () => ({spirit:null, impression:null, faded:false, in_your_projection:false}));
+  const put = (i, card, owner, hp, hpm, a, d, opts={}) =>
+    t[i] = {spirit:{card, owner, attack:a, defense:d, hp, hp_max:hpm, fading:!!opts.fading, echo:!!opts.echo, face_down:!!opts.fd}, impression:null, faded:false, in_your_projection:false};
+  put(7, 17, "A", 30, 30, 30, 20, {echo:true});
+  put(12, 14, "A", 50, 50, 30, 30);
+  put(8, 7, "B", 20, 40, 40, 10);
+  put(13, 22, "B", 40, 40, 30, 0, {fading:true});
+  put(17, 65535, "B", 0, 0, 0, 0, {fd:true});
+  t[6].impression = "A"; t[11].impression = "A"; t[9].impression = "B";
+  [2,3,6,7,8,11,12,13,16,17].forEach(i => t[i].in_your_projection = true);
+  return t;
+}
+
+function render(v) {
+  const lastRound = 12;
+  const clock = document.getElementById("clock");
+  clock.innerHTML = "";
+  for (let r = 1; r <= lastRound; r++) {
+    const p = document.createElement("div");
+    p.className = "pip" + (r <= v.round ? " lit" : "") + (r > 8 ? " dusk" : "");
+    clock.appendChild(p);
+  }
+  document.getElementById("turn").innerHTML =
+    `Round <b>${v.round}</b> · <b>Narrator ${v.active}</b> to tell · your Anima <b>${v.you.anima}</b> · deck <b>${v.you.deck_count}</b>`;
+
+  const board = document.getElementById("board");
+  board.style.gridTemplateColumns = `repeat(5, 84px)`;
+  board.innerHTML = "";
+  v.tiles.forEach((tile) => {
+    const el = document.createElement("div");
+    el.className = "tile";
+    if (tile.faded) el.classList.add("faded");
+    if (tile.in_your_projection && !tile.spirit) el.classList.add("proj");
+    if (tile.impression === "A") el.classList.add("impression-a");
+    if (tile.impression === "B") el.classList.add("impression-b");
+    const sp = tile.spirit;
+    if (sp) {
+      if (sp.echo) el.classList.add("echo");
+      if (sp.face_down) {
+        el.innerHTML = `<div class="facedown">?</div>`;
+      } else {
+        const cls = sp.owner === "A" ? "a" : "b";
+        const fade = sp.fading ? " fading" : "";
+        el.innerHTML =
+          `<div class="name ${cls}${fade}">${cardName(sp.card)}</div>` +
+          `<div class="stats"><span class="atk">${sp.attack}</span> · ` +
+          `<span class="def">${sp.defense}</span> · ` +
+          `<span class="hp">${sp.hp}/${sp.hp_max}</span></div>`;
+      }
+    } else if (!tile.faded) {
+      el.innerHTML = `<div class="empty-dot"></div>`;
+    }
+    board.appendChild(el);
+  });
+
+  const hand = document.getElementById("hand");
+  hand.innerHTML = "";
+  v.you.hand.forEach((id) => {
+    const c = document.createElement("div");
+    c.className = "card";
+    c.innerHTML = `<div class="cn">${cardName(id)}</div><div class="ccost">✦</div>`;
+    hand.appendChild(c);
+  });
+}
+
+// Wired build:
+//   import init, { LocalGame } from './pkg/recollect_web.js';
+//   await init();
+//   const game = LocalGame.new_quick(seed, yourStyle, oppStyle);
+//   render(JSON.parse(game.view_json()));
+// Standalone preview uses the sample:
+render(SAMPLE);
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# The image is built only from the Rust workspace. Ignore everything, then
+# allow app/ back in (minus its build output). Keeps the build context tiny.
+*
+!app
+app/target

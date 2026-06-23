@@ -1,0 +1,119 @@
+name: deploy-image
+# Build the production server image and push it to ECR — the CI half of the FOUNDATION/PLATFORM
+# split (deploy/README.md). On a push to main (or a PR labeled `deploy`), this job assumes the
+# FOUNDATION CI role via GitHub→AWS OIDC (NO stored AWS keys), builds the hardened server image
+# (the repo-root Dockerfile, cargo-chef on distroless), and pushes it to the FOUNDATION ECR repo
+# tagged with the git SHA (immutable, what PLATFORM deploys) + `latest`. PLATFORM then sets
+# `serverImage = <ecr-repo>:<sha>` and the box PULLS it — production never builds on the 1 GB micro.
+#
+# DEPLOYMENT-UNIQUE config is read from repo VARIABLES (Settings → Secrets and variables → Actions →
+# Variables), never committed — so a public clone carries no account specifics and the job simply
+# SKIPS when they're unset:
+#   AWS_ROLE_ARN   the FOUNDATION `ciRoleArn` output (the OIDC role to assume). REQUIRED to run.
+#   AWS_REGION     the FOUNDATION region (e.g. us-east-1). Defaults to us-east-1 if unset.
+#   ECR_REPO_URL   the FOUNDATION `repoUrl` output (…dkr.ecr.<region>…/recollect-server). REQUIRED.
+on:
+  push:
+    branches:
+      - main
+    # Skip doc-only / non-build changes (the image bytes can't change), but ALWAYS run if the build
+    # inputs or this workflow change.
+    paths:
+      - "app/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/deploy-image.yml"
+  workflow_dispatch: # manual run (e.g. to re-push a specific commit / re-tag latest) from the Actions tab
+
+env:
+  CARGO_TERM_COLOR: always
+
+# Least-privilege default. The build job opts into `id-token: write` (mint the OIDC token) +
+# `contents: read` (checkout) — and NOTHING else; it never needs `packages`/`pull-requests`.
+permissions:
+  contents: read
+
+# Triggers are push-to-`main` + manual dispatch ONLY — deliberately NOT pull_request: the FOUNDATION
+# CI role's trust is pinned to this repo's MAIN branch (the OIDC `sub` `…:ref:refs/heads/main`), so a
+# PR's token (a different `sub`) could not assume the role anyway. Keeping the role main-only is the
+# security win (a fork PR can never push); to also push on tags/PRs, broaden the `sub` in
+# foundation/index.ts and add the matching trigger here.
+jobs:
+  push-to-ecr:
+    name: build + push server image to ECR (OIDC)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # Only when the OIDC role var is configured — a public clone with no AWS setup just SKIPS, never
+    # fails red. (Run via push to main, or manually from Actions → deploy-image → Run workflow.)
+    if: vars.AWS_ROLE_ARN != ''
+    permissions:
+      contents: read
+      id-token: write # REQUIRED: mint the GitHub OIDC token configure-aws-credentials trades for AWS creds
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          show-progress: false
+
+      # Trade the GitHub OIDC token for SHORT-LIVED AWS creds by assuming the FOUNDATION CI role.
+      # No access keys are stored anywhere — the role's trust policy is pinned to this repo's main
+      # branch (foundation/index.ts), and the creds expire with the job.
+      - name: configure AWS credentials (OIDC — no stored keys)
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          role-session-name: gha-recollect-deploy-image
+
+      # `docker login` to the private ECR registry using the assumed-role creds (no password stored).
+      # The action performs the login as a side effect — buildx then pushes to ${ECR_REPO_URL}.
+      - name: log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
+
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      # Image metadata: the immutable `sha-<commit>` tag PLATFORM deploys + a moving `latest`. The
+      # `sha-` prefix matches FOUNDATION's lifecycle policy (it keeps the N most-recent `sha-…` images).
+      - name: compute image tags + labels
+        id: meta
+        run: |
+          repo='${{ vars.ECR_REPO_URL }}'
+          sha='${{ github.sha }}'
+          {
+            echo "tags=${repo}:sha-${sha},${repo}:latest"
+            echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "version=$(grep -m1 '^version' app/Cargo.toml | cut -d'"' -f2)"
+          } >> "$GITHUB_OUTPUT"
+
+      # Build the hardened server image and push it. The Dockerfile's cargo-chef stage already caches
+      # the dependency layer; we ALSO use the GitHub Actions cache (type=gha) for the BuildKit layer
+      # cache, so an unchanged dep graph reuses the cooked-deps layer across runs — the slow Rust
+      # compile only re-runs when app/ actually changes. `mode=max` caches intermediate stages too.
+      - name: build + push (BuildKit, GHA layer cache)
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          # `provenance: false` keeps the pushed artifact a single-arch image manifest (not an OCI
+          # image index with an attestation), which is what the box's plain `docker pull` expects.
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ steps.meta.outputs.date }}
+            GIT_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+            SOURCE_URL=https://github.com/${{ github.repository }}
+
+      - name: summarize
+        run: |
+          {
+            echo "### Pushed server image to ECR"
+            echo ""
+            echo "- \`${{ vars.ECR_REPO_URL }}:sha-${{ github.sha }}\` (immutable — deploy this)"
+            echo "- \`${{ vars.ECR_REPO_URL }}:latest\`"
+            echo ""
+            echo "Deploy it: set PLATFORM's \`serverImage\` to the \`sha-\` tag and \`make deploy-up\`,"
+            echo "or on the box: \`sudo recollect-update <git-ref>\`."
+          } >> "$GITHUB_STEP_SUMMARY"

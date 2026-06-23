@@ -1,0 +1,35 @@
+[package]
+name = "recollect-cli"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "The `recollect` client binary: local engine or --server WebSocket, interactive TUI or headless JSON/autoplay. Subsumes the former recollect-tui and recollect-client."
+
+[[bin]]
+name = "recollect"
+path = "src/main.rs"
+
+[dependencies]
+recollect-core = { path = "../recollect-core" }
+recollect-protocol = { path = "../recollect-protocol" }
+recollect-bot = { path = "../recollect-bot" }
+clap = { workspace = true }
+serde_json = { workspace = true }
+# The cursor TUI (src/tui.rs) — local 1v1 only, gated on stdout being a real terminal.
+# crossterm is reached through ratatui's re-export (ratatui::crossterm), so it is
+# not a direct dependency. CLI-only: recollect-web never pulls it (wasm32 unaffected).
+ratatui = { workspace = true }
+# io-std/io-util for stdin lines + the raw HTTP POST; net for the ws/HTTP socket;
+# time for auto-reconnect backoff.
+tokio = { workspace = true, features = ["io-std", "io-util", "net", "time"] }
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+
+[dev-dependencies]
+# The online round-trip test starts the server in-process and spawns the real
+# `recollect` binary as the JSON client; it needs subprocess + timeout support.
+recollect-server = { path = "../recollect-server" }
+tokio = { workspace = true, features = ["process", "time", "rt-multi-thread", "macros"] }
+
+[lints]
+workspace = true

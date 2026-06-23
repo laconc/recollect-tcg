@@ -1,0 +1,329 @@
+# Recollect — Grafana unified-alerting ALERT RULES for the synthetic probes (provisioned as code).
+#
+# Mounted into the otel-lgtm image's Grafana provisioning dir at
+#   /otel-lgtm/grafana/conf/provisioning/alerting/recollect-alerts.yaml
+# (see deploy/compose/docker-compose.deploy.yml). Grafana 13 reads every file under
+# conf/provisioning/alerting/ at boot. These rules are the WHAT-fires; contactpoints.yaml is the
+# WHERE-it-goes. Each rule queries Prometheus for the blackbox `probe_success` series (1 up / 0 down,
+# produced by the scrape jobs in observability/prometheus/prometheus.yaml) and fires when a probe is
+# DOWN for `for:` minutes. Provisioned rules are READ-ONLY in the UI — edit this file + restart (or
+# hot-reload via the Admin API) to change them.
+#
+# THE EVALUATION SHAPE (per rule): two queries.
+#   A  — an INSTANT Prometheus query for the probe's `probe_success` (datasource uid `prometheus`,
+#        the otel-lgtm built-in; see grafana-datasources.yaml). Instant ⇒ one value per series.
+#   C  — a `__expr__` MATH condition `$A < 1` ⇒ 1 when the probe is down (success==0), else 0; this
+#        is the rule `condition`. (Named C, not B, to leave headroom; any refId works.)
+# `for: 5m` means the probe must stay down across ~10 consecutive 30s scrapes before it alerts —
+# long enough to ride out a single missed scrape / restart, short enough to page promptly.
+#
+# TWO GROUPS, deliberately SEPARATE so an operator can tell the two failure classes apart:
+#   • `synthetic-monitoring`           — the INTERNAL probes (compose-network: server /healthz, site
+#     index, ws-origin TCP). `noDataState: Alerting`: if an internal series VANISHES (the exporter or
+#     the whole box is gone) that is itself an outage — fail loud. These mean THE APP is down.
+#   • `synthetic-monitoring-external`  — the EXTERNAL edge probes (the public https path through
+#     Cloudflare: the static SITE on apex/www, the GAME on play.<domain>/healthz, + TLS-expiry).
+#     `noDataState: OK`: the external job is INERT until you set a domain (no committed host), so a
+#     missing series must STAY SILENT — no false alarms on a clean clone / `make deploy-local`. These
+#     mean the EDGE / TUNNEL / DNS is down (the app itself may be fine — the internal group will say).
+# Internal firing + external silent ⇒ app down. Internal silent + external firing ⇒ edge/Tunnel/DNS.
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: synthetic-monitoring
+    folder: Recollect # Grafana creates/uses a folder of this title (sits beside the dashboards' folder)
+    interval: 1m # how often the rules evaluate (the probes themselves scrape every 30s)
+    rules:
+      # --- The game server is reachable (deep app-health) -----------------------------------------
+      - uid: recollect-probe-server-down
+        title: Recollect server /healthz down
+        condition: C
+        for: 5m
+        noDataState: Alerting
+        execErrState: Alerting
+        labels:
+          severity: critical
+          service: recollect
+          probe: server-healthz
+        annotations:
+          summary: "The Recollect game server health probe is failing."
+          description: >-
+            Blackbox http_2xx probe of http://server:8080/healthz has reported probe_success=0 for 5m.
+            The axum server is unreachable or not returning 200 — players cannot create or play
+            matches. Check `docker logs recollect-server-1` and the Postgres health on the box.
+          runbook: "deploy/README.md → Access (SSM); docs/observability.md → Synthetic monitoring"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              expr: probe_success{probe="server-healthz"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: math
+              expression: $A < 1
+              datasource:
+                type: __expr__
+                uid: __expr__
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+      # --- The static site is being served --------------------------------------------------------
+      - uid: recollect-probe-site-down
+        title: Recollect site index down
+        condition: C
+        for: 5m
+        noDataState: Alerting
+        execErrState: Alerting
+        labels:
+          severity: warning
+          service: recollect
+          probe: site-index
+        annotations:
+          summary: "The Recollect static site probe is failing."
+          description: >-
+            Blackbox http_2xx probe of http://server:8080/ has reported probe_success=0 for 5m. The
+            landing page is not being served from STATIC_DIR (the single origin). The API may still be
+            up; check the site-builder one-shot completed and the `site` volume is mounted.
+          runbook: "docs/observability.md → Synthetic monitoring"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              expr: probe_success{probe="site-index"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: math
+              expression: $A < 1
+              datasource:
+                type: __expr__
+                uid: __expr__
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+      # --- The WebSocket origin accepts connections -----------------------------------------------
+      - uid: recollect-probe-ws-origin-down
+        title: Recollect ws origin TCP down
+        condition: C
+        for: 5m
+        noDataState: Alerting
+        execErrState: Alerting
+        labels:
+          severity: critical
+          service: recollect
+          probe: ws-origin
+        annotations:
+          summary: "The Recollect WebSocket origin TCP probe is failing."
+          description: >-
+            Blackbox tcp_connect probe of server:8080 has reported probe_success=0 for 5m. The ws
+            listener is not accepting connections — live matches (wss://…/matches/{id}/ws) cannot
+            connect. Usually the same root cause as the /healthz alert (server process down).
+          runbook: "docs/observability.md → Synthetic monitoring"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              expr: probe_success{probe="ws-origin"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: math
+              expression: $A < 1
+              datasource:
+                type: __expr__
+                uid: __expr__
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+  # --- EXTERNAL edge probes (the full public path through Cloudflare) ---------------------------
+  # A SEPARATE group from the internal probes above, so a firing here means the EDGE / TUNNEL / DNS /
+  # TLS path is broken — distinct from 'the app is down' (the internal group). Every rule here is
+  # `noDataState: OK` + `execErrState: OK`: the external job is INERT until you render a domain into
+  # external-targets/public-edge.yaml (see prometheus.yaml + docs/observability.md §5.1), so with no
+  # targets there is NO series and these rules must STAY SILENT — a clean clone / `make deploy-local`
+  # never false-alarms. They light up automatically once external targets exist.
+  - orgId: 1
+    name: synthetic-monitoring-external
+    folder: Recollect
+    interval: 1m
+    rules:
+      # --- The static SITE is reachable from the world (DNS + edge TLS + Cloudflare Pages) ---------
+      - uid: recollect-probe-external-site-down
+        title: Recollect public site (edge) down
+        condition: C
+        for: 5m
+        noDataState: OK # external job inert until a domain is set ⇒ no series ⇒ stay silent
+        execErrState: OK
+        labels:
+          severity: critical
+          service: recollect
+          scope: external # distinguishes edge/Tunnel/DNS failures from the internal 'app down' group
+          probe: public-site
+        annotations:
+          summary: "The public Recollect site is unreachable through Cloudflare."
+          description: >-
+            Blackbox https_2xx probe of the public site (https://<domain>/ and www) has reported
+            probe_success=0 for 5m. The site is down FROM THE OUTSIDE — DNS, the Cloudflare edge/TLS,
+            or Cloudflare Pages. If the INTERNAL site-index probe is UP, the app is fine and the fault
+            is the edge/DNS, not the origin. Check Cloudflare (DNS records, Pages deployment, zone).
+          runbook: "docs/observability.md → Synthetic monitoring (§5.1 internal-vs-external)"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              expr: probe_success{probe="public-site"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: math
+              expression: $A < 1
+              datasource:
+                type: __expr__
+                uid: __expr__
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+      # --- The GAME server is reachable from the world (DNS + edge TLS + the named Tunnel) --------
+      - uid: recollect-probe-external-game-down
+        title: Recollect public game (tunnel) down
+        condition: C
+        for: 5m
+        noDataState: OK # external job inert until a domain is set ⇒ no series ⇒ stay silent
+        execErrState: OK
+        labels:
+          severity: critical
+          service: recollect
+          scope: external
+          probe: public-game
+        annotations:
+          summary: "The public Recollect game server is unreachable through the Cloudflare Tunnel."
+          description: >-
+            Blackbox https_2xx probe of https://play.<domain>/healthz has reported probe_success=0 for
+            5m. The game is down FROM THE OUTSIDE — DNS, the Cloudflare edge/TLS, or the named Tunnel
+            (cloudflared). If the INTERNAL server-healthz/ws-origin probes are UP, the server is fine
+            and the fault is the edge/Tunnel/DNS. Check `docker logs recollect-cloudflared-1` + the
+            Cloudflare Tunnel/DNS for play.<domain>.
+          runbook: "docs/observability.md → Synthetic monitoring (§5.1 internal-vs-external)"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              expr: probe_success{probe="public-game"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: math
+              expression: $A < 1
+              datasource:
+                type: __expr__
+                uid: __expr__
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+      # --- The public TLS cert is not about to expire (both the site + game edge certs) -----------
+      # The external https probes record probe_ssl_earliest_cert_expiry (a unix timestamp). This warns
+      # when the SOONEST-expiring public cert has < 14 days left. With Cloudflare's universal edge cert
+      # this normally auto-renews; this is the canary if it ever does not. probe=~"public-.*" covers
+      # both external probes; min() picks the earliest expiry across them.
+      - uid: recollect-probe-external-tls-expiry
+        title: Recollect public TLS cert expiring (<14d)
+        condition: C
+        for: 1h
+        noDataState: OK # external job inert until a domain is set ⇒ no series ⇒ stay silent
+        execErrState: OK
+        labels:
+          severity: warning
+          service: recollect
+          scope: external
+          probe: public-tls
+        annotations:
+          summary: "A public TLS certificate is within 14 days of expiry."
+          description: >-
+            The external https probes report probe_ssl_earliest_cert_expiry within 14 days for the
+            public site/game edge. With Cloudflare's edge cert this normally auto-renews; investigate
+            if it does not. (Inert unless external monitoring is enabled — a domain is set.)
+          runbook: "docs/observability.md → Synthetic monitoring (§5.1 internal-vs-external)"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              # seconds until the earliest public cert expires; < 14d (1209600s) ⇒ warn
+              expr: min(probe_ssl_earliest_cert_expiry{probe=~"public-.*"} - time())
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: math
+              expression: $A < 1209600
+              datasource:
+                type: __expr__
+                uid: __expr__
+              intervalMs: 1000
+              maxDataPoints: 43200

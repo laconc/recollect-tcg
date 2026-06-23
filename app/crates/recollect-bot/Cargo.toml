@@ -1,0 +1,12 @@
+[package]
+name = "recollect-bot"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "Headless random-legal-move bot: balance sims, load tests, integration tests."
+
+[dependencies]
+recollect-core = { path = "../recollect-core" }
+
+[lints]
+workspace = true

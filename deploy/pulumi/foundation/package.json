@@ -1,0 +1,18 @@
+{
+  "name": "recollect-foundation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pulumi IaC for Recollect's FOUNDATION stack (ECR repo + GitHub OIDC + the scoped CI push role). Run once.",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "@pulumi/aws": "^7.34.0",
+    "@pulumi/pulumi": "^3.247.0"
+  }
+}

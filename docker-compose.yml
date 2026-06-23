@@ -1,0 +1,50 @@
+# Local stack: postgres + Grafana LGTM (logs/metrics/traces over OTLP) + server.
+# Credentials here are LOCAL-ONLY by design; production secrets come from the
+# helm chart's existingSecret, never from a file in git.
+services:
+  postgres:
+    # Postgres 18 is a major bump from 16; an existing `pgdata` volume created by
+    # an older major won't start under 18 — `make nuke` (or remove the volume)
+    # once when upgrading a local stack.
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_USER: recollect
+      POSTGRES_PASSWORD: recollect-local-only
+      POSTGRES_DB: recollect
+    ports: ["5432:5432"]
+    # Postgres 18+ recommends mounting /var/lib/postgresql (data lands in a
+    # subdir) so pg_upgrade --link works without mount-boundary issues.
+    volumes: ["pgdata:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recollect"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  lgtm:
+    # Grafana + Tempo (traces) + Loki (logs) + Prometheus (metrics), OTLP in.
+    image: grafana/otel-lgtm:0.28.0
+    ports:
+      - "3000:3000"   # grafana ui (anonymous admin: local-only)
+      - "4317:4317"   # otlp grpc
+      - "4318:4318"   # otlp http
+    volumes: ["lgtm:/data"]
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: ["8080:8080"]
+    environment:
+      DATABASE_URL: postgres://recollect:recollect-local-only@postgres:5432/recollect
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317
+      RUST_LOG: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lgtm:
+        condition: service_started
+
+volumes:
+  pgdata:
+  lgtm:

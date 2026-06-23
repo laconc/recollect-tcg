@@ -1,0 +1,17 @@
+# Build config for the wasm web shell (D-26). `trunk serve` for a live playtest,
+# `trunk build --release` for the deployable bundle (wasm-opt -z applied via the
+# index.html `data-wasm-opt`). The ≤3 MB gzipped budget (red team T-5) is checked
+# on the release artifact; wgpu makes that tight — a follow-up will measure + trim.
+[build]
+target = "index.html"
+dist = "dist"
+# The play client deploys under /client/ (make site copies dist/ -> the site's dist/client/),
+# and index.html hand-imports `./recollect-web.js` + its `_bg.wasm` by name — so trunk must NOT
+# hash-rename them, or the import 404s and the client never boots (caught by #96's UI tests).
+# The /client/ prefix for trunk-injected assets (the CSS link) is passed at build time via
+# `--public-url /client/` in the Makefile `site` target, so `trunk serve` still works at root.
+filehash = false
+
+[serve]
+address = "127.0.0.1"
+port = 8088

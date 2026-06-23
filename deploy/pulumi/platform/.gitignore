@@ -1,0 +1,11 @@
+# Pulumi / Node build artifacts — never committed.
+node_modules/
+bin/
+*.tsbuildinfo
+
+# Pulumi keeps stack STATE in your configured backend (Pulumi Cloud or a self-managed
+# backend), never in the repo. Per-stack config (Pulumi.<stack>.yaml) is created locally by
+# `pulumi stack init` + `pulumi config set`; it may hold ENCRYPTED secrets and is intentionally
+# left untracked here so real deploy config (account ids, the chosen region, encrypted secrets)
+# isn't committed. Commit a Pulumi.<stack>.yaml deliberately only if it contains no secrets.
+Pulumi.*.yaml

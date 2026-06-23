@@ -1,0 +1,49 @@
+[package]
+name = "recollect-server"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "Authoritative game server: axum WebSocket sessions over the deterministic core. Postgres event store + Valkey ephemerals arrive in M1 (see tech design)."
+
+[dependencies]
+recollect-core = { path = "../recollect-core" }
+recollect-protocol = { path = "../recollect-protocol" }
+recollect-journal-postgres = { path = "../recollect-journal-postgres" }
+# The AI opponent for a server-driven seat (`?opponent=bot`).
+recollect-bot = { path = "../recollect-bot" }
+# CORS so a browser-served web client can reach the HTTP surface cross-origin.
+tower-http = { workspace = true }
+# The authoritative event journal rides a shared async connection (AsyncStore
+# borrows &Client); accounts/match metadata stay on the legacy `Journal`.
+tokio-postgres = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true, features = ["net", "sync", "time", "signal"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+# #85 match-seed security: OS-CSPRNG seeds + hashed seat tokens + a seed
+# commit–reveal (see crypto.rs). Same primitives the accounts store already uses.
+rand = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+# OpenTelemetry is always compiled in; OTLP export is gated at runtime on
+# OTEL_EXPORTER_OTLP_ENDPOINT (see telemetry.rs).
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry-appender-tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+
+[dev-dependencies]
+# The journaled-resume PG test (#[ignore]) needs the test macro + a runtime;
+# the live-ws test (in-memory, no PG) also needs io-util for the raw HTTP POST
+# that creates the match.
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "io-util"] }
+# A real ws client + sink/stream combinators drive the live-ws integration test.
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,44 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/OWNER/recollect-server
+  tag: ""            # pin per release; never :latest
+  pullPolicy: IfNotPresent
+
+# Name of an existing Secret with key DATABASE_URL. The chart never templates
+# database credentials from values — secrets do not live in git.
+existingSecret: recollect-db
+
+otel:
+  enabled: true
+  endpoint: http://lgtm.observability.svc:4317
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: nginx
+  host: play.example.com
+  tlsSecret: ""
+
+resources:
+  requests: { cpu: 100m, memory: 128Mi }
+  limits: { cpu: "1", memory: 512Mi }
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  seccompProfile: { type: RuntimeDefault }
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: ["ALL"] }

@@ -1,0 +1,32 @@
+# Recollect — BUILD overlay for the deploy stack (local + smoke only).
+#
+# Production PULLS the server image from ECR (the base docker-compose.deploy.yml gives `server` only
+# an `image:` — the ECR ref cloud-init writes as IMAGE_REF). This overlay adds the server `build:`
+# block BACK so a laptop / CI smoke can compile the image locally and tag it the local IMAGE_REF
+# default (recollect-server:deploy) — no ECR, no AWS creds needed to run the stack end-to-end.
+#
+# It is layered UNDER docker-compose.local.yml by `make deploy-local` / `make deploy-smoke` (the
+# DEPLOY_COMPOSE chain), so `up -d --build` builds the server here, while production omits this file
+# and pulls. The site-builder already builds in the base (it bakes the per-deploy origin/beacon and
+# is not an ECR artifact), so it needs nothing here.
+#
+# Compose merges by service name: this `build:` joins the base `server` (which keeps its
+# `image: ${IMAGE_REF:-recollect-server:deploy}`), so `--build` writes the built image to that tag.
+#
+# Used via the make targets (recommended); or by hand from the repo root:
+#   docker compose \
+#     -f deploy/compose/docker-compose.deploy.yml \
+#     -f deploy/compose/docker-compose.build.yml \
+#     -f deploy/compose/docker-compose.local.yml up -d --build
+
+services:
+  server:
+    build:
+      # Repo root is the build context (the Dockerfile is root-relative, .dockerignore allows app/).
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        GIT_REF: ${GIT_REF:-unknown}
+        # OCI source label (provenance only). Env-driven with a generic placeholder fallback so no
+        # real repo URL is committed; cloud-init can pass your repoUrl via .env.
+        SOURCE_URL: ${SOURCE_URL:-https://github.com/yourorg/recollect}

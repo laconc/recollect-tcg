@@ -1,0 +1,51 @@
+[package]
+name = "recollect-web"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "WASM web client shell (built with trunk; excluded from default native builds)."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+recollect-core = { path = "../recollect-core" }
+recollect-bot = { path = "../recollect-bot" }
+recollect-protocol = { path = "../recollect-protocol" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+wasm-bindgen = { workspace = true }
+web-sys = { workspace = true }
+
+# The wgpu ink renderer is wasm-only: native builds (and `make test`) never pull
+# wgpu/naga, so the workspace stays lean. The pure `scene` layer is native-tested;
+# this backend only draws it (WebGPU, with a WebGL2 fallback).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgpu = { version = "29", default-features = false, features = ["webgl", "webgpu", "wgsl"] }
+bytemuck = { version = "1", features = ["derive"] }
+wasm-bindgen-futures = "0.4"
+console_error_panic_hook = "0.1"
+# Pure-Rust TrueType rasterizer (wasm-compatible, no system fonts needed) — rasterizes the
+# bundled EB Garamond (OFL-1.1, see assets/) into a glyph ATLAS at startup so the canvas draws
+# real anti-aliased serif type instead of the 3×5 bitmap. Shared with the native shells (the
+# atlas builds from the same font bytes), keeping the renderer one surface across platforms.
+ab_glyph = "0.2"
+
+# A NATIVE, GPU-free preview rasterizer for the shell/board (the `shell_preview` example): it
+# builds a `ShellScene`/`Scene` from a deterministic local game and rasterizes it to PNG on the
+# CPU — the same SDF rounded rects, soft shadows, gradients, and EB Garamond atlas glyphs the wgpu
+# backend draws, just on the CPU. It lets us eyeball the visual-polish work deterministically when
+# a headed GPU surface isn't available (and doubles as a documentation/QA tool). `ab_glyph` is the
+# same rasterizer the wasm atlas uses (already in the lock); `png` writes the output. Dev-only, so
+# the wasm build and `make test` are unaffected.
+[dev-dependencies]
+recollect-core = { path = "../recollect-core" }
+ab_glyph = "0.2"
+png = "0.17"
+
+[[example]]
+name = "shell_preview"
+path = "examples/shell_preview.rs"
+
+[lints]
+workspace = true

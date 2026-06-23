@@ -1,0 +1,122 @@
+name: recollect-platform
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+description: >-
+  Recollect — PLATFORM (run PER RELEASE): the lean launch host (tech-design §10.1). One free-tier
+  AWS EC2 box in the configured region running the deploy Docker Compose stack (recollect-server —
+  PULLED from FOUNDATION's ECR, also serving the static site + wasm client from one origin — +
+  on-box Postgres + cloudflared + the self-hosted LGTM observability stack), fronted by Cloudflare
+  (DNS + a named Tunnel + edge TLS). No inbound ports: the tunnel dials out. The on-box server build
+  is retired for production (the box pulls the image CI pushed). `pulumi up` is the source of truth.
+  Its companion FOUNDATION stack (deploy/pulumi/foundation/, run once) owns the ECR repo + the CI
+  push role this stack's image comes from.
+
+# Typed config (set with `pulumi config set [--secret] recollect-platform:<key>`).
+# Secrets are stored encrypted in the stack state. See deploy/README.md for the full list.
+#
+# NOTHING deployment-unique is committed here. The values that identify YOUR deployment — the
+# domain, the repo URL, the server image (ECR ref), the Cloudflare account/zone ids, the maintainer
+# email — have NO default: you set them in your gitignored Pulumi.<stack>.yaml at deploy time, so
+# this repo stays generic.
+config:
+  recollect-platform:region:
+    type: string
+    # Generic default: us-east-1 is AWS's default free-tier region, not a value unique to one
+    # deployment. Keep it the SAME as the FOUNDATION region so the box pulls the image cheaply.
+    default: us-east-1
+  recollect-platform:instanceType:
+    type: string
+    default: t3.micro
+  recollect-platform:domain:
+    type: string
+    description: >-
+      REQUIRED — the public hostname for THIS deployment (e.g. your-domain.com). Deployment-unique,
+      so there is no committed default; set it: `pulumi config set domain your-domain.com`.
+  recollect-platform:repoUrl:
+    type: string
+    description: >-
+      REQUIRED — the git URL cloud-init clones on the box (for the compose files + the site build).
+      Deployment-unique, no committed default; e.g. https://github.com/yourorg/recollect.git.
+  recollect-platform:gitRef:
+    type: string
+    description: A pinned commit SHA or tag to deploy (never a moving branch).
+  recollect-platform:serverImage:
+    type: string
+    description: >-
+      REQUIRED — the server IMAGE the box PULLS (the FOUNDATION/PLATFORM split: prod no longer builds
+      on-box; CI builds + pushes to ECR, the box pulls). The FOUNDATION `repoUrl` output at the pinned
+      tag CI pushed, e.g. <acct>.dkr.ecr.<region>.amazonaws.com/recollect-server:<gitRef>. The instance
+      role grants ECR read-only so the pull is keyless. Deployment-unique, no committed default.
+  recollect-platform:cloudflareAccountId:
+    type: string
+  recollect-platform:cloudflareZoneId:
+    type: string
+  recollect-platform:gameSubdomain:
+    type: string
+    description: >-
+      Host part prepended to <domain> for the GAME SERVER (default `play` ⇒ play.<domain>). The
+      apex + www are the static website on Cloudflare Pages; the game server (wss + REST) lives on
+      this sub-route, so the two share the one zone without colliding.
+    default: play
+  recollect-platform:pagesProjectName:
+    type: string
+    description: >-
+      The Cloudflare Pages PROJECT NAME for the static website (direct-upload; CI `wrangler pages
+      deploy`s dist/ to it). Generic default — NOT deployment-unique. Exported as the
+      `pagesProjectName` stack output so CI's CF_PAGES_PROJECT GitHub var can name the same project.
+    default: recollect-site
+  recollect-platform:otelEndpoint:
+    type: string
+    description: >-
+      OTLP endpoint. EMPTY (default) ⇒ the server exports to the ON-BOX self-hosted lgtm stack
+      (http://lgtm:4317). Set only to ship OFF-box instead (e.g. a Grafana Cloud OTLP URL).
+    default: ""
+  recollect-platform:budgetEmail:
+    type: string
+    description: Email for the AWS Budgets free-tier alerts (omit to skip notifications).
+    default: ""
+  recollect-platform:monthlyBudgetUsd:
+    type: string
+    default: "5"
+  # --- Self-hosted observability access + alarms (§11) ---
+  recollect-platform:maintainerEmail:
+    type: string
+    description: >-
+      The maintainer email allowed through Cloudflare Access to reach grafana.<domain>. REQUIRED —
+      the Access-gated Grafana is an allow-list of exactly this address; everyone else is denied.
+  recollect-platform:grafanaSubdomain:
+    type: string
+    description: Host part prepended to <domain> for Grafana (default `grafana` ⇒ grafana.<domain>).
+    default: grafana
+  recollect-platform:cfTeamName:
+    type: string
+    description: >-
+      OPTIONAL (R2-1, defense-in-depth) — your Cloudflare Zero Trust org/team name (the `<team>` in
+      `<team>.cloudflareaccess.com`). SET ⇒ the grafana tunnel ingress also validates the Access JWT
+      at the connector (origin-side, bound to the Grafana Access app's AUD). UNSET ⇒ edge-only Access
+      (the default posture). Deployment-unique, so no committed default. See deploy/README.md "R2-1".
+  recollect-platform:alarmEmail:
+    type: string
+    description: >-
+      Email for the CloudWatch out-of-band box-health alarms (SNS). Falls back to budgetEmail; omit
+      both to create the alarms without an email subscription.
+    default: ""
+  recollect-platform:cpuAlarmThresholdPct:
+    type: integer
+    description: CPUUtilization alarm threshold percent (default 80).
+    default: 80
+  recollect-platform:rootVolumeSizeGb:
+    type: integer
+    description: >-
+      Instance ROOT volume size (GiB). Default 10 so root (10) + the durable /data volume (20) =
+      30 GiB fit entirely in the 30 GB/12-month EBS free tier ($0) — the #31 cost fix.
+    default: 10
+  # Secrets (do not set without --secret). NOTE: the on-box Postgres password is NOT here —
+  # Pulumi GENERATES it (random.RandomPassword in index.ts), since Postgres is compose-internal
+  # (no published port) and needs no operator-managed credential.
+  recollect-platform:cfBeaconToken:
+    type: string
+    secret: true
+    default: ""

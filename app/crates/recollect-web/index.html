@@ -1,0 +1,2429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Recollect — play</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link data-trunk rel="rust" data-wasm-opt="z" data-bindgen-target="web" />
+    <link data-trunk rel="css" href="play.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#board">Skip to the game</a>
+    <!-- #100 §Page shell — the SAME nav the website pages carry (semantic HTML, the
+         shared brand chrome: Play · Guide · Cards · Rules · Lore), plus the play
+         settings: sound · reduced-motion · animation-speed. The client is served under
+         /client/, so the site links go up one level. Everything below the nav is the
+         full-bleed canvas the Rust scene draws. -->
+    <header class="site-header play-header">
+      <div class="container">
+        <a class="brand" href="../index.html">Recollect</a>
+        <!-- The nav reads Play · Guide · Cards · Rules · Lore on the LEFT, with the Options
+             control pushed to the FAR RIGHT of the bar (item 1, via `.nav-options{margin-left:auto}`):
+             the raw sound / reduced-motion / animation-speed controls are collapsed behind that single
+             "Options" disclosure (the panel below) so they don't clutter the bar. -->
+        <nav class="site-nav" aria-label="Primary">
+          <a href="../play.html" aria-current="page">Play</a>
+          <a href="../guide.html">Guide</a>
+          <a href="../cards.html">Cards</a>
+          <a href="../rules.html">Rules</a>
+          <a href="../lore.html">Lore</a>
+          <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                  aria-expanded="false" aria-controls="options-panel">Options</button>
+        </nav>
+      </div>
+      <!-- The Options panel (item 4): the play settings — sound, reduced-motion, and the
+           animation-speed that governs the paced opponent replay (Phase C — one global setting,
+           NOT per-action fast-forward). `prefers-reduced-motion` is honoured automatically; the
+           toggle lets a player force it on top of the OS setting. Hidden until the Options
+           disclosure opens it; semantic HTML so it stays accessible. -->
+      <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+        <div class="options-inner">
+          <h2 class="options-title">Options</h2>
+          <div class="play-settings" role="group" aria-label="Play settings">
+            <label class="setting setting-check" for="opt-sound">
+              <input type="checkbox" id="opt-sound" />
+              <span>Sound</span>
+            </label>
+            <label class="setting setting-check" for="opt-reduced-motion">
+              <input type="checkbox" id="opt-reduced-motion" />
+              <span>Reduced motion</span>
+            </label>
+            <label class="setting" for="anim-speed">Animation speed
+              <select id="anim-speed" aria-label="Animation speed for the opponent's replay">
+                <option value="normal" selected>normal</option>
+                <option value="fast">fast</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+    </header>
+    <!-- #100 — the canvas owns the WHOLE game for a LOCAL 1v1 telling: tap a piece then a
+         glowing tile (or drag) to act, tap a hand card then a tile to play, hover /
+         long-press to inspect; End Turn + Glimpse + evolve/reclaim are in-canvas
+         affordances. It is FULL-BLEED (100% width × the viewport below the nav),
+         portrait-first, DPR-aware (fitCanvas). The canvas is opaque to assistive tech, so
+         the VIRTUAL A11Y TREE (#shell-a11y) mirrors every affordance as an actionable ARIA
+         button firing the SAME command (invariant 7); #board-sr narrates the board tile by
+         tile and #status is the announcements live region — all three are SCREEN-READER-
+         ONLY (in the a11y tree, invisible to the eye — the canvas is the visible surface).
+         Online (1v1 PvP) and 2v2 ALSO drive the full canvas shell now (sourced from the
+         server's redacted PlayerView/TeamView + its legal list — see online.rs); the
+         transitional #moves / #hand DOM controls are retired for them too. -->
+    <main id="stage" class="stage">
+      <canvas id="board" width="720" height="720" tabindex="0" role="application"
+              aria-label="Game board — arrow keys to move the cursor, Enter or Space to pick up a spirit and place it; the actionable list in Game actions mirrors every move"
+              aria-describedby="board-sr"></canvas>
+      <!-- The picker / online / 2v2 DOM chrome (visible only OFF the canvas-native shell:
+           the style picker, the online host form, the 2v2 status). The local 1v1 shell
+           draws its HUD/hand/FABs in the canvas, so these stay empty + hidden there. -->
+      <div id="picker"></div>
+      <div id="hand"></div>
+      <div id="moves"></div>
+      <div id="actions"></div>
+    </main>
+    <!-- The accessible mirror of the canvas — present in the a11y tree, invisible on
+         screen (the canvas is the visible surface, §a11y). #status is the announcements
+         live region; #board-sr narrates the board tile by tile; #shell-a11y is the
+         actionable ARIA tree; #detail is the inspect text readout (the in-canvas floating
+         panel is the visible inspect — this is its a11y twin). -->
+    <div id="status" class="visually-hidden" role="status" aria-live="polite">loading…</div>
+    <div id="board-sr" class="visually-hidden" role="region" aria-label="Board state — read tile by tile; act with the buttons in Game actions below"></div>
+    <div id="shell-a11y" class="visually-hidden" role="group" aria-label="Game actions"></div>
+    <div id="detail" class="visually-hidden"></div>
+
+    <script type="module">
+      // The wgpu ink renderer draws the whole game; the Rust core (LocalGame) stays
+      // authoritative. For a LOCAL 1v1 telling the client is canvas-native (#100
+      // Phase B): you act on the canvas (tap-select / drag / hover-or-long-press
+      // inspect / the in-canvas FABs), and the virtual a11y tree (#shell-a11y)
+      // mirrors every affordance as an actionable button firing the same engine
+      // command — the transitional HTML move buttons are retired for this mode.
+      // ONLINE (1v1 PvP) and 2v2 ALSO drive the full canvas shell + a11y tree now
+      // (sourced from the server's redacted view + legal list via OnlineShell/online.rs);
+      // the #moves/#hand DOM controls are retired for them too.
+      // The seeded AI takes its turn when you end yours.
+      import init, {
+        LocalGame, OnlineShell, WebRenderer, protocol_version, card_name,
+        card_detail_by_id_json, reach_grid_by_id_json,
+        sample_online_welcome_json, sample_team_welcome_json, sample_landmark_welcome_json,
+        sample_devolve_welcome_json,
+      } from "./recollect-web.js";
+
+      // `game` is the local engine (vs-AI / 2v2 watch); `online` is a networked
+      // session against the authoritative server (no local engine — the server
+      // rules, we render the PlayerView/TeamView it sends). Exactly one is active.
+      // `onlineShell` is the stateless online/2v2 shell builder (#100): it turns the
+      // server's redacted view + legal list into the SAME ShellModel the local shell
+      // draws (board · HUD · hand · affordances · the a11y inputs), with no engine.
+      let game, renderer, onlineShell = null, watch = null, online = null, protoV = 1;
+      const $ = (id) => document.getElementById(id);
+      const seed64 = () => BigInt(Date.now()) & 0xffffffffffffffffn;
+      const diffName = (i) => ["easy", "normal", "hard", "expert"][parseInt(i, 10)] ?? "normal";
+      // HTML-escape a string before it goes into innerHTML. The picker's labels are
+      // engine-authored (a trusted static catalog), but escaping is the correct hygiene
+      // and future-proofs against any card name with a special character.
+      const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+      // #97/#100 Board interaction (local 1v1 only — online/2v2 stay button-driven).
+      // `board` holds the live input state the wgpu overlay reads each frame:
+      //   • legal  — the parsed legal_labeled moves (source of truth; the engine's,
+      //              never re-derived here — we only filter & match against it);
+      //   • bw     — board width (5 normally);
+      //   • sel    — what the player has "picked up": a spirit tile or a hand card
+      //              (`{kind:'spirit',tile}` / `{kind:'hand',handIndex,id}`), null when nothing;
+      //   • targets— the legal destination tiles for `sel` (highlighted on the canvas);
+      //   • focus  — the keyboard cursor's tile (an int, or null when focus isn't on the board);
+      //   • drag   — an in-progress pointer drag (#100): { from, x, y, moved } where
+      //              `from` is the region the press started on; `moved` flips once the
+      //              pointer passes the slop threshold (a tap vs a drag);
+      //   • inspect— the floating inspect panel's data (#100), or null (hover/long-press);
+      //   • regions— the shell hit-test rects for this frame (board/hand/FABs), refreshed
+      //              from the renderer each draw so a pointer maps to the right thing.
+      // The whole model is a thin view over `legal`: pointer/keyboard only choose a
+      // selection + a target, then apply the matching legal move. Nothing here is a
+      // rules input — the engine validates every command.
+      const board = { legal: [], bw: 5, sel: null, targets: [], focus: null,
+                      drag: null, inspect: null, inspectId: null, regions: null, longPress: null,
+                      // #100 §Hand — the carousel scroll offset (px; JS-owned, clamped to the
+                      // regions' hand_max_scroll). Wheel / drag / touch-swipe / hover-edge moves it.
+                      handScroll: 0, hoverScrollDir: 0 };
+
+      // #100 Phase C — the paced opponent-turn replay. When the bot's turn ends we
+      // DON'T snap the state: the local engine has already applied the whole turn, and
+      // `game.auto_play_turn_paced()` hands back an ordered stream of beats, each with a
+      // caption, an a11y announcement, the affected tiles, and a self-contained shell
+      // model snapshot (the human's redacted view AFTER that action). We walk them on a
+      // timer (~1s/beat, honoring the animation-speed setting + prefers-reduced-motion),
+      // drawing each snapshot, captioning it on-canvas, and pushing the announcement into
+      // the #status live region. While `active`, the player's affordances are inert and
+      // the a11y tree shows the opponent's-turn state.
+      //   • active   — a replay is in progress (gates all interaction);
+      //   • queue    — the remaining beats to play;
+      //   • model    — the current beat's ShellModel JSON (drawn by the frame loop);
+      //   • timer    — the pending setTimeout handle;
+      //   • after    — a callback to run once the queue drains (restore the live frame).
+      const replay = { active: false, queue: [], model: null, timer: null, after: null, roundNote: null };
+
+      // #100 Phase D — the Dusk/Nightfall set-piece + the in-canvas result screen. Both
+      // are JS-driven OVERLAYS folded into the shell's ui_json (so the one draw_shell path
+      // renders them): their CONTENT is engine-computed (result_screen_json /
+      // dusk_set_piece_json), the animation `progress` is JS-owned (a rAF ramp, honoring
+      // prefers-reduced-motion).
+      //   • dusk    — { kind, title, subtitle, progress } while a Dusk/Nightfall set-piece
+      //               animates over the board, or null. `timer`/`raf` drive its ramp+dwell.
+      //   • result  — the parsed ResultScreen (verdict + breakdown + actions) once the
+      //               telling ends, or null; `progress` ramps its reveal; `mode` adapts it.
+      const phaseD = { dusk: null, duskTimer: null, duskRaf: null, lastDuskRound: 0,
+                       result: null, resultProgress: 0, resultRaf: null, mode: "bot" };
+
+      // #26 — the in-canvas GLIMPSE + MULLIGAN choice modal. Two kinds, both drawn by the
+      // ONE draw_shell path (the model carries `choice`), so this JS state only governs the
+      // INTERACTION (hit-test dispatch + the opening offer + the announcement):
+      //   • The GLIMPSE (burn → keep/bottom) is an engine pending choice — it surfaces in the
+      //     model automatically (no flag needed); we just read it to announce each step + map
+      //     a tap to Command::Choose.
+      //   • The MULLIGAN is a legal command at the opening, so the bridge owns whether the
+      //     offer SHOWS: `offer` is set when a fresh local telling mounts (and the window is
+      //     open) and cleared on either pick (Mulligan / Keep). The engine's window still
+      //     gates it (a stale flag draws nothing — can_mulligan()).
+      //   • `sig` dedupes the per-step announcement (so the live region narrates each new
+      //     step once, not every frame).
+      const choiceUi = { offer: false, sig: null };
+
+      // prefers-reduced-motion: the replay still PLAYS (you still see each action, the
+      // a11y announcements still land) but near-instant — no one is forced to wait on
+      // motion they've asked to reduce.
+      const reducedMotionQuery = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)");
+      // #100 §Page shell settings — sound · reduced-motion · animation-speed. Persisted
+      // across sessions (localStorage), wired to the nav controls in main(). Reduced
+      // motion is the OS preference OR the in-app toggle (a player can force it on top of
+      // the system setting); `sound` gates future audio (no audio engine yet — the
+      // preference is stored so the toggle is a real, honoured control, not a stub).
+      const settings = {
+        sound: localStorage.getItem("recollect_sound") === "on",
+        reducedMotion: localStorage.getItem("recollect_reduced_motion") === "on",
+      };
+      const prefersReducedMotion = () =>
+        settings.reducedMotion || !!(reducedMotionQuery && reducedMotionQuery.matches);
+
+      // The per-beat dwell in ms, from the global animation-speed setting (the only
+      // pacing control — no per-action fast-forward, per web_client_ux.md). Reduced
+      // motion collapses it to a brief tick so the stream still narrates in order.
+      function beatDwellMs() {
+        if (prefersReducedMotion()) return 60;
+        const sel = $("anim-speed");
+        return (sel && sel.value === "fast") ? 420 : 1000;
+      }
+
+      // ── #100 online/2v2 shell: the mode + dispatch abstraction ───────────────────
+      // The canvas-native shell drives THREE transports through one set of interaction
+      // handlers: a LOCAL engine (vs-AI 1v1), an ONLINE 1v1 (the authoritative server's
+      // redacted PlayerView), and ONLINE 2v2 (a TeamView). The handlers below
+      // (pickUp / dropOn / activateTile / tapFab / dispatchChoice) are written against
+      // `board.legal` + these helpers, so the SAME tap-select / drag / FAB / a11y paths
+      // serve all three — the only difference is where a chosen command goes (the local
+      // engine vs the websocket) and where the live view comes from.
+
+      // Which transport is live: "local" (engine 1v1), "online" (server 1v1),
+      // "team" (server 2v2), or "none" (the picker).
+      function currentMode() {
+        if (game) return game.is_2v2() ? "localteam" : "local";
+        if (online && online.view) return "online";
+        if (online && online.team) return "team";
+        return "none";
+      }
+      // True for a NETWORKED telling (1v1 or 2v2) — the server is authoritative.
+      function isOnline() { return !!(online && (online.view || online.team)); }
+      // True for ANY 2v2 telling drawn in the shell (online team play).
+      function isTeam() { return !!(online && online.team); }
+      // The live redacted view JSON for the current transport (PlayerView or TeamView),
+      // or null. Online holds the server's pushed view; local serializes the engine's.
+      function currentViewJson() {
+        const m = currentMode();
+        if (m === "online") return JSON.stringify(online.view);
+        if (m === "team") return JSON.stringify(online.team);
+        if (m === "local") { try { return game.view_json(); } catch (_) { return null; } }
+        if (m === "localteam") { try { return game.team_view_json(); } catch (_) { return null; } }
+        return null;
+      }
+      // The legal-move list for the current transport (server-supplied online; the
+      // engine's labeled list locally), already parsed into `[{label, cmd, forecast}]`.
+      function currentLegal() {
+        if (isOnline()) return online.legal || [];
+        if (game && !game.is_2v2()) { try { return JSON.parse(game.legal_labeled_json()); } catch (_) { return []; } }
+        return [];
+      }
+      // Whether the live telling has ENDED (transport-agnostic): the local engine's
+      // `is_over`, or a `Finished` phase on the server's pushed view.
+      function gameIsOver() {
+        if (game) return game.is_over();
+        const v = (online && (online.view || online.team));
+        return !!(v && v.phase && v.phase.Finished);
+      }
+      // YOUR seat in the live telling ("A"/"B") — the side whose spirits you may pick up.
+      // Local 1v1 is always seat A; online reads the view's own `seat` (1v1) or `team`
+      // (2v2), since you may be seat B over the wire.
+      function youSeat() {
+        if (online && online.view) return online.view.seat;
+        if (online && online.team) return online.team.team;
+        return "A";
+      }
+      // Apply a chosen command: locally through the engine, online over the websocket.
+      // One seam so every handler (drop / FAB / choice / a11y) is transport-agnostic.
+      function dispatchCmd(cmd, label) {
+        if (isOnline()) { sendCmd(cmd); setStatus(label || "…"); return; }
+        report(game.apply_json(JSON.stringify(cmd)), label || "move");
+      }
+
+      // Reset the picked-up selection + highlights (keeps the focus cursor). Also drops
+      // any in-progress drag (a state change invalidates it).
+      function clearSelection() { board.sel = null; board.targets = []; board.drag = null; }
+
+      // #100 The transient UI state the Phase-B shell folds in: the lifted hand card,
+      // an in-progress drag (+ pointer position), and the inspect panel. Built each
+      // frame and passed to shell_model_json / shell_regions_json / shell_a11y_json so
+      // the canvas, the regions, and the a11y tree all see one consistent picture.
+      function shellUiJson() {
+        const lifted = board.sel && board.sel.kind === "hand" ? board.sel.handIndex : null;
+        const dragging = !!(board.drag && board.drag.moved);
+        // #100 Phase D — fold in the Dusk/Nightfall set-piece + the result screen overlays
+        // (with their live JS-owned animation progress) so the one draw_shell path renders
+        // them. `dusk` carries its current `progress`; `result` carries its reveal progress
+        // via a `_progress` hint the model doesn't read (the draw fades by the card alpha).
+        const dusk = phaseD.dusk
+          ? { kind: phaseD.dusk.kind, title: phaseD.dusk.title, subtitle: phaseD.dusk.subtitle, progress: phaseD.dusk.progress }
+          : null;
+        return JSON.stringify({
+          lifted_hand: lifted,
+          hand_scroll: board.handScroll || 0,
+          dragging,
+          drag_xy: dragging ? [board.drag.x, board.drag.y] : null,
+          inspect: board.inspect,
+          dusk,
+          result: phaseD.result,
+          // #26 — request the opening Mulligan modal while the bridge is offering it (the
+          // engine's window still gates whether it actually draws). The Glimpse modal needs
+          // no flag — it rides the engine's pending choice straight into the model.
+          mulligan_offer: choiceUi.offer,
+        });
+      }
+
+      // #100 §Hand — clamp the carousel scroll to the live row bounds (from the regions'
+      // hand_max_scroll), so a wheel/swipe never overscrolls past the last card.
+      function clampHandScroll() {
+        const max = (board.regions && board.regions.hand_max_scroll) || 0;
+        board.handScroll = Math.max(0, Math.min(board.handScroll || 0, max));
+      }
+
+      // #100 §Hand — hover-to-scroll: when the mouse hovers over the hand tray and nears its
+      // LEFT or RIGHT edge, set a continuous scroll direction (-1 left / +1 right / 0 none);
+      // a rAF loop (handCarouselLoop) glides the carousel that way while the cursor stays in
+      // the edge zone. (x,y are backing px.)
+      function updateHoverScroll(x, y) {
+        board.hoverScrollDir = 0;
+        const R = board.regions;
+        const tray = R && R.hand_tray;
+        const max = (R && R.hand_max_scroll) || 0;
+        if (!tray || max <= 0) return;
+        if (!(x >= tray.x && x < tray.x + tray.w && y >= tray.y && y < tray.y + tray.h)) return;
+        // The edge zone is the outer ~12% of the tray on each side (the gutters where cards
+        // are partial), so hovering a full card mid-row still inspects rather than scrolls.
+        const zone = tray.w * 0.12;
+        if (x < tray.x + zone) board.hoverScrollDir = -1;
+        else if (x > tray.x + tray.w - zone) board.hoverScrollDir = 1;
+      }
+
+      // The continuous hover-scroll glide. Runs every frame; advances handScroll while a hover
+      // direction is set (speed eases up the deeper into the edge zone the cursor sits — here a
+      // steady, comfortable rate). Cheap no-op when not hover-scrolling.
+      function handCarouselLoop() {
+        if (board.hoverScrollDir !== 0 && shellActive() && !replay.active && !phaseD.result) {
+          const cv = $("board");
+          const r = cv.getBoundingClientRect();
+          const scale = r.width > 0 ? (cv.width / r.width) : 1;
+          board.handScroll = (board.handScroll || 0) + board.hoverScrollDir * 9 * scale;
+          clampHandScroll();
+        }
+        requestAnimationFrame(handCarouselLoop);
+      }
+
+      // #100 Toggle the portrait shell layout (a taller canvas + the transitional
+      // controls below) only for a LOCAL 1v1 telling — the mode the canvas-native
+      // shell draws. The picker, online, and 2v2 keep the square board. Re-fit the
+      // canvas backing buffer to the new box so the in-canvas type stays crisp.
+      function setShellLayout() {
+        const on = shellActive();
+        document.body.classList.toggle("shell", on);
+        if (typeof fitCanvas === "function") fitCanvas();
+      }
+
+      // The interaction overlay the renderer draws this frame: legal-target glows,
+      // the picked-up spirit's ring, the keyboard focus ring. Empty ⇒ plain board.
+      function interactionJson() {
+        return JSON.stringify({
+          legal: board.targets,
+          selected: board.sel && board.sel.kind === "spirit" ? board.sel.tile : null,
+          focus: board.focus,
+        });
+      }
+
+      // Parse one legal move's command into a compact {verb, from, to, tile, handIndex, …}
+      // shape for matching. The Command serde is externally-tagged, so `cmd` is either the
+      // string "EndTurn"/"Glimpse"/… or a one-key object like {"MoveSpirit":{from,to,engage}}.
+      function cmdShape(cmd) {
+        if (typeof cmd === "string") return { verb: cmd };
+        const verb = Object.keys(cmd)[0];
+        return { verb, ...cmd[verb] };
+      }
+
+      // The legal destination tiles for a picked-up SPIRIT at `tile`: every MoveSpirit
+      // from it (the `to`), plus its own tile if it can Evolve-in-place (the Main-phase
+      // Primal-evolve of a standing-Faded spirit — a click on the lit spirit rescues it).
+      function spiritTargets(tile) {
+        const tos = [];
+        let canEvolveHere = false;
+        board.legal.forEach((m) => {
+          const c = cmdShape(m.cmd);
+          if (c.verb === "MoveSpirit" && c.from === tile) tos.push(c.to);
+          if (c.verb === "Evolve" && c.tile === tile) canEvolveHere = true;
+        });
+        if (canEvolveHere && !tos.includes(tile)) tos.push(tile);
+        return tos;
+      }
+
+      // The legal destination tiles for a picked-up HAND card `handIndex`: the tiles a
+      // tile-targeting play lands on — PlaySpirit / Overwrite / PlaceLandmark /
+      // SetFabrication (`.tile`), or an Evolve form onto its matching base (`.tile`).
+      // (Instant, tile-less plays — Cast / TellUnwriting / Release — are handled on
+      // pick-up by handInstant, since they have no board target to drag onto.)
+      function handTargets(handIndex) {
+        const tiles = [];
+        board.legal.forEach((m) => {
+          const c = cmdShape(m.cmd);
+          const tileVerb =
+            c.verb === "PlaySpirit" || c.verb === "Overwrite" ||
+            c.verb === "PlaceLandmark" || c.verb === "SetFabrication";
+          if (tileVerb && c.hand_index === handIndex) tiles.push(c.tile);
+          // An evolution form card's target is the matching BASE tile.
+          if (c.verb === "Evolve" && c.form_hand === handIndex) tiles.push(c.tile);
+          // §5 Devolution: a BASE card's target is the standing-Faded FORM tile it
+          // recedes (the rescue) — the mirror of evolve, base-onto-form not form-onto-base.
+          if (c.verb === "Devolve" && c.base_hand === handIndex) tiles.push(c.tile);
+        });
+        return tiles;
+      }
+
+      // Whether hand card `handIndex` is a recede BASE — it can be played onto a
+      // standing-Faded form to devolve it (§5). Drives the pick-up prompt's wording.
+      function isDevolveBase(handIndex) {
+        return board.legal.some((m) => { const c = cmdShape(m.cmd); return c.verb === "Devolve" && c.base_hand === handIndex; });
+      }
+
+      // The instant (tile-less) legal play for a picked-up HAND card `handIndex`, if any
+      // — Cast a Ritual / Tell an Unwriting / Release. These have no board target, so
+      // picking such a card up resolves it directly (the canvas affordance for a spell
+      // that isn't placed). Returns the matching move object, or null.
+      function handInstant(handIndex) {
+        return board.legal.find((m) => {
+          const c = cmdShape(m.cmd);
+          return (c.verb === "CastRitual" || c.verb === "TellUnwriting" || c.verb === "Release") &&
+            c.hand_index === handIndex;
+        }) || null;
+      }
+
+      // Whether board interaction is live: it is YOUR turn in a telling drawn in the
+      // canvas shell — a LOCAL 1v1 (seat A), an ONLINE 1v1 (your seat is active), or
+      // ONLINE 2v2 (your slot's team is active) — AND no opponent replay is animating
+      // (#100 Phase C, local only) and no Glimpse/Mulligan modal is up (that modal is the
+      // only live target then). Guards every pointer/keyboard action. The local 2v2 WATCH
+      // (the AI drives all four slots) is not interactive.
+      function boardInteractive() {
+        if (replay.active || choiceActive()) return false;
+        const m = currentMode();
+        if (m === "local") return !game.is_over() && game.active_seat() === "A";
+        if (m === "online") return online.view.active === online.view.seat &&
+          !(online.view.phase && online.view.phase.Finished);
+        if (m === "team") return online.team.active_slot === online.team.slot &&
+          !(online.team.phase && online.team.phase.Finished);
+        return false; // local 2v2 watch, the picker, etc.
+      }
+
+      // Whether tile `t` has a legal Evolve-in-place — the Main-phase Primal-evolve of a
+      // standing-Faded spirit (it persists one turn after being banished in combat;
+      // Primal-evolving rescues it with no impression). The lit tile itself is the Evolve affordance.
+      function canEvolveHere(t) {
+        return board.legal.some((m) => { const c = cmdShape(m.cmd); return c.verb === "Evolve" && c.tile === t; });
+      }
+
+      // Whether the standing-Faded form on `tile` can be RECEDED (devolved) — a base card
+      // in hand targets it. The recede is played base-onto-form (the hand card carries the
+      // affordance), so a tap on the form itself guides the player to that base card.
+      function canDevolveHere(t) {
+        return board.legal.some((m) => { const c = cmdShape(m.cmd); return c.verb === "Devolve" && c.tile === t; });
+      }
+
+      // Pick up a spirit standing on `tile` (yours, with at least one legal Move or
+      // Evolve) — highlight its destinations. No-op (and clears) if it has none. When the
+      // spirit can Evolve in place (a Fading rescue), say so: its own glowing tile evolves it.
+      function pickUpSpirit(tile) {
+        const targets = spiritTargets(tile);
+        if (targets.length === 0) {
+          // No move/evolve-in-place — but a standing-Faded form you can RECEDE guides you
+          // to the base card that rescues it (devolution is played base-onto-form). Inspect
+          // the form + prompt; the player then picks up the base and taps this form.
+          if (canDevolveHere(tile)) {
+            clearSelection();
+            const sp = currentTiles()[tile]?.spirit;
+            if (sp && !sp.face_down) inspect(sp.card);
+            $("status").textContent = "Standing Faded — pick up a base card from your hand to recede it onto this form and rescue it";
+            return false;
+          }
+          clearSelection();
+          return false;
+        }
+        board.sel = { kind: "spirit", tile };
+        board.targets = targets;
+        const sp = currentTiles()[tile]?.spirit;
+        if (sp && !sp.face_down) inspect(sp.card);
+        const evolve = canEvolveHere(tile);
+        const move = targets.some((t) => t !== tile);
+        $("status").textContent = evolve
+          ? (move
+              ? "Picked up — tap a glowing tile to move, or tap this spirit again to Evolve it (Esc to cancel)"
+              : "Fading spirit — tap it again (its glowing tile) to Evolve and rescue it (Esc to cancel)")
+          : "Spirit picked up — choose a glowing tile to move there (Esc to cancel)";
+        return true;
+      }
+
+      // Pick up hand card `handIndex` — highlight where it can be placed (its tiles
+      // glow). A card whose only play is INSTANT (Cast / Tell / Release) has no tile to
+      // drop onto, so picking it up resolves it directly. A card with no legal play at
+      // all just inspects. Returns true if it became a live pick-up (tile targets shown).
+      function pickUpHand(handIndex, id) {
+        if (id != null) inspect(id);
+        const targets = handTargets(handIndex);
+        if (targets.length === 0) {
+          // No tile target: if it has an instant play, fire it; else it isn't playable.
+          const instant = handInstant(handIndex);
+          if (instant) { clearSelection(); applyMove(instant); return false; }
+          clearSelection();
+          $("status").textContent = "That card has no legal play this turn (inspecting)";
+          return false;
+        }
+        board.sel = { kind: "hand", handIndex, id };
+        board.targets = targets;
+        const evolveForm = board.legal.some((m) => { const c = cmdShape(m.cmd); return c.verb === "Evolve" && c.form_hand === handIndex; });
+        // A recede base leads with the rescue prompt (its distinct affordance): choose a
+        // glowing standing-Faded form to recede it onto. The faction's word (Revert / Recede)
+        // lands on the confirm announcement (the legal-move label `report` reads).
+        const devolveBase = isDevolveBase(handIndex);
+        $("status").textContent = devolveBase
+          ? "Base card picked up — choose a glowing standing-Faded form to recede it onto and rescue it (Esc to cancel)"
+          : evolveForm
+          ? "Form card picked up — choose a glowing base to evolve it onto (Esc to cancel)"
+          : "Card in hand — choose a glowing tile to place it (Esc to cancel)";
+        return true;
+      }
+
+      // Drop the picked-up selection onto destination `tile`. Picks the matching legal
+      // move; among several to the same tile (e.g. a move that can also engage, or an
+      // evolve-in-place) it prefers the engaging/strike variant when one exists, so a
+      // tap that lands on a defender resolves the combat the buttons would. Returns true
+      // if a move was applied.
+      function dropOn(tile) {
+        if (!board.sel) return false;
+        const matches = board.legal.filter((m) => {
+          const c = cmdShape(m.cmd);
+          if (board.sel.kind === "spirit") {
+            if (c.verb === "MoveSpirit" && c.from === board.sel.tile && c.to === tile) return true;
+            // Standing-Faded Primal-evolve (in Main): clicking the lit faded spirit rescues it.
+            if (c.verb === "Evolve" && c.tile === board.sel.tile && tile === board.sel.tile) return true;
+            return false;
+          }
+          // A hand card placed onto `tile`: PlaySpirit / Overwrite / PlaceLandmark /
+          // SetFabrication, an Evolve form onto its matching base, or a Devolve base onto
+          // the standing-Faded form it recedes (§5 — the rescue).
+          const h = board.sel.handIndex;
+          if ((c.verb === "PlaySpirit" || c.verb === "Overwrite" ||
+               c.verb === "PlaceLandmark" || c.verb === "SetFabrication") &&
+              c.hand_index === h && c.tile === tile) return true;
+          if (c.verb === "Evolve" && c.form_hand === h && c.tile === tile) return true;
+          if (c.verb === "Devolve" && c.base_hand === h && c.tile === tile) return true;
+          return false;
+        });
+        if (matches.length === 0) return false;
+        // Prefer a variant that engages on arrival (a strike the player clearly intends
+        // by landing on an occupant) over a bare arrival to the same tile.
+        const engaging = matches.find((m) => cmdShape(m.cmd).engage != null);
+        const chosen = engaging || matches[0];
+        clearSelection();
+        applyMove(chosen);
+        return true;
+      }
+
+      // The active view's tiles (local OR online/2v2). Online reads the server's pushed
+      // view; local serializes the engine. The board overlays + inspect read this — and
+      // it is always the REDACTED view, so an opponent's hidden lurker is a back, never
+      // their card.
+      function currentTiles() {
+        const j = currentViewJson();
+        if (!j) return [];
+        try { return JSON.parse(j).tiles || []; } catch (_) { return []; }
+      }
+
+      // Inspect what's on tile `t`, TOGGLING between a spirit and a co-resident landmark (item
+      // 12). A tile can hold both (a spirit standing on a Landmark); tapping it cycles the inspect
+      // panel spirit → landmark → spirit, so the landmark a spirit covers is reachable. A tile
+      // with only one inspectable thing just inspects it. `currentInspect` tags a landmark inspect
+      // `terrain:<t>` so we know which to flip to next.
+      function tapInspectTile(t) {
+        const tile = currentTiles()[t];
+        if (!tile) return;
+        const sp = (tile.spirit && !tile.spirit.face_down) ? tile.spirit : null;
+        const terr = (tile.terrain && !tile.terrain.face_down && tile.terrain.card != null) ? tile.terrain : null;
+        if (sp && terr) {
+          // Both present: flip to whichever ISN'T currently shown (default to the spirit first).
+          if (board.inspectId === `terrain:${t}`) inspect(sp.card);
+          else inspectTerrain(t);
+        } else if (sp) {
+          inspect(sp.card);
+        } else if (terr) {
+          inspectTerrain(t);
+        }
+      }
+
+      // A board tile click/keyboard-activate: if something is picked up and this tile is
+      // a legal target, drop on it; otherwise (re)pick whatever sits here — your spirit
+      // (move/evolve), or just inspect a face-up occupant (toggling to a co-resident landmark
+      // on a repeat tap — item 12). Clicking the picked-up spirit again on an evolve-in-place
+      // target evolves it; clicking elsewhere cancels.
+      function activateTile(tile) {
+        if (!boardInteractive()) {
+          // Inspect-only fallback (game over / not your turn): show the occupant (spirit or,
+          // toggling, a co-resident landmark).
+          tapInspectTile(tile);
+          return;
+        }
+        if (board.sel && board.targets.includes(tile)) { dropOn(tile); return; }
+        const sp = currentTiles()[tile]?.spirit;
+        if (sp && sp.owner === youSeat() && !sp.face_down) {
+          // Re-tapping the already-picked-up spirit cancels (a clean toggle).
+          if (board.sel && board.sel.kind === "spirit" && board.sel.tile === tile) { clearSelection(); $("status").textContent = "Selection cancelled"; return; }
+          pickUpSpirit(tile);
+        } else {
+          clearSelection();
+          // Not yours / not pickable: inspect it (spirit, or toggle to a co-resident landmark).
+          tapInspectTile(tile);
+        }
+      }
+
+      // ── #100 Phase B: canvas pointer mapping (board · hand tray · FABs) ──────────
+      // The shell draws the board as a SUB-rectangle of the canvas, the hand as a row of
+      // card rects, and the FABs in the lower-right — so a canvas tap must map onto the
+      // right thing. The renderer exposes those rects (one source of truth with the
+      // draw) via shell_regions_json; we refresh them each draw into board.regions.
+
+      // Refresh the hit-test regions for the current frame from the renderer (backing-px
+      // rects: board + grid side, a rect per hand card, the two FABs). No-op off-shell.
+      function refreshRegions() {
+        if (!shellActive() || !renderer) { board.regions = null; return; }
+        const cv = $("board");
+        try {
+          if (isOnline()) {
+            board.regions = JSON.parse(onlineShell.shell_regions_json(
+              currentViewJson(), JSON.stringify(currentLegal().map((m) => m.cmd)), isTeam(),
+              interactionJson(), shellUiJson(), onlineNames().you, onlineNames().opp, cv.width, cv.height));
+          } else {
+            board.regions = JSON.parse(
+              game.shell_regions_json(game.move_cues_json(), interactionJson(), shellUiJson(), cv.width, cv.height));
+          }
+        } catch (_) { board.regions = null; }
+      }
+
+      // #100 online/2v2: the display names for the HUD (you) + the opponent strip (them).
+      // The server ships session names via `seat_names`; we cache them on `online`. For
+      // 2v2 the opposing team gets a generic label (the strip mirrors the rival TEAM).
+      function onlineNames() {
+        const names = (online && online.names) || {};
+        return { you: names.you || "", opp: names.opp || "" };
+      }
+
+      // #100 online/2v2: the ShellModel JSON for the current frame — built by OnlineShell
+      // from the server's redacted view (PlayerView or TeamView) + its legal list + the
+      // JS-owned transient UI (`ui`). The SAME model the local shell draws; the only
+      // difference is the source (the wire, not an engine). Redaction holds — the model
+      // can only carry the redacted view (opponent = counts/backs).
+      function onlineShellModelJson(ui) {
+        return onlineShell.shell_model_json(
+          currentViewJson(), JSON.stringify(currentLegal().map((m) => m.cmd)), isTeam(),
+          interactionJson(), ui, onlineNames().you, onlineNames().opp);
+      }
+
+      // A pointer event → a point in the canvas BACKING-pixel space (the space the
+      // regions live in). The CSS box maps to the backing buffer by width/height ratio.
+      function pointerBackingXY(ev) {
+        const c = $("board");
+        const r = c.getBoundingClientRect();
+        const fx = (ev.clientX - r.left) / Math.max(1, r.width);
+        const fy = (ev.clientY - r.top) / Math.max(1, r.height);
+        return { x: fx * c.width, y: fy * c.height };
+      }
+
+      // Backing-px point → board tile index, or null if outside the board square. The ONE
+      // px→tile resolver (every pointer/keyboard path funnels through it), mirroring the
+      // board's Y-flip (top visual row = highest tile-row, home row at the bottom). It is the
+      // exact JS twin of Rust's `ShellRegions::tile_at` (shell.rs), whose native regression
+      // suite (`pointer_resolves_to_the_right_tile_*`, `the_pointer_path_*`, #15) is this
+      // formula's contract — so the draw and the hit-test can't drift into a misroute.
+      function tileAtPx(R, x, y) {
+        if (!R || !R.board) return null;
+        const w = R.board_w || 5;
+        const col = Math.floor(((x - R.board.x) / R.board.w) * w);
+        const row = Math.floor(((y - R.board.y) / R.board.h) * w);
+        if (col < 0 || row < 0 || col >= w || row >= w) return null;
+        return (w - 1 - row) * w + col;
+      }
+
+      // Which region a backing-px point lands on: a board tile, a hand card, a FAB, or
+      // nothing. Returns e.g. {kind:'tile',tile} / {kind:'hand',index} / {kind:'fab',which}.
+      function hitRegion(x, y) {
+        const R = board.regions;
+        if (!R) return null;
+        const inside = (b) => b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h;
+        if (inside(R.end_turn)) return { kind: "fab", which: "EndTurn" };
+        if (inside(R.study)) return { kind: "fab", which: "Glimpse" };
+        for (let i = 0; i < (R.hand || []).length; i++) {
+          if (inside(R.hand[i])) return { kind: "hand", index: i };
+        }
+        if (inside(R.board)) {
+          const tile = tileAtPx(R, x, y);
+          if (tile === null) return null;
+          return { kind: "tile", tile };
+        }
+        return null;
+      }
+
+      // #100 Phase D — which result-screen action button a backing-px point lands on (the
+      // Rematch / New opponent / Back to site buttons drawn over the board), or null. The
+      // renderer exposes the same rects it draws, so a tap maps onto the right verb.
+      function resultHit(x, y) {
+        if (!phaseD.result || !renderer) return null;
+        let rects;
+        try { rects = JSON.parse(renderer.result_action_rects_json(JSON.stringify(phaseD.result), $("board").width, $("board").height)); }
+        catch (_) { return null; }
+        for (const r of rects) {
+          if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return r.verb;
+        }
+        return null;
+      }
+
+      // A FAB tap → its command (the only two global buttons; everything else is
+      // contextual on a piece/card). End Turn passes the turn (then the AI plays);
+      // Glimpse opens the once-per-turn burn-then-peek. Both go through the same apply path as a button.
+      function tapFab(which) {
+        if (!boardInteractive()) return;
+        clearSelection();
+        // Online/2v2: the two globals are plain commands shipped to the server (it pushes
+        // the next view). End Turn = "EndTurn", Glimpse = "Glimpse".
+        if (isOnline()) {
+          dispatchCmd(which === "Glimpse" ? "Glimpse" : "EndTurn", which === "Glimpse" ? "Glimpse" : "End turn");
+          return;
+        }
+        if (which === "EndTurn") {
+          report(game.end_turn(), "End turn");
+          // #100 Phase C — if that handed the turn to the bot, WATCH it: pace its turn
+          // action-by-action. startOpponentReplay() drives the bot turn + flips on the
+          // replay BEFORE the next frame, so no frame ever renders the bot's vantage; it
+          // restores the live (your-turn) frame when the replay finishes.
+          if (!game.is_over() && game.active_seat() === "B") startOpponentReplay();
+          else refresh();
+        } else if (which === "Glimpse") {
+          report(game.study(), "Glimpse");
+          refresh();
+        }
+      }
+
+      // Inspect the card/piece a backing-px point is over (the in-canvas floating panel):
+      // a hand card → that card; a board tile with a face-up spirit → that spirit. Builds
+      // the panel data (full detail + the reach grid) anchored at the element's centre.
+      // Clears the panel when the point is over nothing inspectable. `inspectDom` also
+      // mirrors it into the #detail text panel (an extra readout / a11y aid).
+      function inspectAt(x, y) {
+        const hit = hitRegion(x, y);
+        let id = null, anchor = null;
+        if (hit && hit.kind === "hand") {
+          const view = currentView();
+          id = view?.you?.hand?.[hit.index];
+          const b = board.regions.hand[hit.index];
+          anchor = [b.x + b.w / 2, b.y + b.h / 2];
+        } else if (hit && hit.kind === "tile") {
+          const sp = currentTiles()[hit.tile]?.spirit;
+          if (sp && !sp.face_down) {
+            id = sp.card;
+            const R = board.regions, w = R.board_w || 5;
+            const col = hit.tile % w, row = Math.floor(hit.tile / w);
+            const gy = w - 1 - row; // board Y-flip
+            anchor = [R.board.x + (col + 0.5) * (R.board.w / w),
+                      R.board.y + (gy + 0.5) * (R.board.h / w)];
+          }
+        }
+        if (id == null) { board.inspect = null; board.inspectId = null; return; }
+        // Re-inspecting the same card on every mouse-move is wasteful (a card_detail
+        // JSON + a DOM write each time); only rebuild when the inspected card changes,
+        // and just re-anchor otherwise (the panel follows the element cheaply).
+        if (board.inspect && board.inspectId === id) { board.inspect.anchor = anchor || board.inspect.anchor; return; }
+        setInspect(id, anchor);
+      }
+
+      // Build the in-canvas inspect panel data for card `id`, anchored at `anchor`
+      // (backing px). Pulls the same detail + reach grid the DOM inspect uses, so the
+      // floating panel and the #detail text agree. Also refreshes the #detail readout.
+      function setInspect(id, anchor) {
+        try {
+          const d = JSON.parse(cardDetailJson(id));
+          const rg = JSON.parse(reachGridJson(id));
+          board.inspect = {
+            name: d.name, kind: d.kind, resonance: d.resonance, cost: d.cost,
+            attack: d.attack, defense: d.defense, hp: d.hp, reach: d.reach,
+            keywords: d.keywords, rules: d.rules || "",
+            reach_w: rg.w, reach_center: rg.center, reach_tiles: rg.reach,
+            anchor: anchor || [0, 0],
+          };
+          board.inspectId = id;
+          showDetail(d, rg); // keep the #detail text panel in sync (a11y readout)
+        } catch (_) { board.inspect = null; board.inspectId = null; }
+      }
+
+      // The viewport-px centre of board tile `t` (backing px), honouring the board Y-flip — the
+      // anchor an inspect panel hangs off. Returns null if the regions aren't ready.
+      function tileCenterAnchor(t) {
+        const R = board.regions;
+        if (!R || !R.board) return null;
+        const w = R.board_w || 5;
+        const col = t % w, row = Math.floor(t / w);
+        const gy = w - 1 - row; // board Y-flip (home row at the bottom)
+        return [R.board.x + (col + 0.5) * (R.board.w / w),
+                R.board.y + (gy + 0.5) * (R.board.h / w)];
+      }
+
+      // Item 12 — inspect the TERRAIN on tile `t` (the Landmark a spirit may be standing on), so a
+      // co-occupied tile's landmark is reachable (its card identity → the same inspect panel a
+      // spirit gets). A face-down enemy lie carries no identity, so it's a no-op there (redaction).
+      // Reached from the a11y "inspect it" node and the canvas toggle-tap. `inspectId` is tagged
+      // with a `terrain:` prefix so a co-occupied tile's spirit↔landmark toggle is unambiguous.
+      function inspectTerrain(t) {
+        const terr = currentTiles()[t]?.terrain;
+        if (!terr || terr.face_down || terr.card == null) return;
+        const anchor = tileCenterAnchor(t);
+        try {
+          const d = JSON.parse(cardDetailJson(terr.card));
+          const rg = JSON.parse(reachGridJson(terr.card));
+          board.inspect = {
+            name: d.name, kind: d.kind, resonance: d.resonance, cost: d.cost,
+            attack: d.attack, defense: d.defense, hp: d.hp, reach: d.reach,
+            keywords: d.keywords, rules: d.rules || "",
+            reach_w: rg.w, reach_center: rg.center, reach_tiles: rg.reach,
+            anchor: anchor || [0, 0],
+          };
+          board.inspectId = `terrain:${t}`; // distinct from the spirit's id so the toggle reads it
+          showDetail(d, rg);
+          $("status").textContent = `Inspecting the ${terr.kind} on this tile`;
+        } catch (_) {}
+      }
+
+      // The active view (local 1v1 PlayerView, or the online PlayerView/TeamView),
+      // parsed, or null. Used to read YOUR hand for inspect (`you.hand`) — your cards
+      // only; the opponent is never enumerated (redaction).
+      function currentView() {
+        const j = currentViewJson();
+        if (!j) return null;
+        try { return JSON.parse(j); } catch (_) { return null; }
+      }
+
+      // ── #100 Phase B: the virtual ARIA tree (invariant 7) ───────────────────────
+      // The canvas is opaque to assistive tech, so #shell-a11y mirrors every canvas
+      // affordance — board tiles, hand cards, the opponent strip, End Turn / Glimpse — as
+      // actionable ARIA buttons that fire the SAME command the canvas does. Rebuilt from
+      // the engine's a11y tree only when it CHANGES (so focus is stable mid-turn), and
+      // reused by id. Keyboard reaches every action (each button is a real Tab stop).
+      let _a11ySig = null;
+      function syncA11yTree() {
+        const host = $("shell-a11y");
+        if (!shellActive()) { _a11ySig = null; host.innerHTML = ""; return; }
+        // #100 Phase D — at the result screen the a11y tree is the RESULT's (verdict +
+        // actions), owned by syncResultA11y; don't clobber it with the live game tree.
+        if (gameIsOver()) return;
+        // #100 Phase C — during the paced opponent replay the player's affordances are
+        // inert, so the actionable tree is REPLACED by the opponent's-turn state: no
+        // actionable buttons (nothing to do but watch), just a labeled note. The #status
+        // live region carries the per-beat announcements; this keeps the tree honest
+        // (it never offers an action the player can't take mid-replay).
+        if (replay.active) {
+          if (_a11ySig === "replay") return;
+          _a11ySig = "replay";
+          host.innerHTML = "";
+          const h = document.createElement("h2");
+          h.textContent = "The opponent is telling";
+          host.appendChild(h);
+          const p = document.createElement("p");
+          p.textContent = "Watch the opponent's turn — the announcements are read aloud above. Your move returns when they finish.";
+          host.appendChild(p);
+          return;
+        }
+        let nodes;
+        try {
+          nodes = isOnline()
+            ? JSON.parse(onlineShell.shell_a11y_json(currentViewJson(), JSON.stringify(currentLegal().map((m) => m.cmd)), isTeam(), interactionJson(), shellUiJson(), onlineNames().you, onlineNames().opp))
+            : JSON.parse(game.shell_a11y_json(game.move_cues_json(), interactionJson(), shellUiJson()));
+        }
+        catch (_) { return; }
+        const sig = JSON.stringify(nodes);
+        if (sig === _a11ySig) return; // unchanged — keep the DOM (and focus) as-is
+        _a11ySig = sig;
+        // Preserve which node had focus across the rebuild (focus-stable by id).
+        const focusedId = document.activeElement && document.activeElement.dataset
+          ? document.activeElement.dataset.a11yId : null;
+        host.innerHTML = "";
+        // The board is a true ARIA GRID (invariant 7, per-tile fidelity): a role="grid"
+        // container → role="row" rows → role="gridcell" cells, each carrying its 1-based
+        // aria-rowindex / aria-colindex, so a screen reader announces "row R, column C,
+        // <occupant>" and arrow-navigates it. The Rust a11y tree (build_a11y_tree) is the
+        // single source — it tags board nodes with a `grid` payload; we assemble the
+        // nesting here. `grid` / `row` / `currentCell` track the open container so cells
+        // land inside their row (an actionable cell wraps the focusable button; an inert
+        // cell is a labelled gridcell with no Tab stop — present + announced, never lost).
+        let grid = null, row = null, currentCell = null;
+        // Wire a button node to fire its command + restore focus across the rebuild.
+        const wireButton = (b, n) => {
+          b.type = "button";
+          b.textContent = n.label;
+          b.dataset.a11yId = n.id;
+          if (!n.enabled) b.setAttribute("aria-disabled", "true");
+          b.onclick = () => fireA11y(n.target);
+          if (n.id === focusedId) b.focus();
+        };
+        nodes.forEach((n) => {
+          const g = n.grid;
+          if (g && g.role === "Grid") {
+            // The grid container — a labelled role="grid" with row/col counts. The board
+            // section heading folds into it (aria-label), so it reads as one named grid.
+            grid = document.createElement("div");
+            grid.setAttribute("role", "grid");
+            grid.setAttribute("aria-label", n.label);
+            grid.id = `a11y-${n.id}`;
+            if (g.rows) grid.setAttribute("aria-rowcount", String(g.rows));
+            if (g.cols) grid.setAttribute("aria-colcount", String(g.cols));
+            host.appendChild(grid);
+            row = null; currentCell = null;
+            return;
+          }
+          if (g && g.role === "Row") {
+            row = document.createElement("div");
+            row.setAttribute("role", "row");
+            if (g.row) row.setAttribute("aria-rowindex", String(g.row));
+            (grid || host).appendChild(row);
+            currentCell = null;
+            return;
+          }
+          if (g && g.role === "Cell") {
+            // EVERY tile is a gridcell (complete grid for SR navigation). The cell carries
+            // its row/col index + the reading; an actionable cell holds the focusable
+            // button, an inert one is the labelled cell itself. A co-occupied tile's second
+            // (terrain) node rides INSIDE the same gridcell, so the geometry stays intact.
+            if (n.role === "gridcell") {
+              const cell = document.createElement("div");
+              cell.setAttribute("role", "gridcell");
+              if (g.row) cell.setAttribute("aria-rowindex", String(g.row));
+              if (g.col) cell.setAttribute("aria-colindex", String(g.col));
+              if (n.target) {
+                // Actionable: a focusable button inside the cell (the affordance + command).
+                const b = document.createElement("button");
+                wireButton(b, n);
+                cell.appendChild(b);
+              } else {
+                // Inert: the cell's own accessible name is the reading — present + announced,
+                // but not a Tab stop (so empty tiles never bury the actionable ones).
+                cell.setAttribute("aria-label", n.label);
+                cell.textContent = n.label;
+              }
+              (row || grid || host).appendChild(cell);
+              currentCell = cell;
+              return;
+            }
+            // A secondary widget that belongs to the current cell (e.g. the inspect-the-
+            // landmark button on a co-occupied tile) — append it inside that gridcell.
+            const b = document.createElement("button");
+            wireButton(b, n);
+            (currentCell || row || grid || host).appendChild(b);
+            return;
+          }
+          // ── Non-grid nodes (hand / opponent / actions) ──
+          if (n.role === "group") {
+            // A section header (hand / actions) — a heading for navigation.
+            const h = document.createElement("h2");
+            h.textContent = n.label;
+            h.id = `a11y-${n.id}`;
+            host.appendChild(h);
+            grid = null; row = null; currentCell = null;
+            return;
+          }
+          if (n.role === "text") {
+            const p = document.createElement("p");
+            p.textContent = n.label;
+            host.appendChild(p);
+            return;
+          }
+          // An actionable button mirroring a canvas affordance (hand card / FAB).
+          const b = document.createElement("button");
+          wireButton(b, n);
+          host.appendChild(b);
+        });
+      }
+
+      // Fire the command an a11y button names — routed through the SAME paths the canvas
+      // affordances use (activateTile / pickUpHand / tapFab), so the accessible tree and
+      // the visual affordances can never diverge. Two activations on a tile (select, then
+      // target) mirror the tap-then-target gesture; a single button fires a FAB.
+      function fireA11y(target) {
+        // #26 — a choice-modal option fires the SAME dispatch the canvas chip does (the
+        // verbs are "choose:N" / "mulligan" / "keep"). Handled BEFORE the boardInteractive
+        // gate (which is false mid-choice) so the accessible path reaches the modal.
+        if (target && target.Action != null && choiceActive()) {
+          const a = target.Action;
+          if (a === "mulligan" || a === "keep") { dispatchChoice(a, 0); return; }
+          if (a.startsWith("choose:")) { dispatchChoice("choose", parseInt(a.slice(7), 10)); return; }
+        }
+        // Item 12 — inspect the TERRAIN on a co-occupied tile (a Landmark a spirit stands on).
+        // A read, available regardless of turn, so it runs BEFORE the boardInteractive gate.
+        if (target && target.Action != null && target.Action.startsWith("inspect-terrain:")) {
+          inspectTerrain(parseInt(target.Action.slice("inspect-terrain:".length), 10));
+          return;
+        }
+        if (!target || !boardInteractive()) {
+          // Off-turn / no target: an inspect-only activation where it makes sense.
+          if (target && target.Tile != null) activateTile(target.Tile);
+          return;
+        }
+        if (target.Action != null) { tapFab(target.Action); return; }
+        if (target.Tile != null) { board.focus = target.Tile; activateTile(target.Tile); return; }
+        if (target.Hand != null) {
+          if (board.sel && board.sel.kind === "hand" && board.sel.handIndex === target.Hand) {
+            clearSelection(); $("status").textContent = "Selection cancelled"; return;
+          }
+          const view = currentView();
+          pickUpHand(target.Hand, view?.you?.hand?.[target.Hand]);
+        }
+      }
+
+      // Make a status/announcement string SPEAKABLE for a screen reader: replace the
+      // canvas's compact glyphs with words, so the live region reads a natural phrase
+      // ("Move c3 to d3, attacking e3") rather than symbols a synthesiser voices as
+      // "rightwards arrow" / "crossed swords" or silently drops. This is SR-ONLY — the
+      // visible canvas keeps its glyph language; this only touches the #status text.
+      // The LOCAL engine's move labels are already worded in Rust (LocalGame::label), so
+      // this is a no-op there; it's the safety net for the ONLINE labels, which come from
+      // the shared `recollect-protocol::label` (also the visible TUI's, so it keeps its
+      // arrows) and for any stray glyph that reaches the spoken layer.
+      const SPEAK = [
+        [/\s*→\s*/g, " to "],      // placement / movement target
+        [/\s*←\s*/g, " from "],    // evolve / devolve source
+        [/\s*⚔\s*/g, ", attacking "], // combat engagement
+        [/\s+ENGAGING\s+/g, ", attacking "],
+        [/\s*·\s*/g, ", "],        // the middot separator the menus use
+        [/\s*°\s*/g, " held "],    // a held marker
+        [/\s*⌂\s*/g, " landmark "],
+      ];
+      function speakable(text) {
+        let s = String(text ?? "");
+        for (const [re, word] of SPEAK) s = s.replace(re, word);
+        // Tidy any doubled spaces / stray comma-spacing the substitutions can leave.
+        return s.replace(/\s{2,}/g, " ").replace(/\s+,/g, ",").trim();
+      }
+      // Set the #status live region with a screen-reader-friendly (worded) string. The
+      // single seam every announcement flows through, so no glyph reaches the spoken text.
+      function setStatus(text) { $("status").textContent = speakable(text); }
+
+      function report(json, label) {
+        try { const r = JSON.parse(json); if (r && r.reject) { setStatus(`${label} — rejected: ${r.reject}`); return; } } catch (_) {}
+        setStatus(label);
+      }
+
+      // ── #100 Phase C: the paced opponent-turn replay ────────────────────────────
+      // Drive the bot's whole turn (the engine applies it eagerly + deterministically),
+      // then PACE through the resulting beats so the player watches the opponent act
+      // action-by-action — never a wall of "it did six things". Each beat carries its
+      // own redacted shell snapshot (the human's view AFTER that action), so we just
+      // draw it; the frame loop renders `replay.model` while `replay.active`.
+      function startOpponentReplay(onDone) {
+        // Nothing to watch if the game's gone or it isn't the bot's turn.
+        if (!game || game.is_2v2() || game.is_over() || game.active_seat() !== "B") {
+          if (onDone) onDone();
+          return;
+        }
+        let env;
+        try { env = JSON.parse(game.auto_play_turn_paced()); }
+        catch (_) { if (onDone) onDone(); return; }
+        const beats = (env && env.beats) || [];
+        clearSelection();
+        board.inspect = null; board.inspectId = null;
+        replay.queue = beats.slice();
+        replay.roundNote = (env && env.round_note) || null;
+        replay.after = onDone || null;
+        if (replay.queue.length === 0) {
+          // The bot passed with no visible action — hand straight back (no empty frames);
+          // finishReplay plays the Dusk/Nightfall set-piece first if the round turned.
+          replay.active = false;
+          finishReplay();
+          return;
+        }
+        replay.active = true;
+        // Mark the watched turn in the a11y tree (the opponent's-turn state) up front.
+        syncA11yTree();
+        stepReplay();
+      }
+
+      // Play one beat: draw its snapshot (set as replay.model for the frame loop),
+      // caption it in the #status live region (the a11y announcement — invariant 7),
+      // then schedule the next beat one dwell later. When the queue drains, restore the
+      // live interactive frame.
+      function stepReplay() {
+        clearTimeout(replay.timer);
+        if (!replay.active) return;
+        const beat = replay.queue.shift();
+        if (!beat) { finishReplay(); return; }
+        replay.model = JSON.stringify(beat.model);
+        // The announcement is the live-region text AND the on-canvas caption (one source
+        // — the snapshot model already carries the caption overlay the canvas draws).
+        announce(beat.announce || beat.caption || "");
+        // Track the per-tile #board-sr mirror to THIS beat's snapshot too, so the
+        // detailed screen-reader board reading paces with the canvas (not the turn end).
+        try { if (beat.model && beat.model.view) $("board-sr").textContent = renderer.board_aria(JSON.stringify(beat.model.view), false); } catch (_) {}
+        replay.timer = setTimeout(() => {
+          if (replay.queue.length > 0) stepReplay();
+          else finishReplay(); // last beat played — hand back (with a Dusk set-piece if due)
+        }, beatDwellMs());
+      }
+
+      // End the replay: drop the frozen model + clear the flag, then restore the live
+      // interactive frame. If the bot's turn crossed a binding beat (Dusk / Nightfall), the
+      // round set-piece is played by refresh() → maybePlayRoundSetPiece (a single trigger so
+      // it fires whichever seat crossed the boundary, never twice for the same round).
+      function finishReplay() {
+        clearTimeout(replay.timer);
+        replay.active = false;
+        replay.model = null;
+        replay.queue = [];
+        const after = replay.after; replay.after = null;
+        replay.roundNote = null;
+        if (after) after();
+        refresh();
+      }
+
+      // #100 Phase D — play the Dusk/Nightfall set-piece if the CURRENT round is a binding
+      // beat and we haven't already shown it for this round (so it fires whether the human
+      // OR the bot crossed the boundary, and exactly once). Returns true if it started one.
+      // The seal is announced in the #status live region (the screen-reader narration) and
+      // the rim-contraction/clock flourish animates over the board — one source for both.
+      function maybePlayRoundSetPiece(onDone) {
+        if (!game || game.is_2v2() || game.is_over()) { if (onDone) onDone(); return false; }
+        let setPiece = null;
+        try { setPiece = JSON.parse(game.dusk_set_piece_json()); } catch (_) { setPiece = null; }
+        let round = 0;
+        try { round = JSON.parse(game.view_json()).round; } catch (_) {}
+        if (!setPiece || round === phaseD.lastDuskRound) { if (onDone) onDone(); return false; }
+        phaseD.lastDuskRound = round;
+        announce(setPiece.title + (setPiece.subtitle ? ` — ${setPiece.subtitle}` : ""));
+        playDuskSetPiece(setPiece, onDone);
+        return true;
+      }
+
+      // Hard-cancel any in-flight replay WITHOUT refreshing (used when leaving the game
+      // — New game / connect online — where there's nothing to refresh back to).
+      function cancelReplay() {
+        clearTimeout(replay.timer);
+        replay.active = false; replay.model = null; replay.queue = [];
+        replay.after = null; replay.roundNote = null;
+      }
+
+      // Push a line into the #status live region (the a11y announcements — invariant 7).
+      // A `role="status" aria-live="polite"` region narrates each set text to assistive
+      // tech; this is the single channel for the Phase-C announcement set (opponent
+      // actions, Dusk/Nightfall, the opener). Also the human-visible status line.
+      function announce(text) {
+        if (text) setStatus(text);
+      }
+
+      // #26 — lead the #status live region with `text`, keeping the current line behind it
+      // (so the screen reader hears the new fact AND the prompt that follows). Used when an
+      // opening choice (mulligan / keep) resolves: the FACT leads, the gameplay prompt trails.
+      function leadStatus(text) {
+        if (text) setStatus(`${text} ${$("status").textContent}`);
+      }
+
+      // #26 — re-state the match-start opener ahead of the current status (design §5 — the
+      // first player is ALWAYS announced). Re-applied after the opening Mulligan resolves so
+      // the opener isn't lost behind the modal (it led the line before the modal opened).
+      function leadOpener() {
+        if (!game || game.is_2v2()) return;
+        try { const op = game.opener_announcement(); if (op) leadStatus(op); } catch (_) {}
+      }
+
+      // ── #100 Phase D: the Dusk/Nightfall set-piece + the in-canvas result screen ────
+
+      // How the last LOCAL telling was started, so Rematch can reseed an equivalent
+      // match (a fresh seed, the same styles + difficulty). Set by startGame / start2v2.
+      let lastStart = null;
+
+      // Animate the Dusk/Nightfall set-piece over the board (the binding beat made visible
+      // — the rim contracting/darkening, the clock face lit, the seal). `set` is the
+      // dusk_set_piece_json content; `onDone` runs after the dwell. The progress ramps 0→1
+      // (≈600ms), dwells, then clears — reduced-motion snaps to full + a short dwell so the
+      // beat still reads (the #status announcement carries it for assistive tech regardless).
+      function playDuskSetPiece(set, onDone) {
+        cancelDusk();
+        if (!set) { if (onDone) onDone(); return; }
+        // Test-observability: the set-piece is a brief on-canvas flourish (opaque to the
+        // DOM) whose seal announcement the #status live region overwrites within a beat, so
+        // racing it from a test is flaky. Record each set-piece kind shown for the life of
+        // the page in a read-only hook the UI suite can assert against (it never affects
+        // gameplay — the engine stays authoritative).
+        window.__recollectTest = window.__recollectTest || { duskShown: [] };
+        window.__recollectTest.duskShown.push(set.kind);
+        phaseD.dusk = { kind: set.kind, title: set.title, subtitle: set.subtitle, progress: 0 };
+        const reduced = prefersReducedMotion();
+        const rampMs = reduced ? 0 : 600;
+        const dwellMs = reduced ? 700 : 1500;
+        const t0 = performance.now();
+        const step = (now) => {
+          if (!phaseD.dusk) return;
+          phaseD.dusk.progress = rampMs > 0 ? Math.min((now - t0) / rampMs, 1) : 1;
+          if (phaseD.dusk.progress < 1) { phaseD.duskRaf = requestAnimationFrame(step); }
+          else {
+            // Hold the full set-piece for the dwell, then fade it out and hand back.
+            phaseD.duskTimer = setTimeout(() => { cancelDusk(); if (onDone) onDone(); }, dwellMs);
+          }
+        };
+        phaseD.duskRaf = requestAnimationFrame(step);
+      }
+
+      // Clear any in-flight Dusk set-piece (its ramp + dwell).
+      function cancelDusk() {
+        if (phaseD.duskRaf) cancelAnimationFrame(phaseD.duskRaf);
+        clearTimeout(phaseD.duskTimer);
+        phaseD.duskRaf = null; phaseD.duskTimer = null; phaseD.dusk = null;
+      }
+
+      // The telling has ended (local 1v1): show the #100 Phase-D in-canvas result screen.
+      // Folds the engine-computed ResultScreen (verdict in the game's voice + the score
+      // breakdown + the actions) into the shell overlay, animates its reveal, ANNOUNCES the
+      // verdict in the #status live region, and builds the result's virtual a11y tree (the
+      // verdict + the Rematch / New opponent / Back to site buttons) so the result is
+      // reachable by keyboard / screen reader at parity with the canvas (invariant 7).
+      function showResultScreen() {
+        let res;
+        try {
+          res = isOnline()
+            ? JSON.parse(onlineShell.result_screen_json(currentViewJson(), isTeam(), phaseD.mode))
+            : JSON.parse(game.result_screen_json(phaseD.mode));
+        } catch (_) { res = null; }
+        if (!res) return;
+        // Clear any in-flight Nightfall set-piece so its clock/seal doesn't ghost behind
+        // the verdict (the telling can end right at the Nightfall beat).
+        cancelDusk();
+        phaseD.result = res;
+        phaseD.resultProgress = 0;
+        // Announce the verdict (the live region — one source with the on-canvas verdict).
+        announce(res.verdict + (res.flavor ? ` ${res.flavor}` : ""));
+        // Build the result a11y tree (the accessible mirror of the verdict + actions).
+        syncResultA11y();
+        // A gentle reveal ramp (cosmetic; the verdict is already announced + drawn).
+        if (phaseD.resultRaf) cancelAnimationFrame(phaseD.resultRaf);
+        const reduced = prefersReducedMotion();
+        const t0 = performance.now(), rampMs = reduced ? 0 : 360;
+        const step = (now) => {
+          if (!phaseD.result) return;
+          phaseD.resultProgress = rampMs > 0 ? Math.min((now - t0) / rampMs, 1) : 1;
+          if (phaseD.resultProgress < 1) phaseD.resultRaf = requestAnimationFrame(step);
+        };
+        phaseD.resultRaf = requestAnimationFrame(step);
+      }
+
+      // #100 online/2v2 — the telling ended over the wire: show the in-canvas result
+      // screen built from the server's Finished view (verdict · breakdown · actions). Idempotent
+      // (only mounts once — showResultScreen is cheap to re-enter, but we guard so the reveal
+      // ramp isn't restarted every frame the Finished view re-arrives).
+      function showOnlineResult() {
+        if (phaseD.result) return; // already showing the verdict
+        showResultScreen();
+      }
+
+      // Build the result screen's virtual a11y tree into #shell-a11y — the verdict + the
+      // score breakdown as a readout, and each action (Rematch / New opponent / Back to
+      // site) as an actionable button firing the same verb the canvas button does. Rebuilt
+      // only when the result changes (focus-stable across frames).
+      //
+      // Focus management on this SCREEN CHANGE (the telling has ended): the board is gone,
+      // so leaving focus on a now-removed tile/FAB button would strand a keyboard / screen-
+      // reader user. When the result tree is built for the first time we move focus to the
+      // verdict HEADING (a `tabindex="-1"` landing) — the SR user hears the outcome and can
+      // Tab straight into Rematch / New opponent / Back. We only steal focus on the
+      // transition (a fresh `_a11ySig`), never on a later rebuild, so it isn't grabbed twice.
+      function syncResultA11y() {
+        const host = $("shell-a11y");
+        let nodes;
+        try {
+          nodes = isOnline()
+            ? JSON.parse(onlineShell.result_a11y_json(currentViewJson(), isTeam(), phaseD.mode))
+            : JSON.parse(game.result_a11y_json(phaseD.mode));
+        } catch (_) { return; }
+        const sig = "result:" + JSON.stringify(nodes);
+        if (sig === _a11ySig) return;
+        const firstBuild = !String(_a11ySig || "").startsWith("result:");
+        _a11ySig = sig;
+        host.innerHTML = "";
+        let verdictHeading = null;
+        nodes.forEach((n) => {
+          if (n.role === "group") {
+            const h = document.createElement("h2"); h.textContent = n.label;
+            // The first heading is the verdict — make it a focus landing for the screen change.
+            if (!verdictHeading) { h.tabIndex = -1; h.dataset.a11yId = n.id; verdictHeading = h; }
+            host.appendChild(h); return;
+          }
+          if (n.role === "text") {
+            const p = document.createElement("p"); p.textContent = n.label; host.appendChild(p); return;
+          }
+          const b = document.createElement("button");
+          b.type = "button"; b.textContent = n.label; b.dataset.a11yId = n.id;
+          b.onclick = () => { if (n.target && n.target.Action != null) resultAction(n.target.Action); };
+          host.appendChild(b);
+        });
+        // Land focus on the verdict the first time the result screen appears (the board
+        // it was on is gone). A rAF defers it past the same-frame canvas draw.
+        if (firstBuild && verdictHeading) {
+          requestAnimationFrame(() => { try { verdictHeading.focus(); } catch (_) {} });
+        }
+      }
+
+      // Dispatch a result-screen action by its verb (the SAME path the canvas button + the
+      // a11y button fire). Rematch reseeds an equivalent local telling; New opponent returns
+      // to the picker; Back to site navigates home. PvP's "rematch" verb is an invite in a
+      // networked match (host/join) — for the local shell it reseeds a fresh local game.
+      function resultAction(verb) {
+        // Online/2v2: a rematch is a fresh server match (host/join), not an instant reseed
+        // — Rematch and New opponent both return to the picker to create/join again; Back
+        // to site navigates home. (The "Offer a rematch" label is set by `mode: "pvp"`.)
+        if (isOnline()) {
+          if (verb === "site") { window.location.href = "/index.html"; return; }
+          clearResultScreen(); showPicker(); return;
+        }
+        if (verb === "rematch") {
+          clearResultScreen(); cancelDusk();
+          if (lastStart && lastStart.kind === "quick") {
+            game = LocalGame.new_quick(seed64(), lastStart.style, lastStart.opp, lastStart.diff);
+            phaseD.lastDuskRound = 0; // a fresh telling re-shows the Dusk/Nightfall set-pieces
+            choiceUi.offer = !!game.can_mulligan(); choiceUi.sig = null; // #26 — a fresh opening offers the mulligan
+            $("picker").style.display = "none"; $("detail").innerHTML = "";
+            refresh();
+            try { const op = game.opener_announcement(); if (op) setStatus(`${op} ${$("status").textContent}`); } catch (_) {}
+          } else { showPicker(); }
+        } else if (verb === "new") {
+          clearResultScreen(); showPicker();
+        } else if (verb === "site") {
+          window.location.href = "/index.html";
+        }
+      }
+
+      // Tear down the result-screen overlay (its reveal ramp + a11y tree). Called before a
+      // rematch / leaving, so the next frame doesn't draw a stale verdict.
+      function clearResultScreen() {
+        if (phaseD.resultRaf) cancelAnimationFrame(phaseD.resultRaf);
+        phaseD.resultRaf = null; phaseD.result = null; phaseD.resultProgress = 0;
+        _a11ySig = null; $("shell-a11y").innerHTML = "";
+      }
+
+      // ── #26: the in-canvas GLIMPSE + MULLIGAN choice modal interaction ──────────────
+      // The modal DRAWS via the one draw_shell path (the model carries `choice`); this is
+      // its interaction layer — read the live prompt, map a tap to the right command, and
+      // announce each step. The accessible mirror is the choice's own a11y tree
+      // (shell_a11y_json returns it while the modal is up); fireA11y routes its verbs here.
+
+      // The active choice prompt (Glimpse / Mulligan) for the current frame, or null. Built
+      // from the same ui_json the draw uses (so the mulligan offer agrees). Online routes
+      // through OnlineShell over the server's view (the Glimpse is the engine pending
+      // choice in YOUR redacted view — never the opponent's; redaction holds). Cheap.
+      function currentChoice() {
+        if (isOnline()) {
+          const j = currentViewJson(); if (!j) return null;
+          try {
+            const c = JSON.parse(onlineShell.choice_prompt_json(j, JSON.stringify(currentLegal().map((m) => m.cmd)), isTeam(), shellUiJson()));
+            return c;
+          } catch (_) { return null; }
+        }
+        if (!game || game.is_2v2() || game.is_over()) return null;
+        try { return JSON.parse(game.choice_prompt_json(game.move_cues_json(), interactionJson(), shellUiJson())); }
+        catch (_) { return null; }
+      }
+
+      // Whether a choice modal is up (gates board/hand/FAB interaction — the modal is the
+      // only live target while it's open). A cheap existence check.
+      function choiceActive() { return !!currentChoice(); }
+
+      // Which choice-option a backing-px point lands on (its {verb, index}), or null — from
+      // the renderer-shared option rects (one source with the draw), so a tap maps to the
+      // chip the player sees.
+      function choiceHit(x, y) {
+        const prompt = currentChoice();
+        if (!prompt) return null;
+        let rects;
+        try {
+          rects = isOnline()
+            ? JSON.parse(onlineShell.choice_regions_json(currentViewJson(), JSON.stringify(currentLegal().map((m) => m.cmd)), isTeam(), shellUiJson(), $("board").width, $("board").height))
+            : JSON.parse(game.choice_regions_json(game.move_cues_json(), interactionJson(), shellUiJson(), $("board").width, $("board").height));
+        }
+        catch (_) { return null; }
+        for (const r of rects) {
+          if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return { verb: r.verb, index: r.index };
+        }
+        return null;
+      }
+
+      // Dispatch a chosen option — the SAME path the canvas chip + the a11y button fire:
+      //   • "choose" + index → Command::Choose (the Glimpse burn / keep-or-bottom step);
+      //   • "mulligan"       → Command::Mulligan (redraw, bottom one — the opening cost);
+      //   • "keep"           → dismiss the opening offer (keep this hand, no command).
+      // After a Glimpse step resolves, the next step (or the live frame) re-renders; after
+      // the mulligan/keep the offer clears and the turn proceeds.
+      function dispatchChoice(verb, index) {
+        if (verb === "keep") {
+          // Keep the opening hand — just dismiss the offer (no engine command).
+          choiceUi.offer = false; choiceUi.sig = null;
+          if (!isOnline()) refresh(); // back to the playable shell (sets the gameplay prompt)
+          // The opening beat resolved: lead the live region with the FACT, then re-state the
+          // opener (design §5 — always name the first player) ahead of the gameplay prompt.
+          leadStatus("You keep your opening hand.");
+          leadOpener();
+          return;
+        }
+        if (verb === "mulligan") {
+          choiceUi.offer = false; choiceUi.sig = null;
+          // Online: ship a Mulligan for YOUR seat (the server resolves + pushes the view).
+          if (isOnline()) dispatchCmd({ Mulligan: { seat: youSeat() } }, "Mulligan");
+          else { report(game.mulligan(), "Mulligan"); refresh(); }
+          // The announcement states only the FACT (redaction) — never the cards drawn.
+          leadStatus("You mulligan — a fresh hand, one card to the bottom.");
+          leadOpener();
+          return;
+        }
+        if (verb === "choose") {
+          // Online: ship Command::Choose; the server resolves the Glimpse step + pushes the
+          // next view (the keep step, or your turn). Local: apply through the engine.
+          if (isOnline()) dispatchCmd({ Choose: { index } }, "Choose");
+          else { report(game.choose(index), "Choose"); refresh(); }
+          return;
+        }
+      }
+
+      // Announce the active choice step in the #status live region (invariant 7), once per
+      // NEW step (deduped by a signature) so the screen reader narrates "burn a card…",
+      // then "you peek…", then clears — not every frame. Called from the frame loop.
+      function maybeAnnounceChoice() {
+        const prompt = currentChoice();
+        if (!prompt) { choiceUi.sig = null; return; }
+        const sig = prompt.kind + ":" + prompt.options.length;
+        if (sig === choiceUi.sig) return;
+        choiceUi.sig = sig;
+        // The title + subtitle is the live-region narration (one source with the on-canvas
+        // modal). The peeked card name (keep step) rides along so the reader knows the card.
+        let line = prompt.title + (prompt.subtitle ? ` — ${prompt.subtitle}` : "");
+        if (prompt.peeked && prompt.peeked.name) line += `. The top card is ${prompt.peeked.name}.`;
+        announce(line);
+      }
+
+      // F-29: the three offered styles, each with the deck it derives at this seed.
+      function showPicker() {
+        if (watch) { clearInterval(watch); watch = null; }
+        if (online) { try { online.ws.close(); } catch (_) {} online = null; }
+        cancelReplay(); // drop any in-flight opponent replay
+        clearResultScreen(); cancelDusk(); // #100 Phase D — drop any result/Dusk overlay
+        choiceUi.offer = false; choiceUi.sig = null; // #26 — drop any pending mulligan offer
+        game = null;
+        clearSelection();
+        _a11ySig = null; $("shell-a11y").innerHTML = ""; // leaving the local shell — drop its a11y tree
+        board.inspect = null; board.inspectId = null;
+        setShellLayout(); // back to the square board for the picker
+        const seed = seed64();
+        const offers = JSON.parse(LocalGame.quick_offer_json(seed));
+        const p = $("picker");
+        p.style.display = "block";
+        $("hand").innerHTML = "";
+        $("moves").innerHTML = "";
+        // Difficulty picker (TUI parity): Easy / Normal / Hard / Expert.
+        const diffs = JSON.parse(LocalGame.difficulties_json());
+        const opts = diffs.map((d) => `<option value="${d.index}"${d.default ? " selected" : ""}>${d.name}</option>`).join("");
+        // The difficulty select carries a real <label for> (programmatic name) — a bare
+        // "Opponent:" text node isn't an accessible name (WCAG 4.1.2 select-name).
+        p.innerHTML = `<h3>Choose your telling</h3><div><label for="diff">Opponent difficulty: <select id="diff">${opts}</select></label></div>`;
+        $("status").textContent = "preview each style's deck, then pick one";
+        offers.forEach((o) => {
+          const pv = JSON.parse(LocalGame.deck_preview_json(seed, o.id));
+          const curve = pv.curve.map((n, c) => (n ? `${c}:${n}` : "")).filter(Boolean).join("  ");
+          const opens = pv.cards.slice(0, 6).map((c) => c.name).join(", ");
+          // Each style is an actionable BUTTON (keyboard-operable, a real Tab stop with a
+          // visible focus ring — invariant 7), not a bare <div onclick>. The OBJECTIVE
+          // selection-info (resonance lean · tempo · aggression · body-mix, computed in
+          // core over many deck-gen seeds) renders as chips AND — for a screen reader —
+          // as the button's explicit aria-label, so the shape is conveyed as WORDS, never
+          // only as a row of coloured chips. The inner visuals are aria-hidden so the
+          // curated label reads once, cleanly, instead of fragmenting chip by chip.
+          const chips = o.selection.facets
+            .map((f) => `<span class="facet" title="${esc(f.detail)}">` +
+              `<span class="facet-k">${esc(f.dimension)}</span>${esc(f.value)}</span>`)
+            .join("");
+          const facetText = o.selection.facets
+            .map((f) => `${f.dimension}: ${f.value} (${f.detail})`)
+            .join("; ");
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "style telling";
+          btn.setAttribute("aria-label",
+            `Play ${o.name}. ${o.blurb} ${o.selection.summary}. ${facetText}. ` +
+            `${pv.spirit_count} spirits, ${pv.spell_count} spellbook cards. Opens with ${opens}.`);
+          btn.innerHTML = `<span aria-hidden="true">` +
+            `<b>${esc(o.name)}</b> — ${esc(o.blurb)}` +
+            `<span class="facets">${chips}</span>` +
+            `<small>${pv.spirit_count} spirits · ${pv.spell_count} spellbook · curve ${curve}<br>opens: ${esc(opens)}</small>` +
+            `</span>`;
+          btn.onclick = () => startGame(seed, o.id, offers);
+          p.appendChild(btn);
+        });
+        const tv = document.createElement("button");
+        tv.type = "button";
+        tv.className = "style telling";
+        tv.setAttribute("aria-label",
+          "Watch a 2v2 — the 6 by 6 board: the Solace's pair versus two Lorekeepers, AI-driven.");
+        tv.innerHTML = '<span aria-hidden="true"><b>Watch a 2v2</b> — ' +
+          "<small>the 6×6 board: the Solace's pair vs two Lorekeepers, AI-driven</small></span>";
+        tv.onclick = () => start2v2(seed64());
+        p.appendChild(tv);
+
+        // Networked play against the authoritative server. The render path is the
+        // same wgpu ink renderer; the server (which holds the engine) ships the
+        // legal-move menu with each view, so online play has the full move set.
+        const ol = document.createElement("div");
+        ol.className = "style";
+        ol.style.cursor = "default";
+        ol.innerHTML =
+          "<b>Play online</b> — <small>host a match, or join with a code.</small>" +
+          '<div class="host-form">' +
+          '<label>Your name<input id="ho-name" placeholder="optional" autocomplete="off"></label>' +
+          '<label>Mode<select id="ho-mode"><option value="1v1">1v1</option><option value="2v2">2v2</option></select></label>' +
+          '<label>Opponent faction<select id="ho-faction"><option value="lorekeeper">Lorekeepers</option><option value="solace">the Solace</option></select></label>' +
+          '<label>Bot difficulty<select id="ho-diff"><option value="easy">easy</option><option value="normal" selected>normal</option><option value="hard">hard</option></select></label>' +
+          '<label id="ho-1v1">Opponent<select id="ho-b"><option value="human">human (invite)</option><option value="bot">bot</option></select></label>' +
+          '<span id="ho-2v2" hidden>' +
+          '<label>Ally A2<select id="ho-a2"><option value="human">human</option><option value="bot">bot</option></select></label>' +
+          '<label>Opp B1<select id="ho-b1"><option value="human">human</option><option value="bot">bot</option></select></label>' +
+          '<label>Opp B2<select id="ho-b2"><option value="human">human</option><option value="bot">bot</option></select></label>' +
+          "</span>" +
+          '<button id="ho-create">Create match</button>' +
+          "</div>" +
+          '<div class="host-join">Have a code? <button id="ol-join">Join…</button>' +
+          ' <small>· <label for="srv">server <input id="srv" value="http://localhost:8080"></label></small></div>';
+        p.appendChild(ol);
+        const toggleSeats = () => {
+          const is2 = $("ho-mode").value === "2v2";
+          $("ho-2v2").hidden = !is2;
+          $("ho-1v1").hidden = is2;
+        };
+        $("ho-mode").onchange = toggleSeats;
+        toggleSeats();
+        $("ho-create").onclick = () => startOnline("host");
+        $("ol-join").onclick = () => startOnline("join");
+      }
+
+      function startGame(seed, style, offers) {
+        const i = offers.findIndex((o) => o.id === style);
+        const opp = offers[(i + 1) % offers.length].id; // a seeded opponent style
+        const diff = parseInt($("diff")?.value ?? "1", 10);
+        game = LocalGame.new_quick(seed, style, opp, diff);
+        // #100 Phase D — remember how this telling was started so Rematch can reseed an
+        // equivalent one (a fresh seed, the same styles + difficulty); a local vs-bot match.
+        lastStart = { kind: "quick", style, opp, diff };
+        phaseD.mode = "bot"; phaseD.lastDuskRound = 0;
+        clearResultScreen(); cancelDusk();
+        // #26 — open the London-lite Mulligan offer at the very start (the engine's window
+        // gates whether it actually draws; can_mulligan() is true at the opening, 1v1).
+        choiceUi.offer = !!game.can_mulligan(); choiceUi.sig = null;
+        $("picker").style.display = "none";
+        $("detail").innerHTML = "";
+        refresh();
+        // #100 Phase C — the match-start announcement: who opens, always naming the
+        // first player (design §5). It LEADS the #status live region, then the gameplay
+        // prompt refresh() set follows it (so the player keeps the "tap a piece… or End
+        // Turn" guidance) — the live region reads the combined line once.
+        try {
+          const opener = game.opener_announcement();
+          if (opener) setStatus(`${opener} ${$("status").textContent}`);
+        } catch (_) {}
+      }
+
+      // D-16 watch mode: the AI drives all four slots on a timer; we draw the
+      // active slot's TeamView each step.
+      function start2v2(seed) {
+        if (watch) clearInterval(watch);
+        clearResultScreen(); cancelDusk();
+        choiceUi.offer = false; choiceUi.sig = null; // #26 — the mulligan is a 1v1 opening; never in 2v2
+        game = LocalGame.new_2v2(seed);
+        lastStart = { kind: "2v2", seed }; phaseD.mode = "2v2";
+        $("picker").style.display = "none";
+        watch = setInterval(() => {
+          if (!game || game.is_over()) { clearInterval(watch); watch = null; }
+          else game.auto_play_turn();
+          refresh();
+        }, 700);
+        refresh();
+      }
+
+      function applyMove(m) {
+        clearSelection(); // a move was made — drop any pick-up + highlights
+        // Online/2v2: ship the command to the authoritative server; it pushes back the
+        // new redacted view (the frame loop redraws the shell from it). No local engine,
+        // no paced replay here — the server's Update/TeamUpdate IS the next frame.
+        if (isOnline()) { dispatchCmd(m.cmd, m.label); return; }
+        report(game.apply_json(JSON.stringify(m.cmd)), m.label);
+        // #100 Phase C — if that ended your turn, WATCH the seeded AI play its whole turn
+        // (paced action-by-action). startOpponentReplay() flips on the replay before the
+        // next frame (no frame renders the bot's vantage) + restores your frame after.
+        if (!game.is_over() && game.active_seat() === "B") startOpponentReplay();
+        else refresh();
+      }
+
+      // Card detail JSON for `id` — from the local engine when present, else the
+      // engine-free canon-catalog lookup (the ONLINE / 2v2 client has no engine). Same
+      // shape either way, so inspect renders identically across transports.
+      function cardDetailJson(id) {
+        return game ? game.card_detail_json(id) : card_detail_by_id_json(id);
+      }
+      // Reach-grid JSON for `id` — engine-backed locally, catalog-derived online. The
+      // grid width follows the live board (5 for 1v1, 6 for 2v2).
+      function reachGridJson(id) {
+        if (game) return game.reach_grid_json(id);
+        return reach_grid_by_id_json(id, board.bw || 5);
+      }
+      // Card inspect (TUI parity): stats, keywords, rules text, and a mini
+      // reach-grid (★ the card · ● a tile it threatens), facing up like the TUI.
+      function inspect(id) {
+        showDetail(JSON.parse(cardDetailJson(id)), JSON.parse(reachGridJson(id)));
+      }
+      function reachGrid(rg) {
+        let g = "";
+        for (let r = 0; r < rg.w; r++) {
+          for (let c = 0; c < rg.w; c++) {
+            const t = (rg.w - 1 - r) * rg.w + c; // top row = high tile-row (board flip)
+            g += t === rg.center ? "★ " : rg.reach.includes(t) ? "● " : "· ";
+          }
+          g += "\n";
+        }
+        return g;
+      }
+      function showDetail(d, rg) {
+        const kw = d.keywords.length ? ` · ${d.keywords.join(" · ")}` : "";
+        const rules = d.rules ? `<div class="rules">${d.rules}</div>` : "";
+        $("detail").innerHTML =
+          `<div class="card"><b>${d.name}</b> — ${d.kind} · ${d.resonance} · cost ${d.cost}` +
+          `<div class="stats">Atk ${d.attack} · Def ${d.defense} · HP ${d.hp} · reach ${d.reach}${kw}</div>${rules}` +
+          `<pre class="reach">${reachGrid(rg)}</pre></div>`;
+      }
+
+      function refresh() {
+        if (!game) return;
+        // The state changed: any prior pick-up + highlights are stale. Keep the
+        // keyboard focus cursor (a stable place on the board) but drop the selection.
+        clearSelection();
+        board.handScroll = 0; // a new hand — start the carousel at its head
+        setShellLayout(); // #100 portrait shell for a local 1v1; square otherwise
+        board.legal = [];
+        const moves = $("moves");
+        moves.innerHTML = "";
+        if (game.is_2v2()) {
+          $("hand").innerHTML = "";
+          const v = JSON.parse(game.team_view_json());
+          board.bw = v.board_w || 6;
+          setStatus(`2v2 · round ${v.round} · slot ${v.active_slot} to act` +
+            (game.is_over() ? " · GAME OVER" : " · watching AI"));
+          return;
+        }
+        const view = JSON.parse(game.view_json());
+        board.bw = Math.round(Math.sqrt(view.tiles.length)) || 5;
+        const r = JSON.parse(game.result_json());
+        const hand = $("hand");
+        hand.innerHTML = "";
+        if (r.over) {
+          // #100 Phase D — the telling has ended: show the in-canvas result screen (the
+          // verdict in the game's voice + the score breakdown + the Rematch / New opponent
+          // / Back to site actions), announced + mirrored in the a11y tree. The canvas
+          // keeps drawing (the board shows through the scrim as the souvenir); the live
+          // affordance tree is replaced by the result's tree.
+          showResultScreen();
+          return;
+        }
+        // Not over: ensure no stale result/dusk overlay lingers (e.g. after a rematch).
+        if (phaseD.result) clearResultScreen();
+        // #89 running score: Seat A's board points vs Seat B's board points PLUS the
+        // Solace's off-board erasure tally (it leaves no board mark — the tally is
+        // where forgetting scores; at Nightfall it folds into B's total).
+        const sc = JSON.parse(game.score_readout_json());
+        const bScore = sc.erasures > 0
+          ? `${sc.b_total} (board ${sc.b_board} + ${sc.erasures} erased)`
+          : `${sc.b_total}`;
+        // #90 Anima is the limiter: there's no action count — play as much as your
+        // Anima funds, then End Turn (nothing auto-ends).
+        const yourTurn = game.active_seat() === "A";
+        setStatus(
+          `Round ${view.round} · you are seat ${view.seat} · score A ${sc.a} — B ${bScore} · ` +
+          `${view.you.anima} anima (your play budget) — ` +
+          (yourTurn ? "tap a piece or card to act, or End Turn." : "the opponent is telling…"));
+        // The legal-move list is the source of truth for the canvas affordances + the
+        // a11y tree (highlights + move-matching derive from it — never re-derived here).
+        board.legal = JSON.parse(game.legal_labeled_json());
+        // #100 Phase B — the transitional HTML move buttons + hand chips are RETIRED for
+        // the local 1v1 shell: the in-canvas affordances drive every action, and the
+        // virtual a11y tree (#shell-a11y, rebuilt by syncA11yTree each draw) is the
+        // accessible path at parity. #moves/#hand stay empty here (still used by the
+        // online/2v2 paths, which aren't on the shell). The a11y tree is built on the
+        // next draw tick (it needs the regions for nothing, but shares the model).
+        syncA11yTree();
+        // #100 Phase D — if this round is a binding beat (the Dusk after R8, Nightfall at
+        // R12) and we haven't shown its set-piece yet, play it now (the rim
+        // contracting/darkening + the clock face + the seal, announced). Fires once per
+        // binding round, whichever seat crossed the boundary.
+        maybePlayRoundSetPiece();
+      }
+
+      // True if a command is the opening Mulligan variant ({"Mulligan":{seat}}) — used to
+      // detect the open opening window in the server's legal list (the in-canvas offer).
+      function isMulligan(cmd) { return cmd && typeof cmd === "object" && "Mulligan" in cmd; }
+
+      // --- Networked play -----------------------------------------------------
+      const wsBase = (httpBase) => httpBase.replace(/^http/, "ws");
+
+      // A stable, anonymous per-browser id for usage journeys (no PII; localStorage).
+      function sessionId() {
+        let s = localStorage.getItem("recollect_sid");
+        if (!s) { s = crypto.randomUUID(); localStorage.setItem("recollect_sid", s); }
+        return s;
+      }
+
+      // Build the create-match query from the host-settings form (seat order
+      // [A1, B1, A2, B2] matches the server's MatchSettings).
+      function buildHostQuery() {
+        const mode = $("ho-mode").value;
+        const diff = $("ho-diff").value;
+        const fill = (id) => ($(id).value === "bot" ? "bot:" + diff : "human");
+        const seats =
+          mode === "2v2"
+            ? ["human", fill("ho-b1"), fill("ho-a2"), fill("ho-b2")]
+            : ["human", fill("ho-b")];
+        const params = new URLSearchParams();
+        if (mode === "2v2") params.set("mode", "2v2");
+        params.set("seats", seats.join(","));
+        params.set("faction", $("ho-faction").value);
+        return params.toString();
+      }
+
+      async function startOnline(kind) {
+        const base = ($("srv")?.value || "http://localhost:8080").replace(/\/+$/, "");
+        let matchId, token, playerName = "";
+        try {
+          if (kind === "join") {
+            matchId = prompt("match id?"); token = prompt("seat token?");
+            if (!matchId || !token) return;
+            playerName = (prompt("your name? (optional)") || "").trim();
+          } else if (kind === "2v2") {
+            const body = await (await fetch(`${base}/matches?mode=2v2`, { method: "POST" })).json();
+            matchId = body.match_id; token = body.slot_tokens.A1;
+            const s = body.slot_tokens;
+            alert(`2v2 match ${matchId} created. You are slot A1.\nGive a token to each other player (they Join):\n\nB1: ${s.B1}\nA2: ${s.A2}\nB2: ${s.B2}`);
+          } else if (kind === "host") {
+            playerName = $("ho-name").value.trim();
+            const body = await (await fetch(`${base}/matches?${buildHostQuery()}`, { method: "POST" })).json();
+            if (body.error) { $("status").textContent = "create failed: " + body.error; return; }
+            matchId = body.match_id;
+            token = body.seat_a_token || (body.slot_tokens && body.slot_tokens.A1);
+            if (body.slot_tokens) {
+              const s = body.slot_tokens;
+              alert(`2v2 match ${matchId}. You are A1.\nInvite codes — B1: ${s.B1}  A2: ${s.A2}  B2: ${s.B2}`);
+            } else if (body.seat_b_token) {
+              alert(`Match ${matchId} created.\nInvite code (give seat B): ${body.seat_b_token}`);
+            }
+          } else {
+            const q = kind === "bot" ? `?opponent=bot&difficulty=${diffName($("diff")?.value ?? "1")}` : "";
+            const body = await (await fetch(`${base}/matches${q}`, { method: "POST" })).json();
+            matchId = body.match_id; token = body.seat_a_token;
+            if (kind === "new") alert(`match ${matchId} created.\nseat-B token (give it to your opponent — they Join):\n\n${body.seat_b_token}`);
+          }
+        } catch (e) {
+          $("status").textContent = `could not reach the server at ${base} — ${e}`;
+          return;
+        }
+        connectOnline(base, matchId, token);
+      }
+
+      function connectOnline(base, matchId, token) {
+        if (watch) { clearInterval(watch); watch = null; }
+        cancelReplay(); // drop any in-flight local replay
+        clearResultScreen(); cancelDusk(); // #100 Phase D — drop any result/Dusk overlay
+        game = null;
+        $("picker").style.display = "none";
+        $("detail").innerHTML = "";
+        // #100 — online/2v2 now drive the FULL canvas shell (board · HUD · hand · the
+        // affordances + a11y tree), built from the server's redacted view + legal list by
+        // OnlineShell. The transitional #moves / #hand DOM are retired (the canvas owns it).
+        $("moves").innerHTML = ""; $("hand").innerHTML = "";
+        const ws = new WebSocket(`${wsBase(base)}/matches/${matchId}/ws`);
+        online = { ws, view: null, team: null, legal: [], seq: 0, names: { you: playerName || "", opp: "" }, mulliganOffered: false };
+        phaseD.mode = "pvp"; // online 1v1 (set to "2v2" on the first team message)
+        // The portrait shell layout (body.shell) is applied once the FIRST view arrives —
+        // shellActive() is still false here (view/team null), so renderOnline/renderOnlineTeam
+        // call setShellLayout() after setting online.view/team.
+        ws.onopen = () => ws.send(JSON.stringify({ t: "hello", v: protoV, match_token: token, name: playerName || undefined, session_id: sessionId() }));
+        ws.onmessage = (ev) => onServerMsg(JSON.parse(ev.data));
+        ws.onclose = () => { if (online) $("status").textContent = "connection closed (New game to reconnect)"; };
+        ws.onerror = () => { $("status").textContent = "connection error"; };
+        $("status").textContent = "connecting…";
+      }
+
+      function onServerMsg(m) {
+        if (m.t === "welcome" || m.t === "applied" || m.t === "update") {
+          online.view = m.view; online.team = null;
+          online.legal = m.legal || [];
+          // The canvas shell reads `board.legal` for the tap-select / drag affordances —
+          // feed it the server's legal moves (the same shape the local engine's is).
+          board.legal = online.legal;
+          rememberSeatNames(m);
+          phaseD.mode = "pvp";
+          renderOnline(m.view);
+        } else if (m.t === "team_welcome" || m.t === "team_applied" || m.t === "team_update") {
+          online.team = m.view; online.view = null;
+          online.legal = m.legal || [];
+          board.legal = online.legal;
+          phaseD.mode = "2v2";
+          renderOnlineTeam(m.view);
+        } else if (m.t === "rejected") {
+          $("status").textContent = `rejected: ${m.reason}`;
+        } else if (m.t === "error") {
+          $("status").textContent = `server error: ${m.message}`;
+        }
+        // pong is ignored.
+      }
+
+      function sendCmd(cmd) {
+        if (!online || online.ws.readyState !== 1) return;
+        online.seq += 1;
+        online.ws.send(JSON.stringify({ t: "cmd", v: protoV, seq: online.seq, command: cmd }));
+      }
+
+      // #100 — cache the session display names from a Welcome's `seat_names` (index =
+      // seat): yours (your seat) for the HUD, the opponent's (the other seat) for the
+      // strip. Only `welcome` carries them; later Update/Applied omit it, so we keep what
+      // we learned. 2v2 has no per-seat names on the wire (the strip uses a team label).
+      function rememberSeatNames(m) {
+        if (!online) return;
+        const sn = m.seat_names;
+        if (Array.isArray(sn) && online.view) {
+          const me = online.view.seat === "A" ? 0 : 1;
+          if (sn[me]) online.names.you = sn[me];
+          if (sn[1 - me]) online.names.opp = sn[1 - me];
+        }
+      }
+
+      // #100 Online 1v1 render: the FULL canvas shell now owns the surface (board · HUD ·
+      // hand · the affordances + the a11y tree), built each frame from the server's
+      // redacted PlayerView + its legal list by OnlineShell — exactly the shell a local
+      // 1v1 draws. This handler only manages the per-message side-effects: the status
+      // line, the opening Mulligan offer, the result screen, and the choice announcement.
+      // The transitional #moves buttons / #hand chips are RETIRED for online (the design
+      // says replace, not parallel) — the canvas + the a11y tree are the path now.
+      function renderOnline(view) {
+        board.bw = 5;
+        setShellLayout(); // online drives the portrait shell — apply body.shell once live
+        if (view.phase && view.phase.Finished) { showOnlineResult(); return; }
+        clearResultScreen();
+        const yourTurn = view.active === view.seat;
+        // The opening Mulligan offer: a legal Mulligan in YOUR list means the window is
+        // open. Raise the in-canvas modal ONCE per connection (the bridge owns the offer
+        // flag; OnlineShell.choice_prompt_json still gates whether it draws — a stale flag
+        // past the window shows nothing). Cleared on either pick (Mulligan / Keep).
+        const mulliganLegal = yourTurn && online.legal.some((m) => isMulligan(m.cmd));
+        if (mulliganLegal && !online.mulliganOffered) {
+          choiceUi.offer = true; choiceUi.sig = null; online.mulliganOffered = true;
+        }
+        const oppName = online.names.opp || "your opponent";
+        setStatus(`online · round ${view.round} · ${view.you.anima} anima — ` +
+          (yourTurn ? "your move (End Turn when ready)" : `waiting for ${oppName}…`));
+      }
+
+      // #100 Online 2v2 render: the full shell over the 6×6 board, built from the active
+      // slot's redacted TeamView + its legal list. Your slot's HUD / hand / affordances;
+      // the opposing team as combined counts (redaction holds). Same as 1v1 — the #moves /
+      // #hand DOM are retired; the status names the active slot, the canvas does the rest.
+      function renderOnlineTeam(tv) {
+        board.bw = tv.board_w || 6;
+        setShellLayout(); // online 2v2 drives the portrait shell — apply body.shell once live
+        if (tv.phase && tv.phase.Finished) { showOnlineResult(); return; }
+        clearResultScreen();
+        const yourTurn = tv.active_slot === tv.slot;
+        setStatus(`2v2 · round ${tv.round} · slot ${tv.active_slot} to act · you are ${tv.slot} · ${tv.you.anima} anima — ` +
+          (yourTurn ? "your move (End Turn when ready)" : "waiting…"));
+      }
+
+      function buildActions() {
+        const a = $("actions");
+        a.innerHTML = "";
+        const b = document.createElement("button");
+        b.textContent = "New game";
+        b.onclick = () => showPicker();
+        a.appendChild(b);
+      }
+
+      // Pixel click → tile index, mirroring the board's Y-flip (top visual row is
+      // the highest tile-row). Returns null if outside the w×w board. In #100 shell
+      // mode the board is a centered SUB-rectangle of the canvas (not the whole
+      // surface), so the hit maps into that rect — fetched from the renderer (in
+      // backing px; converted to fractions of the CSS box so DPR doesn't matter).
+      function clickedTile(ev, w) {
+        const c = $("board");
+        const r = c.getBoundingClientRect();
+        let fx = (ev.clientX - r.left) / r.width;   // 0..1 across the CSS box
+        let fy = (ev.clientY - r.top) / r.height;
+        if (shellActive()) {
+          let br;
+          try { br = JSON.parse(renderer.shell_board_rect_json(c.width, c.height)); } catch (_) { return null; }
+          // Re-base the click fraction onto the board sub-rect's fraction of the box.
+          const bx0 = br.x / c.width, by0 = br.y / c.height;
+          const bw = br.w / c.width, bh = br.h / c.height;
+          fx = (fx - bx0) / bw;
+          fy = (fy - by0) / bh;
+        }
+        // Resolve through the ONE px→tile map (a unit board rect in fraction space), so this
+        // path and the pointer path (`hitRegion`) share the same Y-flip — guarded natively by
+        // `ShellRegions::tile_at`'s regression suite (#15).
+        return tileAtPx({ board: { x: 0, y: 0, w: 1, h: 1 }, board_w: w }, fx, fy);
+      }
+
+      // #100 Whether the canvas is currently drawing the in-canvas shell — used to re-base
+      // board hit-testing onto the board sub-rectangle. True for a LOCAL 1v1 telling AND
+      // for an ONLINE telling (1v1 or 2v2) — all driven by the canvas-native shell now.
+      // The LOCAL 2v2 WATCH (the AI drives all four slots, no single-seat vantage) keeps
+      // the older board-only draw, so it stays false there. Stays true at the Phase-D
+      // result screen (game over) so the canvas keeps drawing the verdict overlay; board
+      // PLAY is separately gated by boardInteractive().
+      function shellActive() {
+        if (game) return !game.is_2v2();   // local 1v1 only (local 2v2 watch is board-only)
+        return isOnline();                 // online 1v1 + 2v2 both ride the shell
+      }
+
+      // #97 Where the keyboard cursor lands when the board first gains focus: the
+      // centre tile (a neutral, one-hand-portrait-friendly start near both sides).
+      function homeTile() {
+        const w = board.bw, c = (w >> 1);
+        return c * w + c;
+      }
+
+      // #62 Responsive board: the canvas's CSS box is fluid (see play.css), but its
+      // wgpu backing buffer is a fixed pixel grid. Match the buffer to the displayed
+      // size × devicePixelRatio so it's crisp — not blurrily upscaled — from a 320px
+      // phone to a 4K desktop, and never distorted. The board-only modes (picker /
+      // online / 2v2) keep a SQUARE box (sized off the rendered side); the #100 shell
+      // (local 1v1) is a full PORTRAIT/landscape surface, so there we match the box's
+      // actual width AND height. DPR is capped at 2 to bound the fill cost on very
+      // high-density screens. Re-fit on resize / orientation change (the rAF loop
+      // redraws the next frame).
+      function fitCanvas() {
+        const c = $("board");
+        if (!renderer || !c) return;
+        const rect = c.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let w, h;
+        if (shellActive()) {
+          // #100 §Page shell — the canvas-native shell is FULL-BLEED: match the wgpu
+          // backing buffer to the canvas's actual CSS box (100% width × the stage height
+          // below the nav) × DPR, so the in-canvas shell fills the viewport, portrait-
+          // first, and stays crisp 320px → 4K. (No square clamp — the layout is fluid.)
+          w = Math.max(1, Math.round(rect.width * dpr));
+          h = Math.max(1, Math.round(rect.height * dpr));
+        } else {
+          // Off-shell (picker / online / 2v2): a SQUARE board sized off the rendered side.
+          const side = Math.max(1, Math.min(rect.width, rect.height));
+          w = h = Math.max(1, Math.round(side * dpr));
+        }
+        if (c.width === w && c.height === h) return; // no-op when unchanged
+        c.width = w;
+        c.height = h;
+        try { renderer.resize(w, h); } catch (e) {}
+      }
+
+      // #100 §Page shell — wire the nav settings (sound · reduced-motion · animation-
+      // speed) to their persisted state. Sound + reduced-motion are checkboxes; the
+      // animation-speed select is read live by beatDwellMs(). Reduced-motion re-fits +
+      // refreshes so the change reads immediately.
+      function wireSettings() {
+        const snd = $("opt-sound"), rm = $("opt-reduced-motion");
+        if (snd) {
+          snd.checked = settings.sound;
+          snd.onchange = () => {
+            settings.sound = snd.checked;
+            localStorage.setItem("recollect_sound", snd.checked ? "on" : "off");
+          };
+        }
+        if (rm) {
+          rm.checked = settings.reducedMotion;
+          rm.onchange = () => {
+            settings.reducedMotion = rm.checked;
+            localStorage.setItem("recollect_reduced_motion", rm.checked ? "on" : "off");
+          };
+        }
+        // Item 4 — the Options disclosure: the single nav button toggles the settings panel
+        // (hidden by default). Esc closes it; a click outside closes it; focus moves into the
+        // panel on open and back to the button on close (keyboard-accessible).
+        const toggle = $("options-toggle"), panel = $("options-panel");
+        if (toggle && panel) {
+          const setOpen = (open) => {
+            panel.hidden = !open;
+            toggle.setAttribute("aria-expanded", open ? "true" : "false");
+            if (open) {
+              const first = panel.querySelector("input, select, button");
+              if (first) first.focus();
+            }
+          };
+          toggle.onclick = () => setOpen(panel.hidden);
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !panel.hidden) { setOpen(false); toggle.focus(); }
+          });
+          document.addEventListener("click", (e) => {
+            if (panel.hidden) return;
+            if (!panel.contains(e.target) && e.target !== toggle) setOpen(false);
+          });
+        }
+      }
+
+      async function main() {
+        await init();
+        protoV = protocol_version();
+        renderer = await WebRenderer.new($("board"));
+        onlineShell = new OnlineShell(); // #100 — the stateless online/2v2 shell builder
+        wireSettings();
+        // ── Test-observability hook (#100): drive the ONLINE / 2v2 shell from a crafted
+        // server message, with NO real websocket — so the headless UI suite can exercise
+        // the online/2v2 rendering + the a11y tree + redaction (the live server-backed
+        // socket is browser-verify; this covers what IS testable headless). It feeds the
+        // SAME `onServerMsg` path the live socket does, so it renders the production code,
+        // never a test-only branch. Inert in normal play (nothing calls it).
+        window.__recollectTest = window.__recollectTest || { duskShown: [] };
+        window.__recollectTest.injectServerMsg = (m) => {
+          if (!online) {
+            // A fake session: a closed-ws stub (so sendCmd no-ops) the shell reads from.
+            online = { ws: { readyState: 3, send() {}, close() {} }, view: null, team: null,
+                       legal: [], seq: 0, names: { you: "", opp: "" } };
+            game = null; $("picker").style.display = "none"; setShellLayout();
+          }
+          onServerMsg(m);
+        };
+        // The sample redacted welcomes (the real wire shape) the suite injects to mount an
+        // online 1v1 / 2v2 telling with no live server.
+        window.__recollectTest.sampleOnlineWelcome = (seed, seat, moves) => sample_online_welcome_json(BigInt(seed), seat, moves);
+        window.__recollectTest.sampleTeamWelcome = (seed) => sample_team_welcome_json(BigInt(seed));
+        // #50 item 12 — a welcome whose board has a spirit standing ON a Landmark (a co-occupied
+        // tile), so the suite can verify the landmark is independently inspectable.
+        window.__recollectTest.sampleLandmarkWelcome = (seed) => sample_landmark_welcome_json(BigInt(seed));
+        // A welcome whose board has a STANDING-FADED form (rescuable) on tile 12 with the base
+        // in hand, so the suite can verify the DEVOLVE (recede) affordance: the standing-Faded
+        // rendering, the recede chevron + a11y node, and a tap-then-target recede.
+        window.__recollectTest.sampleDevolveWelcome = (seed) => sample_devolve_welcome_json(BigInt(seed));
+        // The live online view (PlayerView or TeamView) the shell is rendering, for the
+        // suite's REDACTION check (it confirms no opponent/rival hand array is present —
+        // the client only holds the redacted view). Read-only; null when not online.
+        window.__recollectTest.onlineViewForTest = () => (online ? (online.view || online.team) : null);
+        // #15 — the production px→tile resolver, exposed so the headless suite can verify the
+        // JS `tileAtPx` twin matches the native `ShellRegions::tile_at` contract WITHOUT a
+        // flaky canvas pixel-tap (those are manual-verification territory). Pure: given a
+        // regions-shaped `{board,board_w}` + a px point, it returns the tile or null.
+        window.__recollectTest.tileAtPx = (R, x, y) => tileAtPx(R, x, y);
+        // The live hit-test regions (`shell_regions_json`, refreshed each draw) — so the
+        // suite can resolve over the REAL board rect the canvas is drawing (#15).
+        window.__recollectTest.regionsForTest = () => board.regions;
+        // Item 5 (option C) — the inspect overlay's interaction contract, exposed for the
+        // headless suite WITHOUT a flaky canvas pixel-tap. `inspectingForTest` reads whether
+        // the inspect panel is up; `openInspectForTest` opens it on a hand card (the same
+        // `inspect()` the hover/long-press path drives); `tapRegionForTest` invokes the
+        // PRODUCTION tap handler with a synthesized hit, so the suite can prove a tap on the
+        // (suppressed) FAB lane while inspecting only DISMISSES inspect — it never fires.
+        window.__recollectTest.inspectingForTest = () => !!board.inspect;
+        window.__recollectTest.openInspectForTest = () => {
+          // Open the CANVAS inspect panel on the first hand card via the production
+          // `setInspect` (the same path hover/long-press funnels through), so `board.inspect`
+          // — the state option C gates the affordance suppression on — is actually set.
+          refreshRegions();
+          const view = currentView();
+          const id = view && view.you && view.you.hand && view.you.hand[0];
+          const r = board.regions && board.regions.hand && board.regions.hand[0];
+          const anchor = r ? [r.x + r.w / 2, r.y + r.h / 2] : null;
+          if (id != null) setInspect(id, anchor);
+          return !!board.inspect;
+        };
+        window.__recollectTest.tapRegionForTest = (hit) => tapRegion(hit);
+        fitCanvas();
+        // Re-fit on viewport / orientation changes. ResizeObserver catches CSS-box
+        // changes (vmin shifts, the landscape side-by-side layout); the listeners
+        // catch DPR moves (e.g. dragging the window between monitors).
+        if (window.ResizeObserver) {
+          new ResizeObserver(() => fitCanvas()).observe($("board"));
+        }
+        window.addEventListener("resize", fitCanvas);
+        window.addEventListener("orientationchange", fitCanvas);
+        const boardEl = $("board");
+        const DRAG_SLOP = 8; // px in the CSS box before a press becomes a drag
+
+        // #100 Phase B pointer interaction for the LOCAL 1v1 shell: the canvas owns the
+        // whole surface, so a press maps onto a board tile, a hand card, or a FAB
+        // (board.regions). Both gestures complete an action:
+        //   • TAP a piece → its targets glow; TAP a glowing tile → act (select-then-target).
+        //   • DRAG a piece/card onto a target → the same action (the literal drag gesture).
+        //   • TAP a hand card → it lifts + its tiles glow; TAP a tile → place (or drag it).
+        //   • TAP a FAB → End Turn / Glimpse.
+        // HOVER (mouse) inspects; LONG-PRESS (touch) inspects. This serves EVERY shell
+        // telling — a LOCAL 1v1 and an ONLINE one (1v1 or 2v2); the only non-shell board
+        // is the local 2v2 watch (a spectator view, not interactive).
+        boardEl.addEventListener("pointerdown", (ev) => {
+          if (!shellActive()) return; // local 2v2 watch / picker: no shell interaction
+          // #100 Phase D — at the result screen the only targets are its action buttons;
+          // record the press (dispatched on pointerup so a clean tap fires the verb), and
+          // skip the live board interaction (the board isn't playable once the telling ends).
+          if (phaseD.result) {
+            const p = pointerBackingXY(ev);
+            board.drag = { result: true, verb: resultHit(p.x, p.y), pointerId: ev.pointerId };
+            try { boardEl.setPointerCapture(ev.pointerId); } catch (_) {}
+            return;
+          }
+          // #26 — a Glimpse / Mulligan modal is up: the only targets are its option chips.
+          // Record the press (dispatched on pointerup so a clean tap fires the option) and
+          // skip the board interaction beneath (it's blocked mid-choice).
+          if (choiceActive()) {
+            const p = pointerBackingXY(ev);
+            board.drag = { choice: true, hit: choiceHit(p.x, p.y), pointerId: ev.pointerId };
+            try { boardEl.setPointerCapture(ev.pointerId); } catch (_) {}
+            return;
+          }
+          refreshRegions();
+          const p = pointerBackingXY(ev);
+          const hit = hitRegion(p.x, p.y);
+          // Whether the press began on the hand tray (so a horizontal drag scrolls the
+          // carousel rather than picking a card up).
+          const tray = board.regions && board.regions.hand_tray;
+          const onTray = !!(tray && p.x >= tray.x && p.x < tray.x + tray.w && p.y >= tray.y && p.y < tray.y + tray.h);
+          // Begin a potential drag from whatever was pressed (resolved on pointerup).
+          board.drag = { from: hit, x: p.x, y: p.y, startClientX: ev.clientX, startClientY: ev.clientY, moved: false, carousel: false, onTray, pointerId: ev.pointerId };
+          try { boardEl.setPointerCapture(ev.pointerId); } catch (_) {}
+          // Touch long-press → inspect (no hover on touch). Cancelled by a move/up.
+          if (ev.pointerType === "touch") {
+            clearTimeout(board.longPress);
+            board.longPress = setTimeout(() => {
+              if (board.drag && !board.drag.moved) { inspectAt(p.x, p.y); board.drag = null; }
+            }, 450);
+          }
+        });
+        boardEl.addEventListener("pointermove", (ev) => {
+          if (!shellActive()) return;
+          const p = pointerBackingXY(ev);
+          // Mouse hover (no button held): scroll the hand carousel when the cursor nears the
+          // tray's left/right edge (hover-to-scroll, §Hand), else inspect the card/piece under it.
+          if (!board.drag && ev.pointerType === "mouse" && ev.buttons === 0) {
+            updateHoverScroll(p.x, p.y);
+            if (board.hoverScrollDir === 0) inspectAt(p.x, p.y);
+            else { board.inspect = null; board.inspectId = null; }
+            return;
+          }
+          if (!board.drag) return;
+          const dx = ev.clientX - board.drag.startClientX, dy = ev.clientY - board.drag.startClientY;
+          // #100 §Hand — a HORIZONTAL swipe that began on the hand tray scrolls the
+          // carousel (a few big cards visible, the rest scroll in). It's distinct from a
+          // VERTICAL drag of a card to the board (a pick-up): we commit to carousel mode
+          // once the gesture is clearly sideways, and scroll by the pointer delta.
+          const max = (board.regions && board.regions.hand_max_scroll) || 0;
+          if (!board.drag.carousel && !board.drag.moved && board.drag.onTray && max > 0 &&
+              Math.abs(dx) > DRAG_SLOP && Math.abs(dx) > Math.abs(dy) * 1.2) {
+            board.drag.carousel = true;
+            board.drag.scrollBase = board.handScroll || 0;
+            board.drag.swipeStartX = ev.clientX;
+            clearTimeout(board.longPress);
+            board.inspect = null;
+          }
+          if (board.drag.carousel) {
+            // Drag-follow: moving the pointer LEFT advances the row (reveals later cards).
+            const r = $("board").getBoundingClientRect();
+            const scale = r.width > 0 ? ($("board").width / r.width) : 1;
+            board.handScroll = board.drag.scrollBase - (ev.clientX - board.drag.swipeStartX) * scale;
+            clampHandScroll();
+            board.drag.x = p.x; board.drag.y = p.y;
+            return;
+          }
+          if (!board.drag.moved && Math.hypot(dx, dy) > DRAG_SLOP) {
+            board.drag.moved = true;
+            clearTimeout(board.longPress);
+            board.inspect = null; // a drag dismisses any inspect panel
+            // Picking a piece/card up at drag start so the ghost + target glows show.
+            const f = board.drag.from;
+            if (f && f.kind === "tile") {
+              const sp = currentTiles()[f.tile]?.spirit;
+              if (sp && sp.owner === "A" && !sp.face_down) pickUpSpirit(f.tile);
+            } else if (f && f.kind === "hand") {
+              const view = currentView();
+              pickUpHand(f.index, view?.you?.hand?.[f.index]);
+            }
+          }
+          board.drag.x = p.x; board.drag.y = p.y;
+        });
+        const endPointer = (ev) => {
+          if (!shellActive()) { board.drag = null; return; }
+          clearTimeout(board.longPress);
+          try { boardEl.releasePointerCapture(ev.pointerId); } catch (_) {}
+          const drag = board.drag; board.drag = null;
+          if (!drag) return;
+          // #100 §Hand — a carousel swipe ends with nothing to dispatch (it only scrolled).
+          if (drag.carousel) { clampHandScroll(); return; }
+          // #100 Phase D — a result-screen tap: fire the action if press + release land on
+          // the SAME button (the verb recorded on press still under the pointer on release).
+          if (drag.result) {
+            const p = pointerBackingXY(ev);
+            const verb = resultHit(p.x, p.y);
+            if (verb && verb === drag.verb) resultAction(verb);
+            return;
+          }
+          // #26 — a choice-modal tap: fire the option if press + release land on the SAME
+          // chip (the option recorded on press still under the pointer on release).
+          if (drag.choice) {
+            const p = pointerBackingXY(ev);
+            const hit = choiceHit(p.x, p.y);
+            if (hit && drag.hit && hit.verb === drag.hit.verb && hit.index === drag.hit.index) {
+              dispatchChoice(hit.verb, hit.index);
+            }
+            return;
+          }
+          const p = pointerBackingXY(ev);
+          const hit = hitRegion(p.x, p.y);
+          if (drag.moved) {
+            // A drag: drop on the tile under the pointer (if it's a legal target).
+            if (hit && hit.kind === "tile") {
+              board.focus = hit.tile;
+              if (board.sel && board.targets.includes(hit.tile)) { dropOn(hit.tile); return; }
+            }
+            // Dropped on nothing legal → cancel the pick-up cleanly.
+            clearSelection();
+            $("status").textContent = "Drag cancelled — drop on a glowing tile to act";
+            return;
+          }
+          // A tap: dispatch by what was pressed.
+          tapRegion(hit);
+        };
+        boardEl.addEventListener("pointerup", endPointer);
+        boardEl.addEventListener("pointercancel", () => { clearTimeout(board.longPress); board.drag = null; });
+        boardEl.addEventListener("pointerleave", (ev) => {
+          // Leaving the canvas with the mouse dismisses a hover inspect + stops hover-scroll.
+          if (ev.pointerType === "mouse" && !board.drag) { board.inspect = null; board.hoverScrollDir = 0; }
+        });
+        // #100 §Hand — mouse WHEEL over the hand tray scrolls the carousel (horizontal or
+        // vertical wheel both advance the row); elsewhere the wheel does nothing on-canvas.
+        boardEl.addEventListener("wheel", (ev) => {
+          if (!shellActive() || phaseD.result || choiceActive()) return; // #26 — no scroll behind a modal
+          refreshRegions();
+          const max = (board.regions && board.regions.hand_max_scroll) || 0;
+          if (max <= 0) return;
+          const p = pointerBackingXY(ev);
+          const tray = board.regions.hand_tray;
+          if (!(tray && p.x >= tray.x && p.x < tray.x + tray.w && p.y >= tray.y && p.y < tray.y + tray.h)) return;
+          ev.preventDefault();
+          const r = $("board").getBoundingClientRect();
+          const scale = r.width > 0 ? ($("board").width / r.width) : 1;
+          board.handScroll = (board.handScroll || 0) + (ev.deltaX || ev.deltaY) * scale * 0.5;
+          clampHandScroll();
+        }, { passive: false });
+
+        // A tap on a region (no drag): a board tile activates (select/drop/inspect), a
+        // hand card picks up (or fires an instant play), a FAB runs its command.
+        function tapRegion(hit) {
+          if (!hit) {
+            // A tap on empty canvas clears a pending selection / inspect (a clean reset).
+            if (board.sel) { clearSelection(); $("status").textContent = "Selection cancelled"; }
+            board.inspect = null;
+            return;
+          }
+          // Item 5 (option C): the FAB lane is visually SUPPRESSED while inspecting, so a
+          // tap on its (now-invisible) location must NOT fire it — it just dismisses the
+          // inspect read (the affordances return; a second, deliberate tap then acts). The
+          // hand cards stay visible under inspect, so a card tap below still picks up.
+          if (hit.kind === "fab") {
+            if (board.inspect) { board.inspect = null; board.inspectId = null; return; }
+            tapFab(hit.which);
+            return;
+          }
+          if (hit.kind === "hand") {
+            board.inspect = null;
+            if (!boardInteractive()) { // off-turn: just inspect
+              const view = currentView();
+              const id = view?.you?.hand?.[hit.index];
+              if (id != null) inspect(id);
+              return;
+            }
+            // Re-tapping the lifted card cancels (a clean toggle).
+            if (board.sel && board.sel.kind === "hand" && board.sel.handIndex === hit.index) {
+              clearSelection(); $("status").textContent = "Selection cancelled"; return;
+            }
+            const view = currentView();
+            pickUpHand(hit.index, view?.you?.hand?.[hit.index]);
+            return;
+          }
+          if (hit.kind === "tile") {
+            board.inspect = null;
+            board.focus = hit.tile; // a tap also lands the keyboard cursor
+            activateTile(hit.tile);
+          }
+        }
+
+        // #97 Keyboard board navigation: the board is one Tab stop (the standard
+        // composite-grid pattern — Tab still flows through the a11y tree, End Turn, and
+        // New game as before, so nothing about Tab breaks). Inside the board, arrow keys
+        // move a visible focus cursor, Enter/Space picks up / drops, Escape cancels a
+        // pick-up. The cursor's tile is drawn as a gold ring (the canvas's :focus-visible).
+        // Live for any shell telling — a LOCAL 1v1 or an ONLINE one (1v1 or 2v2).
+        const boardKeyboardLive = () => shellActive();
+        boardEl.addEventListener("focus", () => {
+          if (boardKeyboardLive() && board.focus == null) board.focus = homeTile();
+        });
+        boardEl.addEventListener("blur", () => { board.focus = null; });
+        boardEl.addEventListener("keydown", (ev) => {
+          if (!boardKeyboardLive()) return;
+          const w = board.bw;
+          if (board.focus == null) board.focus = homeTile();
+          let f = board.focus, col = f % w, row = Math.floor(f / w);
+          // Visual up/down is the tile-row flip (row 0 = your home, drawn at bottom):
+          // ArrowUp moves toward the far edge (higher tile-row), ArrowDown toward home.
+          switch (ev.key) {
+            case "ArrowLeft": col = Math.max(0, col - 1); break;
+            case "ArrowRight": col = Math.min(w - 1, col + 1); break;
+            case "ArrowUp": row = Math.min(w - 1, row + 1); break;
+            case "ArrowDown": row = Math.max(0, row - 1); break;
+            case "Enter": case " ":
+              ev.preventDefault(); board.focus = f; activateTile(f); return;
+            case "Escape":
+              // #26 — Esc on the opening Mulligan offer keeps your hand (the engine forbids
+              // cancelling a Glimpse mid-step, so Esc there does nothing but clear a pick-up).
+              if (choiceUi.offer && choiceActive()) { ev.preventDefault(); dispatchChoice("keep", 0); return; }
+              if (board.sel) { clearSelection(); $("status").textContent = "Selection cancelled"; }
+              return;
+            default: return; // let every other key (incl. Tab) behave normally
+          }
+          ev.preventDefault();
+          board.focus = row * w + col;
+        });
+        buildActions();
+        showPicker();
+        handCarouselLoop(); // #100 §Hand — the hover-to-scroll glide loop
+        let prevJson = null, transPrev = null, transStart = 0;
+        (function frame(now) {
+          let json = null, team = false;
+          if (game) { team = game.is_2v2(); json = team ? game.team_view_json() : game.view_json(); }
+          else if (online && online.team) { team = true; json = JSON.stringify(online.team); }
+          else if (online && online.view) { team = false; json = JSON.stringify(online.view); }
+          // #100 — the canvas owns the WHOLE game for a LOCAL 1v1 telling AND for an ONLINE
+          // telling (1v1 or 2v2): it draws the in-canvas shell (HUD · opponent strip · hand
+          // tray · FABs · the affordances + inspect panel) around the board, AND the virtual
+          // a11y tree (#shell-a11y) mirrors every affordance as an actionable ARIA button.
+          // The local engine path builds the ShellModel from its engine; the online path
+          // builds the SAME model from the server's redacted view + legal list (OnlineShell)
+          // — no engine, redaction holds. The LOCAL 2v2 WATCH (AI drives all slots) keeps the
+          // older board-only draw (no single-seat vantage).
+          const localShell = !!game && !game.is_2v2();
+          const onlineShellActive = isOnline(); // online 1v1 OR 2v2 — full shell
+          const resultActive = (localShell || onlineShellActive) && gameIsOver();
+          if (json !== null) {
+            if (json !== prevJson) {
+              // A new state arrived: animate from the prior one (skip on the first
+              // draw, or when the player prefers reduced motion).
+              transPrev = (prevJson !== null && !prefersReducedMotion()) ? prevJson : null;
+              transStart = now;
+              prevJson = json;
+              // Mirror the board into the screen-reader region (#board-sr describes the
+              // canvas tile by tile; the canvas itself is a labeled input surface, #97).
+              try { $("board-sr").textContent = renderer.board_aria(json, team); } catch (e) {}
+            }
+            const cv = $("board");
+            if (localShell && replay.active && replay.model) {
+              // #100 Phase C — the paced opponent replay is animating: draw the current
+              // beat's self-contained snapshot model (the human's redacted view AFTER
+              // that action, with the on-canvas caption + the affected-tile pulse). The
+              // player's affordances are inert, so we don't refresh regions or rebuild
+              // the a11y tree per frame (it's pinned to the opponent's-turn state).
+              try { renderer.draw_shell(replay.model, cv.width, cv.height); }
+              catch (e) {}
+            } else if (resultActive && localShell) {
+              // #100 Phase D — the local telling has ended: draw the shell with the
+              // result-screen overlay (verdict + breakdown + actions, folded into ui_json).
+              const ui = shellUiJson();
+              try { renderer.draw_shell(game.shell_model_json("{}", "{}", ui), cv.width, cv.height); }
+              catch (e) {}
+            } else if (resultActive && onlineShellActive) {
+              // #100 Phase D (online/2v2) — the telling ended over the wire: draw the shell
+              // with the result-screen overlay built from the server's Finished view. The
+              // board (the redacted souvenir) shows through the scrim behind the verdict.
+              const ui = shellUiJson();
+              try { renderer.draw_shell(onlineShellModelJson(ui), cv.width, cv.height); }
+              catch (e) {}
+            } else if (localShell) {
+              // The full shell, sized to the canvas backing buffer (DPR-aware, set by
+              // fitCanvas). The board inside snaps to a new state; the HUD/FABs +
+              // affordances update live. Refresh the hit-test regions for the pointer
+              // bridge and rebuild the a11y tree from the same model so the canvas and
+              // the accessible mirror stay in lockstep.
+              const ui = shellUiJson();
+              try { renderer.draw_shell(game.shell_model_json(game.move_cues_json(), interactionJson(), ui), cv.width, cv.height); }
+              catch (e) { renderer.draw_view_interactive(json, game.move_cues_json(), interactionJson()); }
+              refreshRegions();
+              syncA11yTree();
+              maybeAnnounceChoice(); // #26 — narrate a Glimpse/Mulligan step once per new step
+            } else if (onlineShellActive) {
+              // #100 ONLINE / 2v2 — the FULL canvas shell, built from the server's redacted
+              // view + legal list (OnlineShell), drawn through the SAME draw_shell path as
+              // local. The board snaps to each pushed view; the HUD/hand/FABs + affordances
+              // update live. Refresh the hit-test regions + rebuild the a11y tree from the
+              // same model so the canvas and the accessible mirror stay in lockstep. The
+              // opponent is counts/backs only — redaction holds (the client only has the
+              // redacted view). A draw failure falls back to the plain board-only draw.
+              const ui = shellUiJson();
+              try { renderer.draw_shell(onlineShellModelJson(ui), cv.width, cv.height); }
+              catch (e) { if (team) renderer.draw_team(json); else renderer.draw_view(json); }
+              refreshRegions();
+              syncA11yTree();
+              maybeAnnounceChoice(); // #26 — narrate a Glimpse/Mulligan step (the online Glimpse)
+            } else if (transPrev) {
+              const t = Math.min((now - transStart) / 180, 1);
+              renderer.draw_blend(transPrev, json, t, team);
+              if (t >= 1) transPrev = null;
+            } else if (team) {
+              // The LOCAL 2v2 WATCH (AI drives all slots): board-only draw with the engine's
+              // #90 cues + #97 overlays.
+              if (game) renderer.draw_team_interactive(json, game.move_cues_json(), interactionJson());
+              else renderer.draw_team(json);
+            } else {
+              if (game) renderer.draw_view_interactive(json, game.move_cues_json(), interactionJson());
+              else renderer.draw_view(json);
+            }
+          }
+          requestAnimationFrame(frame);
+        })(performance.now());
+      }
+      main();
+    </script>
+  </body>
+</html>

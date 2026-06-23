@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recollect — rules in brief</title>
+  <meta name="description" content="How to play Recollect: score the most before the Memory closes. Spirits, Anima, combat, the Dusk, the evolve↔devolve cycle, and the two factions." />
+  <link rel="stylesheet" href="css/brand.css" />
+  <style>
+    /* Page-scoped: the contents nav. Paper & ink only; motion already disabled
+       under prefers-reduced-motion by brand.css. Mirrors the lore page's TOC. */
+    .page-toc {
+      border: 1px solid var(--rule); border-radius: var(--radius);
+      background: #fbf8f0; padding: var(--space); margin: 1.5em 0 2em;
+    }
+    .page-toc h2 { margin: 0 0 0.4em; font-size: 1.2rem; }
+    .page-toc ol { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: var(--space); }
+    .page-toc li { break-inside: avoid; margin: 0 0 0.35em; max-width: none; }
+    @media (max-width: 38rem) { .page-toc ol { columns: 1; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html">Recollect</a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="play.html">Play</a>
+        <a href="guide.html">Guide</a>
+        <a href="cards.html">Cards</a>
+        <a href="rules.html" aria-current="page">Rules</a>
+        <a href="lore.html">Lore</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="prose container">
+      <h1>Rules in brief</h1>
+      <p class="note">Enough to start a telling. The finer points you'll pick up at the board.</p>
+
+      <nav class="page-toc" aria-labelledby="contents">
+        <h2 id="contents">On this page</h2>
+        <ol>
+          <li><a href="#goal">The goal</a></li>
+          <li><a href="#your-turn">Your turn — Flow, Main, Fade</a></li>
+          <li><a href="#combat">Combat &amp; Impressions</a></li>
+          <li><a href="#throughlines">Throughlines</a></li>
+          <li><a href="#becoming">Becoming &amp; receding</a></li>
+          <li><a href="#strays">Strays &amp; the wild</a></li>
+          <li><a href="#dusk">The Dusk</a></li>
+          <li><a href="#two-tellings">The two tellings</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="goal">The goal</h2>
+      <p>When the Memory closes, the storyteller with the higher <strong>Score</strong> wins. You
+        score for the spirits left standing on the board and for the <strong>Impressions</strong>
+        you hold. It is a contest of presence — you win by what you keep on the page, not only by
+        what you take off it.</p>
+
+      <h2 id="your-turn">Your turn</h2>
+      <p>A turn runs <strong>Flow → Main → Fade</strong>. In <strong>Flow</strong> your income
+        arrives and you draw; <strong>Main</strong> is where you act (as far as your
+        <strong>Anima</strong> reaches — there's no fixed action count); and the
+        <strong>Fade</strong> comes at the <em>end</em>, where a spirit you couldn't save
+        dissolves and a <strong>Parting</strong> fires as it leaves. In Main you can:</p>
+      <ul>
+        <li><strong>Play a spirit</strong> from your hand, paying its cost in <strong>Anima</strong>.</li>
+        <li><strong>Move</strong> a spirit, or <strong>engage</strong> an enemy within reach (combat).</li>
+        <li><strong>Evolve</strong> or <strong>recede</strong> a spirit — see <a href="#becoming">Becoming &amp; receding</a>.</li>
+        <li><strong>Glimpse</strong> — burn a hand card, then peek your deck and keep or bottom the top for Anima.</li>
+        <li><strong>Cast</strong> from your spellbook — rituals, bonds, landmarks, fabrications.</li>
+      </ul>
+
+      <h2 id="combat">Combat &amp; Impressions</h2>
+      <p>Spirits have reach, attack, and defense; engagements resolve as momentum exchanges, and a
+        defender may intercept. A defeated spirit is <strong>banished</strong> — returned to the
+        page, never destroyed — and the banisher leaves its <strong>Impression</strong> on that
+        ground.</p>
+      <p><strong>Overwrite.</strong> You can also play a spirit from your hand <em>onto</em> a tile
+        an enemy holds — siege as arrival. The target must be <strong>face-up</strong> and within
+        your reach; you pay full cost and resolve <strong>one</strong> exchange against it. <strong>Win
+        and your spirit takes the tile</strong> (your Impression beneath it); <strong>lose and your
+        spirit dissolves</strong>, leaving no Impression, though the damage you dealt stays. You may
+        never Overwrite your own side.</p>
+
+      <h2 id="throughlines">Throughlines</h2>
+      <p>Line up <strong>three or more of your spirits sharing one Imprint</strong> in a connected,
+        side-by-side run and a <strong>Throughline completes</strong>: the spirit that closes it gains
+        <strong>+10 Attack / +10 Defense and a full heal</strong>, and any "on Throughline complete"
+        riders fire. The reward is <strong>once per spirit</strong> — a body that has earned it won't
+        earn it again&nbsp;… unless its story turns over:</p>
+      <ul>
+        <li><strong>Fading clears it.</strong> If the spirit is banished and stands Faded, the slate is
+          wiped — a rescued or re-formed body can earn its Throughline anew.</li>
+        <li><strong>Becoming a Primal clears it.</strong> A Primal form (which grows from a
+          <em>Fading</em> base) arrives free to complete the Throughline afresh.</li>
+        <li><strong>Devolving clears it — and can re-earn it on the spot.</strong> Receding a Faded form
+          back to its base hands that base a clean slate. And because a recede is an
+          <strong>arrival</strong> (just like an evolution), a base that recedes straight into a standing
+          three-in-a-row <strong>re-completes the Throughline immediately</strong> — the +10/+10 and full
+          heal land then and there, the same swing as a Primal stepping into a line.</li>
+        <li><strong>Becoming a Fabled keeps it.</strong> A Fabled form (which grows from a
+          <em>healthy</em> base) carries the same story forward: if the base had already earned the buff,
+          the Fabled stays <strong>locked</strong> and can't earn it twice.</li>
+      </ul>
+      <p class="note">So the rule of thumb is simple: <strong>Fabled keeps; everything else
+        (fading, Primal, devolving) resets.</strong></p>
+
+      <h2 id="becoming">Becoming &amp; receding</h2>
+      <p>A spirit can <strong>become</strong> more than it was — and, in a pinch, step
+        <strong>back</strong> to what it was. Both are cards you play in Main.</p>
+      <ul>
+        <li><strong>Evolve.</strong> A <strong>form</strong> card (a <strong>Primal</strong> or a
+          <strong>Fabled</strong>) is drawn to hand like any spirit; play it onto a matching
+          <strong>base</strong> you already hold and the base ascends to the form at full strength.
+          A <strong>Primal</strong> lands on a <strong>Fading</strong> base (its last becoming);
+          a <strong>Fabled</strong> lands on a <strong>healthy</strong> one.</li>
+        <li><strong>Recede</strong> (devolution) — <em>the rescue</em>. When a Primal or Fabled
+          form is <strong>banished in combat</strong>, it doesn't vanish at once: it stands
+          <strong>Faded</strong> for a turn, lit in a failing light. On your turn you may play a
+          <strong>base</strong> card from your hand onto it to <strong>recede</strong> it a tier
+          back to that base — restored to full, the form saved by stepping down. It costs
+          <strong>half</strong> the lost form's Anima, and the rescued base needs a turn to gather
+          itself before it can act again. A recede <strong>is an arrival, just like an
+          evolution</strong>: it strikes no one (there is no engage), but it can
+          <strong>complete a Throughline on the spot</strong> if the base steps into a standing
+          line.</li>
+      </ul>
+      <p>Because a spirit can recede and then climb again, the two make a <strong>cycle</strong>:
+        base → form → (banished, Faded) → recede to base → form once more — for as long as you
+        hold the forms and bases to feed it. The <strong class="ink-a">Lorekeepers</strong> call
+        the stepping-down a <strong>revert</strong>; the <strong class="ink-b">Solace</strong>
+        call it a <strong>recede</strong>.</p>
+
+      <h2 id="strays">Strays &amp; the wild</h2>
+      <p>Now and then the Memory stirs and a <strong>Stray</strong> — a lost dog — surfaces on an inner
+        tile, scoring for no one until someone claims it. You can <strong>befriend</strong> it (it joins
+        you, and your collection, for good) or <strong>banish</strong> it like any spirit. Some Strays
+        surface in the open; a <strong>Wary</strong> one surfaces <strong>veiled</strong> — present, but
+        not yet shown by name.</p>
+      <p>A Stray stands on a real tile, so an <strong>Overwrite reaches it</strong> — but what happens
+        depends on whether you can see it:</p>
+      <ul>
+        <li><strong>A revealed Stray is fought.</strong> If it's face-up to you, an Overwrite resolves a
+          <strong>full exchange</strong> against it: <strong>defeat it and your spirit takes the tile</strong>
+          (your Impression beneath, exactly as a banish leaves one); <strong>survive it and your spirit
+          dissolves</strong>, the damage persisting on the wild.</li>
+        <li><strong>A hidden Stray is denied entry, not fought.</strong> A veiled Wary — or any Stray not
+          yet shown to you — isn't face-up, and you can't Overwrite what you can't see by name. Aim an
+          Overwrite at its tile and the hidden thing is simply <strong>turned away: it leaves with no
+          Impression and no reveal</strong> (its identity never surfaces), and <strong>your spirit takes
+          the now-empty tile</strong> as an ordinary arrival — there was nothing face-up to contest.</li>
+      </ul>
+
+      <h2 id="dusk">The Dusk</h2>
+      <p>The board is a fading Memory, and it closes from the edges in. The <strong>Dusk</strong>
+        falls late in the game and the empty rim goes dark; <strong>Nightfall</strong> ends it.
+        What still stands when the Memory closes is what you keep. (The Dusk is its own moment, not
+        the turn-end Fade — it sweeps the empty rim all at once.)</p>
+
+      <h2 id="two-tellings">The two tellings</h2>
+      <p>The <strong class="ink-a">Lorekeepers</strong> fight to keep the memory
+        written. The <strong class="ink-b">Solace</strong> <strong>Unwrite</strong> it:
+        they take a spirit off the page gently, leave no Impression, and deny the keeper their proof.</p>
+      <p>The two even <em>become</em> differently. Where a Lorekeeper spirit ascends toward legend
+        — a Primal, then perhaps a <strong>Fabled</strong> — an Unwritten <strong>deepens</strong>:
+        its forms (the <strong>Solace Deepenings</strong>) are <strong>Primal only</strong>, never
+        Fabled, the erasure sharpening rather than rising. Some Solace bases even offer a
+        <strong>choice of temperament</strong> — a <strong>gentle</strong> deepening or a
+        <strong>malign</strong> one (a kinder erasure, or a crueler) — two Primals from the one
+        base, and you pick which the moment calls for.</p>
+
+      <p><a class="btn btn-primary" href="play.html">Play now</a> <a class="btn" href="cards.html">See the cards</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>Recollect</span>
+      <a href="lore.html">Lore</a>
+      <a href="cards.html">Card catalog</a>
+      <span class="note">A fading Memory, told in paper &amp; ink.</span>
+    </div>
+  </footer>
+</body>
+</html>

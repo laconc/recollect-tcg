@@ -1,0 +1,5652 @@
+{
+  "specs": {
+    "the-kindest-erasure": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": "Release",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-last-lullaby": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "SuppressesAdjacentEnemyEcho"
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-surer-tide": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 20
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-widening-absence": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": -20,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-long-erasure": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ImpressionRemoveTarget",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-grudge-entire": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "AttackPerEnemyImpression": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 20
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-gnawing-unending": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "spite-made-whole": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetEnemySpirit",
+            "effect": {
+              "Damage": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-unkindest-erasure": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-drowning-tide": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetEnemySpirit",
+            "effect": {
+              "Damage": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-grudge-forgiven": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": "Release",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-gnawing-stilled": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "SuppressesAdjacentEnemyEcho"
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "zenith-who-asks-the-sky": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EnemiesAll",
+            "effect": "RevealFabrication",
+            "duration": "Instant"
+          }
+        ]
+      },
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Exception": "GlimpseLooksOneMore"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "vertigo-who-loves-the-long-fall": [
+      {
+        "trigger": "OnEngageResolved",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Survivor",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "saudade-who-sets-a-place-for-the-missing": [
+      {
+        "trigger": "OnAnyBanish",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "crucible-who-holds-the-fire-still": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "cloudling": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 2,
+                "take": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "curio-fox": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "RevealFabrication",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "star-strewn-otter": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "CostDelta": {
+                "delta": -1
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "pathfinder-ibex": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "ReachDelta": {
+                "forward": 1,
+                "all_directions": false,
+                "targeting_only": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-asking-light": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 3,
+                "take": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "tempestrider-roc": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "ReachDelta": {
+                "forward": 1,
+                "all_directions": false,
+                "targeting_only": true
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "wisp-of-doubt": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "pale-stalker": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Lurk"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "nightjar-omen": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemyChoose",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "shade-sewn-cat": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Lurk"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "marrow-whisperer": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EnemiesEngagingAdjacentAllies",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-lurking-court": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Lurk"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "CostDelta": {
+                "delta": -1
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-empty-procession": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "madrigal-the-held-breath": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Lurk"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": {
+              "EnemiesWithinTiles": {
+                "tiles": 2
+              }
+            },
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "drizzle-sprite": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAllyChoose",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "ashen-sparrow": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAllyChoose",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 10
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "last-light-koi": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Exception": "PartingReclaimsFullCost"
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "keenling": [
+      {
+        "trigger": "OnAllyFading",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "wake-walker": [
+      {
+        "trigger": "OnAnyBanish",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 10
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "bearer-of-small-stones": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Exception": "EvolveIgnoresSharedImprint"
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "the-vigilkeeper": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "Exception": "PartingTriggersTwice"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "tidebound-colossus": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "vesper-last-singer-of-the-salt-choir": [
+      {
+        "trigger": "OnAnyBanish",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "duetling": [
+      {
+        "trigger": "Static",
+        "condition": "WhileAdjacentToAlly",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "linnet-of-the-lea": [
+      {
+        "trigger": "OnYouPlayBond",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "chorus-vole": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "CounterAura": {
+                "trait_name": "Chorus",
+                "max": 2
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "warden-of-the-glade": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-gathering-green": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      },
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "CounterAura": {
+                "trait_name": "Chorus",
+                "max": 1
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "choir-of-the-vale": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": {
+              "AlliesWithImprint": {
+                "imprint": "Song"
+              }
+            },
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "rondel-the-joining": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Exception": "BondsCostZero"
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatShareHigher": {
+                "attack": false,
+                "defense": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "ashcub": [
+      {
+        "trigger": "OnDefeat",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "frenzy-kit": [
+      {
+        "trigger": "Static",
+        "condition": "WhileDamaged",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "brand-bearer-macaque": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "MomentumMod": {
+                "first_engage_bonus": false,
+                "chain_while_defeating": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "ragewoken-bison": [
+      {
+        "trigger": "OnPlay",
+        "condition": {
+          "PayForm": {
+            "amount": 20
+          }
+        },
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "ExtraEngage",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "sparkfather-vermilion": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "MomentumMod": {
+                "first_engage_bonus": true,
+                "chain_while_defeating": false
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "bullroarer-immense": [
+      {
+        "trigger": "Static",
+        "condition": "WhileDamaged",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AllOtherSpirits",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "ignis-brightmaw-the-unfinished-argument": [
+      {
+        "trigger": "Static",
+        "condition": "WhileDamaged",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "cairnling-sentinel": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "bulwark-badger": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "anchorite-ox": [
+      {
+        "trigger": "Static",
+        "condition": "OncePerMatch",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Replace": {
+                "SurviveBanishAt": {
+                  "form": 10
+                }
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-patient-arbiter": [
+      {
+        "trigger": "OnEngageResolved",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-graven-elder": [
+      {
+        "trigger": "Static",
+        "condition": "WhileUndamaged",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 20,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "adamant-the-kept-word": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesInReach",
+            "effect": {
+              "DamageReduction": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "latchling": [
+      {
+        "trigger": "Static",
+        "condition": {
+          "AdjacentAlliesShareResonance": {
+            "n": 2
+          }
+        },
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "GrantSharedResonance",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "static-hare": [
+      {
+        "trigger": "Static",
+        "condition": {
+          "AdjacentAlliesShareResonance": {
+            "n": 2
+          }
+        },
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "GrantSharedResonance",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "patchwork-egret": [
+      {
+        "trigger": "Static",
+        "condition": {
+          "AdjacentAlliesShareResonance": {
+            "n": 2
+          }
+        },
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "GrantSharedResonance",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-unfiled": [
+      {
+        "trigger": "Static",
+        "condition": {
+          "AdjacentAlliesShareResonance": {
+            "n": 2
+          }
+        },
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "GrantSharedResonance",
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "OnAttuned",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "errata": [
+      {
+        "trigger": "Static",
+        "condition": {
+          "AdjacentAlliesShareResonance": {
+            "n": 2
+          }
+        },
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "GrantSharedResonance",
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "AllImprintsShared"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-first-forgotten": [
+      {
+        "trigger": "Static",
+        "condition": {
+          "AdjacentAlliesShareResonance": {
+            "n": 2
+          }
+        },
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "GrantSharedResonance",
+            "duration": "WhilePresent"
+          }
+        ]
+      },
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EnemiesAll",
+            "effect": "EdgeNegate",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "saffi-who-lends-the-sky": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Summon": {
+                "card_name": "Twinkle, a Borrowed Star"
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "embermother-ash": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Summon": {
+                "card_name": "Cinder-Pup"
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-ferriers-daughter": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Summon": {
+                "card_name": "Droplet"
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "choirmother-lark": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Summon": {
+                "card_name": "Hum"
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "marionettist-grey": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Summon": {
+                "card_name": "Jitters"
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "cairnwright-odo": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Summon": {
+                "card_name": "Chip"
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "twinkle-a-borrowed-star": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "jitters": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "chip": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "cinder-pup": [
+      {
+        "trigger": "Static",
+        "condition": "WhileDamaged",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "droplet": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAllyChoose",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "hum": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "CounterAura": {
+                "trait_name": "Chorus",
+                "max": 1
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "glimpse-beyond": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 3,
+                "take": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "sudden-clearing": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetSpirit",
+            "effect": "RevealFabrication",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "tailwind": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "ReachDelta": {
+                "forward": 0,
+                "all_directions": true,
+                "targeting_only": false
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "cartography": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 4,
+                "take": 0
+              }
+            },
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "open-sky": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "ReachDelta": {
+                "forward": 0,
+                "all_directions": true,
+                "targeting_only": false
+              }
+            },
+            "duration": "ThisRound"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "cold-spot": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetEnemySpirit",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "misstep": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetEnemySpirit",
+            "effect": {
+              "Displace": {
+                "MoveAny": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "dont-look": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetEnemySpirit",
+            "effect": {
+              "Restrict": "Engage"
+            },
+            "duration": "NextRound"
+          }
+        ]
+      }
+    ],
+    "night-falls-early": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "the-fog-of-elsewhere": [
+      {
+        "trigger": "OnPlay",
+        "condition": {
+          "CostAtMost": {
+            "cost": 3
+          }
+        },
+        "clauses": [
+          {
+            "selector": "TargetEnemySpirit",
+            "effect": "Bounce",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "hold-the-memory": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetFadingSpirit",
+            "effect": {
+              "Replace": "DelayFadeOneStep"
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "salt-and-honey": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetSpirit",
+            "effect": {
+              "RestoreForm": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "what-remains": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaPerBanishedAlly": {
+                "max": 3
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "second-farewell": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ReTriggerParting",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-returning": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "Recover",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "mend": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetSpirit",
+            "effect": {
+              "RestoreForm": {
+                "amount": 30
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "round": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetTwoAdjacentAllies",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "gather-in": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      },
+      {
+        "trigger": "OnPlay",
+        "condition": "YouControlABond",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "harvest-together": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaPerAdjacentAlliedPair": {
+                "max": 4
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "symphony": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 10
+              }
+            },
+            "duration": "ThisRound"
+          },
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "kindle": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "NextArrivalThisTurn",
+            "effect": {
+              "StatDelta": {
+                "attack": 20,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "reckless-charge": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "GrantEngage": {
+                "immediate": true,
+                "pre_chip": 0
+              }
+            },
+            "duration": "Instant"
+          },
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": -10
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "stoke": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "war-roar": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": {
+              "AlliesWithImprint": {
+                "imprint": "Beast"
+              }
+            },
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "eruption": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": {
+              "EnemiesAdjacentToAlliesOf": {
+                "resonance": "Fury"
+              }
+            },
+            "effect": {
+              "Damage": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "hold-fast": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 20,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "close-ranks": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetTwoAdjacentAllies",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "patience": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      },
+      {
+        "trigger": "AtFlow",
+        "condition": "OncePerMatch",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "stand-ground": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "Restrict": "BePushed"
+            },
+            "duration": "ThisRound"
+          },
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "Restrict": "Move"
+            },
+            "duration": "ThisRound"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-long-watch": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Warded"
+              }
+            },
+            "duration": "Permanent"
+          },
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Steadfast"
+              }
+            },
+            "duration": "Permanent"
+          },
+          {
+            "selector": "TargetSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 0,
+                "form": 20
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "deep-breath": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "quiet-step": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "Displace": {
+                "MoveAny": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "recollection": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "scrub-the-margin": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ImpressionRemoveTarget",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "trade-winds": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "BothNarrators",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-library-remembers": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "Recover",
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "CostDelta": {
+                "delta": -2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "whats-that": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetSpirit",
+            "effect": "RevealFabrication",
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 2,
+                "take": 0
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "again": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "NextArrivalThisTurn",
+            "effect": {
+              "SecondTargetEngage": {
+                "attack_penalty": -10
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "remember-them": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "DrawPerBanishedThisTurn": {
+                "max": 2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "hold-the-note": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetBondedPair",
+            "effect": {
+              "RestoreForm": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "behind-you": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetEnemySpirit",
+            "effect": {
+              "Displace": "Swap"
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "dig-in": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "TargetAllySpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Steadfast"
+              }
+            },
+            "duration": "ThisRound"
+          },
+          {
+            "selector": "TargetSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "duckling-following-anyone": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "AllImprintsShared"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "pigeon-carrying-a-message-never-delivered": [
+      {
+        "trigger": "OnBefriend",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "bee-far-from-the-hive": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAllyChoose",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "burr": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "stray-spark": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "gull-who-owns-the-pier": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "fellow-travelers": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Mobile"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "shared-horizon": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "ReachDelta": {
+                "forward": 1,
+                "all_directions": false,
+                "targeting_only": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "mutual-alibi": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "EnemiesEngagingAdjacentAllies",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "conspiracy": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "GrantEngage": {
+                "immediate": true,
+                "pre_chip": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "shared-umbrella": [
+      {
+        "trigger": "AtFlow",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "grief-split": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": "RedirectDamageToPartner",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "held-hands": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "promise": [
+      {
+        "trigger": "Static",
+        "condition": "OncePerMatch",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "Replace": "PartnerTakesIt"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "rivals-pact": [
+      {
+        "trigger": "Static",
+        "condition": "WhileDamaged",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "pack-tactics": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "GrantEngage": {
+                "immediate": false,
+                "pre_chip": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "shoulder-to-shoulder": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Steadfast"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "sworn-shields": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatShareHigher": {
+                "attack": false,
+                "defense": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "strangers-no-more": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "common-cause": [
+      {
+        "trigger": "OnDefeat",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "twin-telling": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "Exception": "PairSharesImprints"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "unbreakable": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "Exception": "BondHoldsUnlessSeparated"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-old-friendship": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "borrowed-courage": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatShareHigher": {
+                "attack": true,
+                "defense": false
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "stargazing-together": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "ReachDelta": {
+                "forward": 0,
+                "all_directions": true,
+                "targeting_only": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "race-you": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "the-long-walk": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "BondedPartner",
+            "effect": {
+              "RestoreForm": {
+                "amount": 30
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "call-and-answer": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "co-conspirators": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "oathbound": [
+      {
+        "trigger": "Static",
+        "condition": "PairAdjacent",
+        "clauses": [
+          {
+            "selector": "BondedPair",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Warded"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-overlook": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "ReachDelta": {
+                "forward": 0,
+                "all_directions": true,
+                "targeting_only": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-dimming": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-still-shore": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-trellis": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantAndAdjacentAllies",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "ashfield": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-old-wall": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 20,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "wellspring": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "high-ground": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "mire": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "old-tree": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "hearth": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "waystone": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "mirror-pool": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "beacon": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "RevealFabrication",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "crossroads": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Mobile"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "shrine-of-the-nameless": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "Exception": "FadingFuelIgnoresImprint"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "queen-of-the-quiet-garden": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "ThroughlineGrant": {
+                "attack": 10,
+                "defense": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "vale-eternal-the-standing-ovation": [
+      {
+        "trigger": "OnThroughlineComplete",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 2
+              }
+            },
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "roc-paramount-sky-entire": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "ReachDelta": {
+                "forward": 1,
+                "all_directions": false,
+                "targeting_only": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "oathkeeper-adamant": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Steadfast"
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "elder-of-the-unbroken-watch": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "arbiter-imperishable": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "Restrict": "BePushed"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "magistrate-of-masks": [
+      {
+        "trigger": "OnFabricationRevealed",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "warden-breaker-crowned-in-smoke": [
+      {
+        "trigger": "OnDefeatWarded",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 20,
+                "defense": 20,
+                "form": 0
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "herald-of-the-ill-intent": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "ImpressionPushDamage": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "whisperer-at-the-door": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "EngagerAttackDelta": {
+                "attack": -10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "elegist-wren": [
+      {
+        "trigger": "OnAllyPartsInReach",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "sage-of-and-then": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 2,
+                "take": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "matron-of-the-long-goodbye": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Exception": "EvolveArrivesBuffed"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "otterling-magus-keeper-of-five-lights": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Exception": "RitualsExtraTarget"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "duet-ascendant-both-halves": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "BondStatGrant": {
+                "attack": 0,
+                "defense": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "embermane-first-of-the-pride": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "MomentumMod": {
+                "first_engage_bonus": false,
+                "chain_while_defeating": true,
+                "per_link_bonus": 10,
+                "chain_no_retaliation": false
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "pyrrhic-the-laughing-brand": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "MomentumMod": {
+                "first_engage_bonus": false,
+                "chain_while_defeating": false,
+                "per_link_bonus": 0,
+                "chain_no_retaliation": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "badgermarshal-of-the-last-line": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "ChainDamageReductionAura": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "maestra-vole-conductor-of-small-things": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "CounterAura": {
+                "trait_name": "Chorus",
+                "max": 3
+              }
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "CounterAura": {
+                "trait_name": "Chorus",
+                "max": 1
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-confluence": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "faultline": [
+      {
+        "trigger": "OnAnyBanish",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "skylight": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "ReachDelta": {
+                "forward": 0,
+                "all_directions": true,
+                "targeting_only": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-bellows": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "rainpool": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "Exception": "PartingTriggersTwice"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "common-ground": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "Exception": "BondsFreeOnLandmark"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-long-shadow": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "CostDelta": {
+                "delta": -1
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-threshold": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "Restrict": "BePushed"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "false-dawn": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "hidden-vista": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "ReachDelta": {
+                "forward": 0,
+                "all_directions": true,
+                "targeting_only": true
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "the-unasked-question": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": "Bounce",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "loose-plank": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "bottomless-puddle": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "your-name-misheard": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "StatDelta": {
+                "attack": -20,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "NextRound"
+          }
+        ]
+      }
+    ],
+    "empty-chair": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "borrowed-time": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-letter-never-sent": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": -10,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          },
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "surprise-party": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 10
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "welcome-mat": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-long-table": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "smoke": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "buried-ember": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "Damage": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-provocation": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": "ExtraEngage",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "decoy-cairn": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-toll": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "AnimaDelta": {
+                "amount": -2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-door-that-holds": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "OccupantHere",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 20,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "nothing-really": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "NoEffect",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "loose-thread": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "paper-sentinel": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": "NoEffect",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "spare-memory": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "AnimaDelta": {
+                "amount": 2
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-perfect-lie": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": "TakeControl",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-blank-page": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": "TraitStrip",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "a-distant-light": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 2,
+                "take": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "short-fuse": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          },
+          {
+            "selector": "Engager",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "message-in-a-bottle": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "picnic-blanket": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "somethings-watching": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "standing-stones": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "foal-born-during-the-storm": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "GrowEachFlow": {
+                "step": 5,
+                "max": 20
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "vixen-reading-your-tracks": [
+      {
+        "trigger": "Static",
+        "condition": "WhileFaceDown",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "badger-mid-eviction": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "wolverine-wearing-a-trap": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "GrantKeyword": {
+                "keyword": "Steadfast"
+              }
+            },
+            "duration": "WhilePresent"
+          },
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "stormswell": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-spilled-sky": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "panic-unhosted": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "verdure-overrunning": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-crescendo": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "lumen-unbound": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-unlit": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-weeping-deep": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 20
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "verdict-absolute": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-undertow": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-front": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 20
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-doubt": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 20
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "nothing-approaching": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "greyrain": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "lament-unending": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 20
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "bedrock-risen": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-unmoved": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 20
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "orogeny": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-swelling-song": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RetaliationDelta": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "rillsong-tadpole": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-long-coronation": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "MomentumMod": {
+                "first_engage_bonus": false,
+                "chain_while_defeating": true
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "emberkit": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "PeekDeck": {
+                "look": 2,
+                "take": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-skys-whole-weight": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "ReachDelta": {
+                "forward": 1,
+                "all_directions": false,
+                "targeting_only": true
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "keyhole-spider": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Draw": {
+                "count": 1
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "the-patient-knife": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "what-waits-beneath": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "negative-space": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": -10,
+                "form": 0
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "lost-paragraph": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ManifestUnwrittenOnRim",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "let-it-lie": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "StopImpressionScoring",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-quiet-spreads": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ScheduleCalmTiles",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "a-mercy-for-the-rim": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ReleaseHeldRim",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "silence-spreads": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "SilenceLandmark",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-page-turns": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ShiftUnwrittenInward",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-vanishing-point": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EngagedEnemy",
+            "effect": {
+              "Displace": {
+                "Push": {
+                  "tiles": 1
+                }
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-last-warm-page": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ImpressionRemoveTarget",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "smear": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EngagedEnemy",
+            "effect": "TraitStrip",
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "nothing-you-did-was-wrong": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AllOtherSpirits",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "and-so-it-ends": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ImpressionRemoveTarget",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "spite": [
+      {
+        "trigger": "Parting",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Engager",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-devouring-margin": [
+      {
+        "trigger": "OnMove",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "ImpressionEat",
+            "duration": "Permanent"
+          },
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RestoreForm": {
+                "amount": 10
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "what-wants-you-gone": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EngagedEnemy",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": -20,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "the-unsaid-cruelty": [
+      {
+        "trigger": "OnDefeat",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemyChoose",
+            "effect": {
+              "Damage": {
+                "amount": 10
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "quiet-tide": [
+      {
+        "trigger": "AtFlow",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "RestoreForm": {
+                "amount": 50
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-mercy-itself": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": "Release",
+            "duration": "Permanent"
+          },
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": "Release",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-gnawing": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "NoEffect",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "tooth-in-the-margin": [
+      {
+        "trigger": "OnPlay",
+        "condition": "OncePerMatch",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "StatDelta": {
+                "attack": 20,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "the-kind-erasure": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemyChoose",
+            "effect": "Release",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-soft-close": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EnemiesAll",
+            "effect": "Release",
+            "duration": "Permanent"
+          },
+          {
+            "selector": "AlliesAll",
+            "effect": "Release",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-almost": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-smudge": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": "TraitSilence",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "null-choir": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": "TraitSilence",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-misremembered": [
+      {
+        "trigger": "OnEngageResolved",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "CopyPrintedStats",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "whats-its-name": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Restrict": "BeTargetedByRituals"
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "lacuna": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Restrict": "GainImpressions"
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "erasures-patience": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "AdjacentImpressionsDontScore"
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-ill-intent-hungers": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "ink-runs-dry": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "BothNarrators",
+            "effect": {
+              "CostDelta": {
+                "delta": 1
+              }
+            },
+            "duration": "ThisRound"
+          }
+        ]
+      }
+    ],
+    "white-out": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": "ImpressionRemoveTarget",
+            "duration": "Instant"
+          },
+          {
+            "selector": "Owner",
+            "effect": "ImpressionRemoveTarget",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "cirrus-first-of-rains": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "EnemiesAll",
+            "effect": "RevealFabrication",
+            "duration": "Instant"
+          }
+        ]
+      }
+    ],
+    "standard-bearer-of-the-burn": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": {
+              "AlliesWithImprint": {
+                "imprint": "Flame"
+              }
+            },
+            "effect": {
+              "StatDelta": {
+                "attack": 10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "colossus-of-the-kept-promise": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentAlliesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": 0,
+                "defense": 10,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "felis-umbra-the-borrowed": [
+      {
+        "trigger": "Static",
+        "condition": "WhileFaceDown",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": {
+              "StatDelta": {
+                "attack": -10,
+                "defense": 0,
+                "form": 0
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "grudge-kept": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "AttackPerEnemyImpression": {
+                "amount": 10
+              }
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-worst-version": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "CopyHighestEnemyAttack",
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-long-rest": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "NoImpressionOnAdjacentDissolve"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-closing-book": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "ImmuneToInterception"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "teethmarks": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "ImmuneToInterception"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-forgiven-debt": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "UnbanishableByEcho"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "what-you-set-down": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemyChoose",
+            "effect": "Bounce",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "ferrier-of-the-salt-road": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "Owner",
+            "effect": {
+              "Exception": "FadeReclaimsExtraAnima"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "footnote": [
+      {
+        "trigger": "OnUnwrite",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "MillTopDeck": {
+                "opponent": false
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "sentence-fragment": [
+      {
+        "trigger": "OnUnwrite",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "MillTopDeck": {
+                "opponent": true
+              }
+            },
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "hush": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "SuppressesAdjacentParting"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-lullaby": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "SuppressesAdjacentEnemyEcho"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "the-half-remembered": [
+      {
+        "trigger": "OnReveal",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "CopyLastPlayed",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-almost-said": [
+      {
+        "trigger": "OnEngageResolved",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": "CopyEngagerReach",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "the-unforgiving": [
+      {
+        "trigger": "Static",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "SelfSpirit",
+            "effect": {
+              "Exception": "StrikesIgnoreWarded"
+            },
+            "duration": "WhilePresent"
+          }
+        ]
+      }
+    ],
+    "you-were-never-really-here": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemyChoose",
+            "effect": "Banish",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ],
+    "i-too-can-create-desolation": [
+      {
+        "trigger": "OnPlay",
+        "condition": "Always",
+        "clauses": [
+          {
+            "selector": "AdjacentEnemiesAll",
+            "effect": "Banish",
+            "duration": "Permanent"
+          }
+        ]
+      }
+    ]
+  },
+  "pending": [],
+  "behavior": [
+    "ashmane-who-outran-the-ill-intent",
+    "cat-from-three-houses-down",
+    "crow-counting-strangers",
+    "dog-who-knows-the-way-home",
+    "dog-who-was-left",
+    "dust-where-a-door-was",
+    "forgotten-name",
+    "goat-on-the-roof",
+    "home-who-was-a-dog-once",
+    "hundredname-who-has-been-watching",
+    "margin-stalker",
+    "moth-around-someone-elses-lamp",
+    "mule-whos-been-promised-things-before",
+    "page-eater",
+    "pebble-underfoot",
+    "redacted-bear",
+    "stag-who-survived-the-painting-of-him",
+    "static",
+    "the-mountain-remembers",
+    "the-trailing-off",
+    "unwritten-wolf",
+    "coat-left-on-the-hook",
+    "glass-underfoot",
+    "knife-you-forgot-you-owned",
+    "letter-never-sent",
+    "name-on-the-tip-of-it",
+    "salt-in-the-wound",
+    "seat-kept-at-the-table",
+    "teeth-you-gave-it",
+    "the-almost-friend",
+    "the-cruelty-of-small-rooms",
+    "the-door-that-wont-open",
+    "the-grudge-that-outlived-him",
+    "the-long-held-breath",
+    "the-long-way-round",
+    "the-nail-that-catches",
+    "the-one-you-meant-to-call",
+    "the-score-unsettled",
+    "the-song-you-lost",
+    "the-worst-you-assumed",
+    "what-the-mirror-keeps",
+    "frost-on-the-inside",
+    "knuckle-on-the-table",
+    "last-one-to-leave",
+    "old-wound-reopened",
+    "photograph-face-down",
+    "spite-kept-warm",
+    "the-cold-shoulder",
+    "the-empty-chair",
+    "the-last-word",
+    "the-number-you-changed",
+    "the-slammed-door",
+    "the-turned-page",
+    "the-unanswered",
+    "the-worst-telling",
+    "voicemail-full",
+    "what-you-overheard"
+  ]
+}

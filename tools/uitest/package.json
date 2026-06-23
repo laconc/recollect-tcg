@@ -1,0 +1,16 @@
+{
+  "name": "recollect-uitest",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Quarantined Playwright UI/end-to-end harness for the Recollect web client. NOT part of the Rust cargo workspace under app/ — its Node deps must never touch the engine graph (mirrors how tools/cardpipe is its own root). Drives the BUILT site (make site -> dist/) in a real headless browser, automating the feasible checks from docs/manual_verification.md.",
+  "scripts": {
+    "test": "playwright test",
+    "test:update-snapshots": "playwright test --update-snapshots",
+    "report": "playwright show-report",
+    "install-browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/test": "1.61.0"
+  }
+}

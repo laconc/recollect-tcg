@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "recollect.name" . }}
+  labels: {{- include "recollect.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "recollect.name" . }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      name: http

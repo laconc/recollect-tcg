@@ -1,0 +1,5 @@
+# The project toolchain. CI, Docker, and dev machines all build on this.
+[toolchain]
+channel = "1.96.0"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown", "x86_64-unknown-linux-musl"]

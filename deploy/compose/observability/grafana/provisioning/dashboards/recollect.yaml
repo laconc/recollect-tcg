@@ -1,0 +1,26 @@
+# Recollect — Grafana dashboard provider (dashboards-as-code).
+#
+# Mounted into the otel-lgtm image's own provisioning dir at
+#   /otel-lgtm/grafana/conf/provisioning/dashboards/recollect.yaml
+# (see the deploy compose), beside the image's stock providers — so Grafana loads OUR three
+# dashboards on top of the image's RED/JVM ones. It points at the SEPARATE dashboards dir that the
+# compose mounts at /var/lib/grafana/dashboards/recollect (Grafana requires the provider yaml and
+# the dashboard JSON to live in different directories).
+#
+# `allowUiUpdates: false` keeps the JSON in the repo the source of truth — the dashboards are
+# read-only in the UI, never clicked together. `foldersFromFilesStructure: false` + a fixed `folder`
+# files them all under one "Recollect" folder.
+apiVersion: 1
+
+providers:
+  - name: Recollect
+    orgId: 1
+    folder: Recollect
+    folderUid: recollect
+    type: file
+    disableDeletion: false
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards/recollect
+      foldersFromFilesStructure: false

@@ -1,0 +1,29 @@
+[package]
+name = "recollect-ffi"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "D-25: UniFFI bindings over recollect-core — one engine, native iOS/Android shells. JSON across the FFI boundary (the wasm LocalGame shape), so the binding surface stays small and the rules stay in core."
+
+[lib]
+# cdylib for the native artifact uniffi-bindgen reads; lib so the workspace can
+# unit-test the game logic on the host.
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+recollect-core = { path = "../recollect-core" }
+recollect-protocol = { path = "../recollect-protocol" }
+recollect-bot = { path = "../recollect-bot" }
+serde_json = { workspace = true }
+# `cli` enables the bundled `uniffi-bindgen` entrypoint (the bin below).
+uniffi = { workspace = true, features = ["cli"] }
+
+# Generates the Swift/Kotlin/etc. bindings from the built cdylib:
+#   cargo run -p recollect-ffi --bin uniffi-bindgen -- \
+#     generate --library target/debug/librecollect_ffi.dylib --language kotlin --out-dir <dir>
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
+[lints]
+workspace = true

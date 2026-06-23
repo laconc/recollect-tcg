@@ -1,0 +1,34 @@
+[package]
+name = "recollect-journal-postgres"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "Postgres journal + accounts. Today: a durable RECORD of events and accounts behind the in-memory engine; becomes the authoritative journal at the Ironstate family swap (journal_contract_test! is the bar)."
+
+[dependencies]
+tokio = { workspace = true }
+tokio-postgres = { workspace = true }
+rand = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+# The async authoritative journal: AsyncStore + execute_async over ironstate's
+# Journal contract (prepare/commit/abort). Lean in production — proptest/
+# stablehash/sim stay test-only (below).
+ironstate-aggregate = { workspace = true }
+ironstate-journal = { workspace = true }
+postcard = { workspace = true }
+serde = { workspace = true }
+
+# Test-only: the seven-property journal contract is run against a SYNC `Journal`
+# twin over the real PG schema, and async loop tests against a live database.
+[dev-dependencies]
+ironstate = { workspace = true }
+ironstate-aggregate = { workspace = true, features = ["stablehash", "proptest"] }
+ironstate-journal = { workspace = true, features = ["sim"] }
+postgres = { workspace = true }
+proptest = { workspace = true }
+
+[lints]
+workspace = true

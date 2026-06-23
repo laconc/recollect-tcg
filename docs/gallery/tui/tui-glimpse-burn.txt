@@ -1,0 +1,27 @@
+
+══ Round 1/12 · Seat A to act ·  ══
+5 [   ..   ][   ..   ][   ..   ][   ..   ][   ..   ]
+4 [   ..   ][   ..   ][   ..   ][   ..   ][   ..   ]
+3 [        ][        ][        ][        ][        ]
+2 [   ::   ][   ::   ][   ::   ][   ::   ][   ::   ]
+1 [   ::   ][   ::   ][   ::   ][   ::   ][   ::   ]
+   a         b         c         d         e      (:: yours · .. theirs · ~ fading · ^ can evolve · ! Echo · ° held/lamplit · ⌂ landmark · ▒ fabrication · ░ dusk)
+(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)
+Score if Nightfall struck now: A 0 — B 0
+You: 2 anima (your play budget — no fixed action count; End Turn when ready) · deck 14 · hand:
+   0. Arbiter Imperishable   3c 30/25/60 Cross Resolve
+   1. Frenzy Kit             2c 45/ 5/50 Cross Fury
+   2. Embermane, First of the Pride 3c 60/ 5/50 Lance Fury
+   3. Surprise Party         1c  0/ 0/ 0 Cross Harmony
+   4. Strider of the Far Blue 3c 45/20/65 Cross Wonder
+   5. Wrong-Way Skylark      2c 45/10/40 Wide Wonder
+Them: 0 anima · hand 5 · deck 15
+
+Legal tellings:
+    0. Burn Arbiter Imperishable to glimpse
+    1. Burn Frenzy Kit to glimpse
+    2. Burn Embermane, First of the Pride to glimpse
+    3. Burn Surprise Party to glimpse
+    4. Burn Strider of the Far Blue to glimpse
+    5. Burn Wrong-Way Skylark to glimpse
+  (type a number to act · or a verb: p/o/m/v/dv/rc/g/r/end · 'i N' inspect hand card N · 'i <tile>' e.g. 'i c3' inspect a board card)

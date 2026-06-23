@@ -1,0 +1,282 @@
+# Recollect — DEPLOY stack (the lean §10.1 launch host).
+#
+# Runs on ONE free-tier EC2 box, brought up by cloud-init (see ../pulumi/user-data.sh):
+#   postgres          on-box durable journal + usage_events (DATABASE_URL targets it)
+#   site-builder      one-shot: builds the static site + wasm client into the shared `site` volume
+#   recollect-server  the axum ws/REST server (the --profile dist image) — ALSO serves the static
+#                     site from the same origin (STATIC_DIR=/srv), so there is no separate proxy.
+#                     PRODUCTION PULLS this image from ECR (CI built + pushed it); it is NOT built
+#                     on-box (the box is a 1 GB micro). See the IMAGE_REF split below.
+#   cloudflared       the named Cloudflare Tunnel (dials OUT; no inbound ports on the box)
+#
+# Why no Caddy/nginx: the axum server serves the built site itself via STATIC_DIR (tower-http
+# ServeDir, gated on the env var). One process serves the page, its wasm, and the wss socket —
+# true single origin (tech-design §10.1: same-origin wss, no CORS), and one fewer container on
+# the 1 GB free tier. cloudflared proxies your-domain.com → http://server:8080 directly.
+#
+# BUILD vs PULL (the FOUNDATION/PLATFORM split — see deploy/README.md):
+#   • PRODUCTION pulls the server image. cloud-init sets IMAGE_REF to the ECR ref CI pushed
+#     (<acct>.dkr.ecr.<region>.amazonaws.com/recollect-server:<gitRef>) and runs `compose pull`
+#     + `up -d` — NO --build. The instance role grants ECR read-only. The on-box Rust build is
+#     RETIRED for prod.
+#   • LOCAL / SMOKE build the server image. `make deploy-local` / `make deploy-smoke` layer the
+#     BUILD overlay (docker-compose.build.yml), which adds the server `build:` block back and tags
+#     it the local IMAGE_REF default (recollect-server:deploy), so a laptop needs no ECR.
+#   The site-builder ALWAYS builds on-box (prod + local): it bakes the per-deploy origin + analytics
+#   beacon, is cheap, and is not an ECR artifact (only the server image is).
+#
+# This is the DEPLOY compose — distinct from the repo-root docker-compose.yml, which is the
+# DEV stack (postgres + grafana/otel-lgtm + a locally-built server, `make up`). It points at
+# on-box Postgres (no RDS — the maintainer's playtest override of §10.1). The site-builder's build
+# context is the REPO ROOT (cloud-init clones the repo, so `../..` from here is the repo root):
+#   docker compose --project-directory <repo> -f deploy/compose/docker-compose.deploy.yml pull
+#   docker compose --project-directory <repo> -f deploy/compose/docker-compose.deploy.yml up -d
+#
+# Self-hosted observability (tech-design §11): an `lgtm` (grafana/otel-lgtm) all-in-one container —
+# Grafana + Tempo + Loki + Prometheus/Mimir + an OTel collector — receives the server's OTLP and is
+# reached at grafana.<domain> ONLY through a Cloudflare Access-gated tunnel route (never public). A
+# tiny `node-exporter` sidecar feeds the host/box dashboard; a `blackbox` exporter sidecar runs the
+# SYNTHETIC PROBES (active HTTP/TCP checks that the service is up), scraped by Prometheus on a
+# schedule, with Grafana ALERT RULES that page when a probe is down for N minutes. All persist under
+# /data/observability on the durable EBS volume, run at SHORT retention to bound storage (~1-2 GB),
+# and lean on the box's 4 GB swap for headroom on the 1 GB free tier. Dashboards AND alerting are
+# provisioned AS CODE from ./observability (no real alert endpoint is committed — placeholders only).
+#
+# Secrets/config come from a .env file cloud-init writes beside the repo (see user-data.sh):
+#   IMAGE_REF           the server image to RUN. Prod: the ECR ref CI pushed (the box pulls it).
+#                       Local/smoke: defaults to recollect-server:deploy (the build overlay tags it).
+#   POSTGRES_PASSWORD   on-box Postgres superuser password (Pulumi secret)
+#   TUNNEL_TOKEN        the Cloudflare Tunnel connector token (Pulumi-created, injected)
+#   OTEL_EXPORTER_OTLP_ENDPOINT   optional; unset ⇒ the on-box lgtm at http://lgtm:4317 (the §11
+#                                 self-hosted default). Set it (e.g. a Grafana Cloud OTLP URL) to
+#                                 export OFF-box instead.
+#   CF_BEACON_TOKEN     optional; Cloudflare Web Analytics beacon token (baked into the site <head>)
+#   SITE_ORIGIN         the public origin baked into the play client (e.g. https://your-domain.com)
+#   SOURCE_URL          optional; the source repo URL stamped as the server image's OCI source label
+#                       (provenance only, the BUILD overlay only — prod's image is labelled by CI).
+#                       Defaults to a generic placeholder. NOT deployment-critical — purely a label.
+#   GIT_REF             the commit/tag the box deployed (the BUILD overlay's image labels; prod's
+#                       image is already labelled by CI with the building SHA).
+#   OBS_DATA_DIR        observability data root (default /data/observability on the box; the local
+#                       overlay scales the stack to zero so it is unused there)
+#   PROM_RETENTION      Prometheus metrics retention (default 14d) — the dominant storage cost; an
+#                       effective --extra-args knob. Loki (7d) + Tempo (3d) retention live in the
+#                       mounted observability/{loki,tempo}/*.yaml configs (they need a compactor).
+name: recollect
+
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: recollect
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: recollect
+    # Postgres 18+ wants /var/lib/postgresql mounted (data lands in a subdir). On the box this is a
+    # HOST BIND MOUNT onto the DURABLE, SEPARATE EBS data volume (mounted at /data by cloud-init;
+    # default ${PG_DATA_DIR}=/data/postgres) — so the journal + accounts survive instance
+    # termination/recreation, NOT an anonymous/named local volume that lives only as long as the box.
+    # The local overlay (docker-compose.local.yml) points PG_DATA_DIR at a named volume instead, so a
+    # laptop run needs no /data mount. cloud-init pre-creates the dir owned 70:70 (the alpine pg uid).
+    volumes: ["${PG_DATA_DIR:-/data/postgres}:/var/lib/postgresql"]
+    # No published ports: only the server (same compose network) talks to it. Block privilege
+    # escalation (always safe); caps are kept because first-boot `initdb` needs CHOWN/SETUID/SETGID.
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recollect"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: build the static site (site/*.html + the wasm play client under /client/) into the
+  # shared `site` volume the server serves. Exits 0 when done; `restart: "no"` so it doesn't loop.
+  # The play client's server origin and the Cloudflare Web Analytics beacon are baked in here.
+  site-builder:
+    image: recollect-site-builder:deploy
+    build:
+      context: ../..
+      dockerfile: deploy/compose/Dockerfile.site
+      args:
+        # The real origin comes from .env (cloud-init writes SITE_ORIGIN from your `domain`); the
+        # fallback is a generic placeholder so no real domain is committed. The bake itself is
+        # origin-agnostic (the client targets window.location.origin) — this is only a human label.
+        SITE_ORIGIN: ${SITE_ORIGIN:-https://your-domain.com}
+        # The PUBLIC Cloudflare Web Analytics site tag (ships in every page's <head>).
+        CF_WEB_ANALYTICS_TAG: ${CF_BEACON_TOKEN:-}
+    restart: "no"
+    volumes:
+      - site:/out
+
+  server:
+    # PRODUCTION PULLS, never builds. IMAGE_REF is the image the box runs: on the real box cloud-init
+    # writes it as the ECR ref (<acct>.dkr.ecr.<region>.amazonaws.com/recollect-server:<gitRef>) that
+    # CI built + pushed, so the box `docker compose pull`s it (instance role: ECR read-only) instead
+    # of compiling Rust on a 1 GB micro. The default is a LOCAL tag so a bare `compose … up --build`
+    # (and the build overlay) still works for laptop/smoke runs. The on-box server BUILD is retired
+    # for production — see docker-compose.build.yml (the build overlay) + deploy/README.md "FOUNDATION".
+    image: ${IMAGE_REF:-recollect-server:deploy}
+    restart: unless-stopped
+    environment:
+      # On-box Postgres ⇒ Postgres-authoritative (append-before-ack, resume-from-journal).
+      DATABASE_URL: postgres://recollect:${POSTGRES_PASSWORD:?}@postgres:5432/recollect
+      # OTLP export → the on-box self-hosted lgtm stack by DEFAULT (the §11 self-hosted launch
+      # posture). Override OTEL_EXPORTER_OTLP_ENDPOINT in .env to ship OFF-box (e.g. Grafana Cloud);
+      # set it to empty there to get JSON logs only. The exporter is fire-and-forget — if lgtm is
+      # down the batch exporters just drop, the server is unaffected (hence no depends_on lgtm).
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://lgtm:4317}
+      BIND_ADDR: 0.0.0.0:8080
+      # Serve the built site from this same origin (the site-builder writes it here).
+      STATIC_DIR: /srv
+      RUST_LOG: ${RUST_LOG:-info}
+    # No published ports: cloudflared reaches it over the compose network; the world reaches it
+    # only through the tunnel. The distroless image has no shell, so liveness is covered by
+    # cloudflared's origin checks + the /healthz route (and `restart: unless-stopped`).
+    volumes:
+      - site:/srv:ro
+    # Container hardening (the §9 row-10 posture the Helm chart enforces, mirrored for the launch
+    # host): the server writes NOTHING to its own rootfs (it reads /srv ro and dials Postgres), so
+    # a read-only root + all caps dropped + no privilege escalation is the strongest safe posture
+    # for the one internet-facing process.
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      site-builder:
+        condition: service_completed_successfully
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.1
+    restart: unless-stopped
+    # `tunnel run` with a connector token: no config file, no inbound ports — cloudflared
+    # dials out to Cloudflare and the named Tunnel's ingress rule (set by Pulumi) routes
+    # your-domain.com → http://server:8080. metrics on :2000 stay internal. TUNNEL_TOKEN is
+    # plain (not `:?`) so the local overlay can disable cloudflared without supplying one;
+    # cloudflared exits with a clear error if it's empty, and user-data.sh requires it for deploy.
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 run --token ${TUNNEL_TOKEN:-}
+    # Hardening: the connector dials out and needs no caps, no privilege escalation, and writes
+    # nothing persistent. Read-only root with a small tmpfs for /tmp keeps it locked down.
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      - server
+
+  # --- Self-hosted observability (tech-design §11) ----------------------------------------------
+  # The grafana/otel-lgtm all-in-one: Grafana (UI :3000) + Tempo (traces) + Loki (logs) +
+  # Prometheus/Mimir (metrics) + an OTel collector, OTLP in on :4317 (gRPC) / :4318 (http). The
+  # server points OTEL_EXPORTER_OTLP_ENDPOINT here; cloudflared routes grafana.<domain> → :3000
+  # behind a Cloudflare Access gate (Pulumi). No published ports — the world reaches Grafana ONLY
+  # through the Access-gated tunnel; OTLP + UI stay on the compose network.
+  lgtm:
+    image: grafana/otel-lgtm:0.28.0
+    restart: unless-stopped
+    environment:
+      # SHORT retention bounds storage on the small box (~1-2 GB total). Prometheus' TSDB is the
+      # dominant cost and its --extra-args retention IS effective (it drops old blocks). Loki + Tempo
+      # retention needs a COMPACTOR, so those are set in the mounted configs below (a period alone
+      # doesn't delete) — see observability/{loki,tempo}/*.yaml.
+      PROMETHEUS_EXTRA_ARGS: "--storage.tsdb.retention.time=${PROM_RETENTION:-14d}"
+      # Grafana is anonymous-Admin (the otel-lgtm default) — SAFE here ONLY because Cloudflare
+      # Access authenticates every request before it reaches the tunnel; nothing public can hit it.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      # OBS_GRAFANA_DOMAIN comes from .env (cloud-init writes it from your `domain`); the fallback is
+      # a generic placeholder so no real domain is committed.
+      GF_SERVER_ROOT_URL: "https://grafana.${OBS_GRAFANA_DOMAIN:-your-domain.com}"
+      GF_USERS_DEFAULT_THEME: "dark"
+    volumes:
+      # Durable: Grafana state + the metrics/logs/traces stores live on /data (the EBS volume), so
+      # dashboards/datasources and history survive a container or box recreate. cloud-init creates
+      # ${OBS_DATA_DIR} (default /data/observability) owned by the lgtm uid before `up`.
+      - "${OBS_DATA_DIR:-/data/observability}:/data"
+      # Dashboards-as-code: the provider yaml goes beside the image's own providers; the dashboard
+      # JSON goes where the provider points (a SEPARATE dir, as Grafana requires). Both read-only.
+      - "./observability/grafana/provisioning/dashboards/recollect.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/recollect.yaml:ro"
+      - "./observability/grafana/dashboards:/var/lib/grafana/dashboards/recollect:ro"
+      # Alerting-as-code: the synthetic-monitoring alert rules + the contact-point/notification-policy
+      # (placeholders — NO real endpoint in git). Grafana reads every file in conf/provisioning/alerting
+      # at boot; these alert when a Blackbox probe (below) reports the service down for N minutes.
+      - "./observability/grafana/provisioning/alerting:/otel-lgtm/grafana/conf/provisioning/alerting:ro"
+      # Custom backend configs (upstream + retention/scrape additions): prometheus.yaml adds the
+      # node-exporter + the Blackbox synthetic-probe scrape jobs; loki/tempo add compactors so
+      # retention actually deletes. Keep in sync with upstream on an otel-lgtm bump (each file docs
+      # exactly what we added).
+      - "./observability/prometheus/prometheus.yaml:/otel-lgtm/prometheus.yaml:ro"
+      - "./observability/loki/loki-config.yaml:/otel-lgtm/loki-config.yaml:ro"
+      - "./observability/tempo/tempo-config.yaml:/otel-lgtm/tempo-config.yaml:ro"
+      # EXTERNAL synthetic-probe targets (file-SD for the blackbox-https-external job). The dir is
+      # EMPTY of live targets in git (only a .yaml.example template the *.yaml glob skips) ⇒ zero
+      # external targets ⇒ inert until render-external-targets.sh writes the gitignored public-edge.yaml
+      # here from your domain. No real domain is committed. See observability/prometheus/prometheus.yaml.
+      - "./observability/prometheus/external-targets:/etc/prometheus/external-targets:ro"
+    # Hardening: drop all caps + block privilege escalation. NOT read_only — Grafana/Prometheus/
+    # Loki/Tempo each write working state under /data and their own runtime dirs, and the image's
+    # supervisor writes pid/log files on its rootfs; a read-only root breaks startup. The writable
+    # surface is the bind-mounted /data (durable) + the container's own ephemeral rootfs, with no
+    # extra Linux capabilities. (The §9 read-only posture is applied where feasible — the server +
+    # cloudflared — and deliberately relaxed for this multi-process image.)
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      - node-exporter
+      - blackbox
+
+  # A tiny Prometheus node-exporter for the host/box dashboard (CPU/mem/swap/disk). It reads the
+  # host's /proc, /sys, and root fs READ-ONLY and exposes :9100 on the compose network, scraped by
+  # lgtm's Prometheus (see observability/prometheus/prometheus.yaml). ~15-25 MB RSS — comfortably
+  # inside the swap-backed headroom. No published port; only lgtm scrapes it.
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    restart: unless-stopped
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/host/root"
+      # Ignore pseudo/virtual filesystems so the filesystem panels show real mounts (/ and /data).
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|run)($$|/)"
+    pid: host
+    volumes:
+      - "/proc:/host/proc:ro"
+      - "/sys:/host/sys:ro"
+      - "/:/host/root:ro,rslave"
+    # Hardening: read-only root, no caps, no privilege escalation. node-exporter needs only to READ
+    # the host pseudo-filesystems mounted above; it writes nothing.
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+
+  # --- Synthetic monitoring: the Prometheus Blackbox exporter -----------------------------------
+  # Actively PROBES the live service on the scrape schedule (vs. the passive app metrics the server
+  # pushes). lgtm's Prometheus scrapes blackbox:9115/probe with ?module=&target= (the relabel jobs in
+  # observability/prometheus/prometheus.yaml); the exporter runs the HTTP/TCP check and returns
+  # probe_success (1/0). The committed probes are INTERNAL deep checks over the compose network —
+  # the game server's /healthz, the static site index, and a TCP connect to the ws origin :8080 — so
+  # nothing public/deployment-unique is needed. An EXTERNAL https-edge job (blackbox-https-external)
+  # also exists for the full DNS→Cloudflare→Tunnel path, but is domain-configurable + INERT by default
+  # (its targets come from a file-SD dir that is empty in git — no real domain committed; see
+  # prometheus.yaml + docs/observability.md §5.1). Grafana alert rules (provisioning/alerting/) page
+  # when a probe is down for N minutes — internal + external rules are SEPARATE so an operator can
+  # tell 'app down' from 'edge/Tunnel/DNS down'. ~10-20 MB RSS — trivially inside the swap-backed
+  # headroom. No published port; only lgtm's Prometheus reaches it.
+  blackbox:
+    image: prom/blackbox-exporter:v0.27.0
+    restart: unless-stopped
+    # Replace the image's stock config with ours (every probe module explicit + IPv4-pinned).
+    command: ["--config.file=/etc/blackbox_exporter/config.yml"]
+    volumes:
+      - "./observability/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro"
+    # Hardening: read-only root, no caps, no privilege escalation. The exporter only opens outbound
+    # probe sockets and serves /probe; it writes nothing to its rootfs.
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+
+# Only the one-shot site build needs a Docker-managed volume now. Postgres' data AND the
+# observability stack's data live on HOST BIND MOUNTS onto the durable EBS volume (/data/postgres,
+# /data/observability), NOT named volumes — that's what makes them survive the box. The local
+# overlay reintroduces a `pgdata` named volume and scales the observability services to zero.
+volumes:
+  site:

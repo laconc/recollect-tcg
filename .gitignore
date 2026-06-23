@@ -1,0 +1,27 @@
+.claude
+# Cargo build output (the workspace lives in app/).
+app/target/
+target/
+dist/
+*.zip
+# Local ops + tooling
+backups/
+.cache/
+# Python bytecode cache (the site generators in tools/ now share a module)
+__pycache__/
+*.pyc
+# Secrets env file — the deploy writes /opt/recollect/.env (Postgres password, tunnel token)
+# INTO the cloned repo working tree on the box. Never let it be committed (defense in depth;
+# it is 0600 root-only there). Local .env files (compose, dev) are excluded for the same reason.
+.env
+.env.*
+!.env.example
+# External synthetic-probe targets — render-external-targets.sh writes the LIVE public-edge.yaml here
+# from the deployment-unique domain (which is NEVER committed). Keep the live file out of git; the
+# tracked tree holds only the .yaml.example template + .gitkeep, so the external probes stay inert.
+deploy/compose/observability/prometheus/external-targets/*.yaml
+# Per-dev opt-in build config (lld linker, etc.) — see app/.cargo/config.toml.example
+app/.cargo/config.toml
+# Editor / OS cruft
+.idea/
+.DS_Store

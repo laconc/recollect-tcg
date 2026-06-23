@@ -1,0 +1,60 @@
+# Recollect — Grafana unified-alerting CONTACT POINTS + notification policy (provisioned as code).
+#
+# Mounted into the otel-lgtm image's Grafana provisioning dir at
+#   /otel-lgtm/grafana/conf/provisioning/alerting/contactpoints.yaml
+# (see deploy/compose/docker-compose.deploy.yml). Grafana 13 reads every file under
+# conf/provisioning/alerting/ at boot. This file defines WHERE a firing alert goes; the sibling
+# recollect-alerts.yaml defines WHAT fires. Together: a probe down for N minutes → this contact point.
+#
+# CONFIG HYGIENE (AGENTS.md): NO real endpoint is committed. The webhook URL and the alert email are
+# PLACEHOLDERS. The on-box copy is the only place a real destination should ever live — set it there
+# (or, better, template it from Pulumi/.env at deploy time on YOUR fork) and keep this git file a
+# placeholder. Until a real destination is wired, alerts still FIRE and are visible in Grafana
+# (Alerting → Alert rules / Active notifications) and on the dashboards; they just don't egress.
+#
+# `apiVersion: 1`. Provisioned contact points are read-only in the UI (the file is the source of
+# truth); edit the file + restart Grafana (or re-provision) to change them.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: recollect-oncall # referenced by the notification policy below + the alert rules' route
+    receivers:
+      # --- Webhook (placeholder) -------------------------------------------------------------------
+      # The primary machine destination. Point this at YOUR incident webhook (PagerDuty Events v2,
+      # Opsgenie, a Slack/Discord incoming webhook, an Alertmanager, a custom receiver, …). The
+      # example.invalid host is RFC-2606 reserved and never resolves, so a stray deploy can't leak to
+      # a real third party. Replace it on the box only.
+      - uid: recollect-webhook
+        type: webhook
+        disableResolveMessage: false
+        settings:
+          url: https://hooks.example.invalid/recollect-alerts # PLACEHOLDER — set on the box
+          httpMethod: POST
+        # If your webhook needs a secret/token, prefer Grafana's secureSettings or an env-templated
+        # value injected on the box (NOT committed): e.g. an `Authorization` header via the
+        # webhook's `authorization_credentials`. Left unset here so nothing secret is in git.
+
+      # --- Email (placeholder) ---------------------------------------------------------------------
+      # A human fallback. Grafana only sends email if the box's Grafana SMTP is configured
+      # (GF_SMTP_ENABLED=true + host/user/pass) — which the otel-lgtm image does NOT set by default,
+      # so this is inert until you wire SMTP on the box. The address is a placeholder.
+      - uid: recollect-email
+        type: email
+        disableResolveMessage: false
+        settings:
+          addresses: alerts@example.invalid # PLACEHOLDER — set on the box (maintainerEmail-style)
+          singleEmail: false
+
+# The notification policy: route everything to the recollect-oncall contact point, and group by
+# alertname + the `probe` label so each synthetic alert — the internal ones (server-healthz,
+# site-index, ws-origin) AND the external edge ones (public-site, public-game, public-tls) — notifies
+# independently but de-dupes its own re-fires. Throttle re-notification so a sustained outage doesn't
+# spam. (The external alerts stay inert until a domain is set, so they never notify on a clean clone.)
+policies:
+  - orgId: 1
+    receiver: recollect-oncall
+    group_by: ["alertname", "probe"]
+    group_wait: 30s # wait this long to batch the first notification of a new group
+    group_interval: 5m # min spacing between notifications for an existing group with new alerts
+    repeat_interval: 4h # re-notify an still-firing group at most this often

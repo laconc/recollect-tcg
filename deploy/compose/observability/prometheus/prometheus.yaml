@@ -1,0 +1,184 @@
+# Recollect — Prometheus config for the on-box LGTM stack (mounted at /otel-lgtm/prometheus.yaml).
+#
+# BASE: a faithful copy of grafana/otel-lgtm:0.28.0's /otel-lgtm/prometheus.yaml (verbatim).
+# WE ADDED EXACTLY THREE THINGS beyond upstream (all inside one added `scrape_configs:` block):
+#   1. a `node-exporter` job (target node-exporter:9100) — the host/box dashboard
+#      (CPU/mem/swap/disk) is fed by the prom/node-exporter sidecar in the deploy compose.
+#   2. the INTERNAL SYNTHETIC-MONITORING jobs — `blackbox-{http,tcp}-*` jobs that scrape the
+#      blackbox-exporter sidecar's `/probe` endpoint to actively check the service is up OVER THE
+#      COMPOSE NETWORK (the game server's /healthz answers, the static site loads, the ws origin
+#      accepts TCP). They use the standard blackbox relabel pattern: each scrape's real target is the
+#      THING PROBED (under `__param_target`), Prometheus rewrites the address to the exporter
+#      (blackbox:9115), and the exporter performs the HTTP/TCP check and returns `probe_success`
+#      (1/0) + timing/TLS series. Grafana alert rules (observability/grafana/provisioning/alerting/)
+#      alert on `probe_success == 0` for N minutes.
+#   3. the EXTERNAL synthetic job — `blackbox-https-external` — which probes the PUBLIC https URLs
+#      (the static site on apex/www + the game on play.<domain>/healthz) THROUGH the Cloudflare edge,
+#      to catch Tunnel-down / DNS-broken / TLS-expired that the internal jobs cannot see. It is
+#      domain-configurable + INERT by default: its targets come from `external-targets/*.yaml` via
+#      file-SD, a dir that is empty of live targets in git (no real domain committed). See that job
+#      below + docs/observability.md §5.1 for the internal-vs-external split.
+#   Upstream ships NO scrape_configs (it is an OTLP-receiver-only Prometheus, started with
+#   --web.enable-otlp-receiver in run-prometheus.sh). The server's app metrics still arrive via OTLP
+#   push; these jobs are the pull-scrapes for node-exporter + the synthetic probes.
+#   (A `scrape_interval` is also added under `global` so the pull jobs have a cadence.)
+#
+# NOT set here (deliberately): retention. Metrics retention is the dominant storage cost and is set
+# effectively via PROMETHEUS_EXTRA_ARGS=--storage.tsdb.retention.time=${PROM_RETENTION:-14d} in the
+# compose (it appends to run-prometheus.sh's flags and DROPS old TSDB blocks). A retention key does
+# not belong in this scrape-config file. Keep this file in sync with upstream on an otel-lgtm bump:
+# re-pull /otel-lgtm/prometheus.yaml and re-apply just the additions marked "RECOLLECT ADDITION".
+---
+global:
+  scrape_native_histograms: true
+  # RECOLLECT ADDITION: a scrape cadence for the node-exporter job below (upstream had none — it
+  # only received OTLP, never scraped). 30s is plenty for a single-box host dashboard.
+  scrape_interval: 30s
+otlp:
+  keep_identifying_resource_attributes: true
+  # Recommended attributes to be promoted to labels.
+  promote_resource_attributes:
+    - service.instance.id
+    - service.name
+    - service.namespace
+    - service.version
+    - cloud.availability_zone
+    - cloud.region
+    - container.name
+    - deployment.environment # backward compatibility
+    - deployment.environment.name
+    - k8s.cluster.name
+    - k8s.container.name
+    - k8s.cronjob.name
+    - k8s.daemonset.name
+    - k8s.deployment.name
+    - k8s.job.name
+    - k8s.namespace.name
+    - k8s.node.name
+    - k8s.pod.name
+    - k8s.replicaset.name
+    - k8s.statefulset.name
+    - host.name
+    - postgresql.database.name
+    - postgresql.schema.name
+    - postgresql.table.name
+    - postgresql.index.name
+    - database # used by otelcol/receiver/mongodb
+    - kafka.cluster.alias
+storage:
+  tsdb:
+    # A 10min time window is enough because it can easily absorb retries and network delays.
+    out_of_order_time_window: 10m
+
+# --- RECOLLECT ADDITION (not in upstream otel-lgtm 0.28.0) ------------------------------------
+# The scrape targets on the box: the node-exporter sidecar (host CPU/mem/swap/disk) + the SYNTHETIC
+# probes (via the blackbox-exporter sidecar). Everything else (the server's app metrics) arrives over
+# OTLP push, not scraped. All targets are on the compose network with no published ports — only
+# Prometheus (inside the lgtm container) reaches them.
+scrape_configs:
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          instance: recollect-box
+
+  # --- Synthetic monitoring (Blackbox exporter) ------------------------------------------------
+  # The blackbox relabel pattern (the upstream-recommended shape): the job lists the things to PROBE
+  # as `targets`; relabeling moves each into the `target` URL param, sets the metrics path to /probe
+  # with the module, and rewrites `__address__` to the exporter so the SCRAPE hits blackbox:9115 but
+  # the PROBE hits the listed target. `instance` is relabeled to the probed target so alerts/series
+  # name what was checked. Emits `probe_success` (1 up / 0 down) + `probe_duration_seconds` etc.
+  #
+  # INTERNAL deep checks (compose-network, no public domain ⇒ committed as-is): these catch the
+  # highest-value failures — the app process being down / not serving / the DB-backed server wedged —
+  # which an edge health check can't distinguish from a transient edge blip. Probed every 30s.
+  - job_name: blackbox-http-internal
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          # The game server's liveness/readiness route (a 200 means axum is up AND serving).
+          - http://server:8080/healthz
+        labels:
+          probe: server-healthz
+      - targets:
+          # The static site landing page, served by the SAME server from STATIC_DIR (so this also
+          # confirms the site-builder's output is being served at the single origin).
+          - http://server:8080/
+        labels:
+          probe: site-index
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  # The WebSocket ORIGIN as a TCP-connect probe: a successful connect to the server's :8080 proves
+  # the ws listener accepts connections (the wss upgrade for /matches/{id}/ws rides this port).
+  - job_name: blackbox-tcp-ws-origin
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+          - server:8080
+        labels:
+          probe: ws-origin
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  # EXTERNAL edge checks (the FULL public path) — DOMAIN-CONFIGURABLE, INERT until a domain is set.
+  # ----------------------------------------------------------------------------------------------
+  # The internal jobs above hit `http://server:8080/…` over the compose network — they bypass the
+  # edge, so they CANNOT see a Tunnel-down / DNS-broken / TLS-expired failure (the server is fine;
+  # the path to it is not). This job probes the PUBLIC https URLs a real player hits, exercising the
+  # whole chain — DNS → Cloudflare edge TLS → (the static SITE on Cloudflare Pages | the GAME server
+  # through the named Tunnel) → the origin — and records `probe_ssl_earliest_cert_expiry` for the
+  # TLS-expiry alert. Internal-up + external-down localizes the fault to the edge/Tunnel/DNS, NOT the
+  # app (see docs/observability.md §5.1 for the internal-vs-external split).
+  #
+  # CONFIG HYGIENE — no real domain in git. The live host is deployment-unique, so it is NOT listed
+  # here. Instead this job uses Prometheus FILE-BASED SERVICE DISCOVERY: the targets are read from
+  # `external-targets/*.yaml`, a directory that ships EMPTY of live targets in git (only a
+  # `public-edge.yaml.example` template, which the `*.yaml` glob deliberately does NOT match). With no
+  # live file the job discovers ZERO targets and never probes — so a clean clone and `make
+  # deploy-local` stay inert (no false alarms, no committed domain). The TLS-expiry + external-down
+  # alert rules are likewise `noDataState: OK`, so they too stay silent until targets appear.
+  #
+  # TO ENABLE on YOUR box (turn external monitoring ON): render the live target file FROM YOUR DOMAIN,
+  # which lives only in the box's `.env` / Pulumi config — never in git:
+  #     OBS_PUBLIC_DOMAIN=your-domain.com \
+  #       deploy/compose/observability/prometheus/render-external-targets.sh
+  # That writes `external-targets/public-edge.yaml` (gitignored) with the site (apex + www) and game
+  # (play.<domain>/healthz) URLs; Prometheus hot-reloads it within `refresh_interval`. Unset the var
+  # (or delete the file) to turn external monitoring back OFF. See docs/observability.md §5.1.
+  #
+  # NOTE: Cloudflare Health Checks (the deploy/pulumi / Cloudflare-dashboard lane) are the natural
+  # EDGE/site monitor and run from Cloudflare's GLOBAL PoPs; this on-box external job is the cheaper
+  # same-box equivalent (one vantage). See docs/observability.md §5.4 (self-hosted vs the alternatives).
+  - job_name: blackbox-https-external
+    scrape_interval: 60s
+    metrics_path: /probe
+    params:
+      module: [https_2xx]
+    file_sd_configs:
+      # The probed URLs + their `probe` labels (public-site / public-game) come from this dir. EMPTY
+      # in git ⇒ zero targets ⇒ inert. render-external-targets.sh writes the live public-edge.yaml.
+      - files:
+          - /etc/prometheus/external-targets/*.yaml
+        refresh_interval: 5m
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

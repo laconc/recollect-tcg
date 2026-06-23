@@ -1,0 +1,3 @@
+Recollect server deployed.
+  Health: kubectl port-forward svc/{{ include "recollect.name" . }} 8080 && curl localhost:8080/healthz
+  The database secret '{{ .Values.existingSecret }}' must exist with key DATABASE_URL.

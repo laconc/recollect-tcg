@@ -1,0 +1,14 @@
+[package]
+name = "recollect-determinism"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "D-26 wasm32 differential: a fixed seeded playout, hashed. CI runs it native and on wasm32-wasip1 under wasmtime — the hashes must match, proving the engine is bit-identical across targets (no float/UB drift)."
+
+[dependencies]
+# Engine only — no rng/tokio/wgpu — so this compiles to wasm32-wasip1 cleanly.
+recollect-core = { path = "../recollect-core" }
+postcard = { workspace = true }
+
+[lints]
+workspace = true

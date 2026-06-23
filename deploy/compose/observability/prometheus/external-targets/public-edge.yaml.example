@@ -1,0 +1,36 @@
+# Recollect — EXTERNAL synthetic-probe targets (the FULL public path through Cloudflare). TEMPLATE.
+#
+# This is the Prometheus file-SD target list for the `blackbox-https-external` scrape job in
+# ../prometheus.yaml. It is read by Prometheus inside the lgtm container at
+#   /etc/prometheus/external-targets/*.yaml
+# (mounted from this directory — see deploy/compose/docker-compose.deploy.yml).
+#
+# CONFIG HYGIENE: this is the `.example` TEMPLATE, with a PLACEHOLDER domain. The `*.yaml` file-SD
+# glob deliberately does NOT match a `.yaml.example` name, so committing this file adds ZERO live
+# targets — the external job stays inert on a clean clone and on `make deploy-local`. NO real domain
+# is ever committed.
+#
+# TO TURN EXTERNAL MONITORING ON, do NOT hand-edit this file. Render the LIVE `public-edge.yaml`
+# (gitignored, sibling to this template) from your deployment-unique domain — which lives only in the
+# box's .env / Pulumi config, never in git — with the helper:
+#     OBS_PUBLIC_DOMAIN=your-domain.com ../render-external-targets.sh
+# (run it from this directory, or give the script the full path). Prometheus hot-reloads the new file
+# within the job's `refresh_interval` (5m). Unset the var / delete the live file to turn it OFF again.
+#
+# The shape Prometheus expects: a list of target groups, each `{ targets: [url, …], labels: {…} }`.
+# The `probe` label distinguishes the two external probes for the SEPARATE external alert rules
+# (recollect-probe-external-{site,game}-down) — keep `public-site` vs `public-game` as below so the
+# alerts and the TLS-expiry rule (which matches probe=~"public-.*") line up.
+
+# The static SITE (Cloudflare Pages, apex + www) — DNS + edge TLS + Pages.
+- targets:
+    - https://your-domain.com/
+    - https://www.your-domain.com/
+  labels:
+    probe: public-site
+
+# The GAME server (through the named Tunnel) — DNS + edge TLS + Tunnel + the axum /healthz route.
+- targets:
+    - https://play.your-domain.com/healthz
+  labels:
+    probe: public-game

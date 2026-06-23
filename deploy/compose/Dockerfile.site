@@ -1,0 +1,56 @@
+# syntax=docker/dockerfile:1
+# Build the deployable static site + wasm play client into /out (a one-shot the deploy compose
+# runs into the shared `site` volume the server serves). This is NOT the server image — it is a
+# throwaway builder. Two bakes happen here that the dev `make site` doesn't need (see build-site.sh):
+#   1. origin       — the play client's default server is rewritten to window.location.origin, so
+#      the deployed client targets its OWN origin → Cloudflare → the tunnel → the server
+#      (same-origin wss, tech-design §10.1). No CORS, no mixed content.
+#   2. CF_BEACON_TOKEN — when set, the cookieless Cloudflare Web Analytics beacon is injected into
+#      every page <head> (usage_tracking.md). Unset ⇒ no beacon (clean local builds).
+# Build context is the repo root.
+#
+# Toolchain mirrors CI's wasm job EXACTLY: the official rust image (glibc) + the pinned trunk
+# BINARY release; trunk then auto-fetches the matching wasm-bindgen + wasm-opt itself (installing
+# wasm-bindgen-cli by hand risks a version skew with the locked wasm-bindgen crate). The wasm
+# output is arch-independent, so a glibc host builder is fine for the eventual musl runtime.
+FROM rust:1.96-bookworm AS build
+ARG TRUNK_VERSION=v0.21.14
+# TARGETARCH is BuildKit's automatic platform arg (amd64 on CI, arm64 on Apple-Silicon
+# build hosts / `make deploy-smoke` on a Mac). Map it to trunk's release-asset triple so
+# the BINARY matches the build container's arch — an x86_64 trunk in an arm64 container
+# dies under emulation ("rosetta error: …ld-linux-x86-64.so.2", exit 133). trunk publishes
+# both x86_64 and aarch64 linux-gnu assets; pick the right one.
+ARG TARGETARCH
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && rustup target add wasm32-unknown-unknown \
+    && case "${TARGETARCH}" in \
+         amd64|'') trunk_arch=x86_64 ;; \
+         arm64)    trunk_arch=aarch64 ;; \
+         *) echo "unsupported TARGETARCH '${TARGETARCH}' for the trunk binary" >&2; exit 1 ;; \
+       esac \
+    && curl -fsSL "https://github.com/trunk-rs/trunk/releases/download/${TRUNK_VERSION}/trunk-${trunk_arch}-unknown-linux-gnu.tar.gz" \
+       | tar -xz -C /usr/local/bin trunk
+WORKDIR /src
+COPY . .
+# SITE_ORIGIN is the human label of the deploy origin (the bake itself uses window.location.origin).
+# CF_WEB_ANALYTICS_TAG is the PUBLIC Cloudflare Web Analytics site tag — it ships in every page's
+# <head> for every visitor, so it is NOT a secret (named for what it is, not "*TOKEN*", so it isn't
+# mistaken for one). Both are passed straight into the RUN's environment, not a baked `ENV` layer.
+ARG SITE_ORIGIN=https://your-domain.com
+ARG CF_WEB_ANALYTICS_TAG=
+# The shared build script (also runnable on a dev box) does: catalog page → trunk build →
+# assemble dist/ → bake the client origin + the analytics beacon. One script ⇒ dev and the image
+# run byte-identical steps. cargo caches speed up repeat builds. The script reads the tag from
+# CF_BEACON_TOKEN (the Cloudflare-documented env name), mapped from the ARG here.
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/src/app/target \
+    SITE_ORIGIN="${SITE_ORIGIN}" CF_BEACON_TOKEN="${CF_WEB_ANALYTICS_TAG}" \
+    bash deploy/compose/build-site.sh /src/dist
+
+# Tiny runtime stage: it copies the built dist/ into the shared `site` volume on `up`, then exits.
+# busybox keeps the one-shot image small; it just needs `cp`.
+FROM busybox:1.37 AS out
+COPY --from=build /src/dist /dist
+CMD ["sh", "-c", "rm -rf /out/* && cp -a /dist/. /out/ && echo 'site published to /out'"]

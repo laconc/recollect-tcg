@@ -1,0 +1,51 @@
+name: mutation-testing
+# A FOCUSED, on-demand mutation-testing trigger: run `cargo-mutants` over one
+# file glob and report any survivors (mutations the test suite fails to catch).
+# MANUAL-ONLY for now — dispatch via the Actions "Run workflow" button
+# (workflow_dispatch); re-add a `schedule:` block to automate. Mirrors
+# `make mutants FILE=… TIMEOUT=…`.
+#
+# Why a third mutation surface, and how it differs from the two that exist:
+#   • ci.yml > mutants            — workflow_dispatch, HARD-CODED to **/effects.rs
+#                                   (a fixed smoke over the effects IR).
+#   • nightly.yml > mutants       — part of the full nightly bundle (soak +
+#                                   model-check + audit); tunable, defaults effects.
+#   • THIS workflow               — mutation testing ALONE (no soak/model-check/
+#                                   audit), tunable, and DEFAULTS TO THE ENGINE
+#                                   reducer/decide modules (**/engine/*.rs) so you
+#                                   can probe one file (e.g. **/engine/evolve.rs)
+#                                   without the long siblings.
+# Locally: `make mutants FILE='**/engine/*.rs'`.
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "cargo-mutants file glob to mutate (e.g. **/engine/evolve.rs)"
+        default: "**/engine/*.rs"
+      timeout:
+        description: "per-mutant test timeout (seconds)"
+        default: "45"
+
+env:
+  CARGO_TERM_COLOR: always
+permissions:
+  contents: read
+
+jobs:
+  mutants:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          show-progress: false
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.96.0"
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: app
+      - name: install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      - name: mutation testing (does the suite catch injected bugs?)
+        run: make mutants FILE="${{ github.event.inputs.file || '**/engine/*.rs' }}" TIMEOUT="${{ github.event.inputs.timeout || '45' }}"

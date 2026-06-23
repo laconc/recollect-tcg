@@ -1,0 +1,6 @@
+apiVersion: v2
+name: recollect
+description: Recollect game server (replaces the retired kustomize overlays)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

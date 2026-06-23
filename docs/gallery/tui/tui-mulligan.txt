@@ -1,0 +1,36 @@
+
+Legal tellings:
+    0. Glimpse (burn a hand card, then peek your top card)
+    1. End turn
+    2. Mulligan (redraw a fresh hand, bottom one — once, at the opening)
+    3. Play Frenzy Kit → a1
+    4. Play Frenzy Kit → b1
+    5. Play Frenzy Kit → c1
+    6. Play Frenzy Kit → d1
+    7. Play Frenzy Kit → e1
+    8. Play Frenzy Kit → a2
+    9. Play Frenzy Kit → b2
+   10. Play Frenzy Kit → c2
+   11. Play Frenzy Kit → d2
+   12. Play Frenzy Kit → e2
+   13. Set fabrication at 0 (hand 3)
+   14. Set fabrication at 1 (hand 3)
+   15. Set fabrication at 2 (hand 3)
+   16. Set fabrication at 3 (hand 3)
+   17. Set fabrication at 4 (hand 3)
+   18. Set fabrication at 5 (hand 3)
+   19. Set fabrication at 6 (hand 3)
+   20. Set fabrication at 7 (hand 3)
+   21. Set fabrication at 8 (hand 3)
+   22. Set fabrication at 9 (hand 3)
+   23. Play Wrong-Way Skylark → a1
+   24. Play Wrong-Way Skylark → b1
+   25. Play Wrong-Way Skylark → c1
+   26. Play Wrong-Way Skylark → d1
+   27. Play Wrong-Way Skylark → e1
+   28. Play Wrong-Way Skylark → a2
+   29. Play Wrong-Way Skylark → b2
+   30. Play Wrong-Way Skylark → c2
+   31. Play Wrong-Way Skylark → d2
+   32. Play Wrong-Way Skylark → e2
+  (type a number to act · or a verb: p/o/m/v/dv/rc/g/r/end · 'i N' inspect hand card N · 'i <tile>' e.g. 'i c3' inspect a board card)

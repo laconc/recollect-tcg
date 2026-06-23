@@ -1,0 +1,82 @@
+# Recollect — Tempo config for the on-box LGTM stack (mounted at /otel-lgtm/tempo-config.yaml).
+#
+# BASE: a faithful copy of grafana/otel-lgtm:0.28.0's /otel-lgtm/tempo-config.yaml (verbatim).
+# WE ADDED EXACTLY ONE block beyond upstream, to BOUND TRACE STORAGE (≈3d — traces are the bulkiest
+# signal, so they get the shortest window):
+#   * `compactor:` with `compaction.block_retention: 72h` — Tempo's compactor deletes trace blocks
+#     older than this. Upstream ships NO `compactor` block (so blocks would accrue unbounded); this
+#     is the single addition that enforces the 3d window the deploy/README documents.
+#
+# Everything else below is upstream verbatim. Keep in sync on an otel-lgtm bump: re-pull
+# /otel-lgtm/tempo-config.yaml and re-apply just the block marked "RECOLLECT ADDITION".
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9096
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "127.0.0.1:4417"
+        http:
+          endpoint: "127.0.0.1:4418"
+
+ingester:
+  trace_idle_period: 1s
+  max_block_duration: 1s
+  flush_check_period: 1s
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    min_ready_duration: 1s
+
+memberlist:
+  bind_addr: [127.0.0.1]
+  bind_port: 7947
+
+query_frontend:
+  mcp_server:
+    enabled: true
+
+querier:
+  frontend_worker:
+    frontend_address: 127.0.0.1:9096
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /data/tempo/wal
+    local:
+      path: /data/tempo/blocks
+
+metrics_generator:
+  processor:
+    local_blocks:
+      filter_server_spans: false
+    span_metrics:
+      dimensions:
+        - service_name
+        - operation
+        - status_code
+  traces_storage:
+    path: /data/tempo/generator/traces
+  storage:
+    path: /data/tempo/generator/wal
+    remote_write:
+      - url: http://127.0.0.1:9090/api/v1/write
+        send_exemplars: true
+
+overrides:
+  metrics_generator_processors: [service-graphs, local-blocks, span-metrics]
+
+# --- RECOLLECT ADDITION (not in upstream otel-lgtm 0.28.0) ------------------------------------
+# Bound trace storage to ~3d. Tempo's compactor deletes blocks older than `block_retention`;
+# upstream ships none, so without this blocks would grow unbounded under the short-retention budget.
+compactor:
+  compaction:
+    block_retention: 72h # 3d (the deploy/README Observability section's documented traces window)

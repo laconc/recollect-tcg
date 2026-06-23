@@ -1,0 +1,5 @@
+# Keep this directory in git even though the live target file (public-edge.yaml) is gitignored.
+# The blackbox-https-external job (../prometheus.yaml) reads */*.yaml here via file-SD; an empty dir
+# (only this .gitkeep + the .yaml.example template) means ZERO external targets ⇒ the external probes
+# are INERT until you render the live public-edge.yaml from your domain (see public-edge.yaml.example
+# and ../render-external-targets.sh). No real domain is ever committed here.

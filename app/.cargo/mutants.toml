@@ -1,0 +1,72 @@
+# cargo-mutants configuration — the full-engine mutation sweep.
+#
+# `exclude_re` lists mutants (matched by the name `cargo mutants --list` prints)
+# that are GENUINELY EQUIVALENT — the source change produces no observable
+# behaviour difference, so no test can ever catch them. Each entry below was
+# triaged by hand during the full-engine sweep and carries the reasoning; a bare
+# survivor count is meaningless without this list, since these can never die.
+#
+# DO NOT add a mutant here just because it survived. A survivor is a missing
+# test until PROVEN equivalent (apply it, reason about every input). The sweep
+# killed the valuable survivors with outcome-asserting tests (see
+# tests/suites/{bond_auras,effects_engine,rules,solace_effects,redaction}.rs);
+# only the provably-inert mutants belong here.
+
+exclude_re = [
+    # --- projection::oriented_w, the reach geometry `xy_tile_w(x + dx, y + dy * f)` ---
+    # `forward()` is exactly +1 (Seat A) or -1 (Seat B), and EVERY canonical Reach's
+    # dx-offsets are symmetric about 0 (±1 or 0; see Reach::offsets in types.rs). So:
+    #   * `x + dx` ⇒ `x - dx` maps each offset to its mirror → the SAME tile set.
+    #   * `dy * f` ⇒ `dy / f` is identical for f ∈ {+1,-1} (dy/1=dy, dy/-1=-dy=dy*-1).
+    # Both are inert for all reaches and both seats. (The OUTER `y + …` at col 52 is
+    # NOT listed — flipping it negates the y-offset and IS catchable.)
+    "projection.rs:22:44: replace \\+ with - in oriented_w",
+    "projection.rs:22:57: replace \\* with / in oriented_w",
+
+    # --- effects_exec::exec_clause_mode, ShiftUnwrittenInward center `c = (w - 1) / 2` ---
+    # The center is only ever consumed as `(c - coord).signum()` (a DIRECTION toward
+    # center) and in `|coord - c|` axis comparisons. On the only board these run on
+    # (5×5 ⇒ w=5), `(w-1)/2 = 2` while `(w-1)*2 = 8` and `(w-1)%2 = 0`; for every tile
+    # the signum toward the mutated center is identical to the signum toward (2,2),
+    # so the inward step is unchanged. Board-size-equivalent (would need a wider board
+    # to distinguish — out of scope for the fixed 5×5 / 6×6 the engine ships).
+    "effects_exec.rs:147:25: replace / with \\* in exec_clause_mode",
+
+    # --- decide::decide_impl, the MatchAbandoned score tally (score_a/score_b) ---
+    # Abandonment is a FORFEIT: `evolve` finishes the match as Win(present_seat)
+    # regardless of these counts (see AGENTS.md "Abandonment" + evolve.rs MatchAbandoned).
+    # The tallied score_a/score_b ride along on the event for display only; no rule,
+    # view, or invariant reads them for the abandonment outcome, so mutating the tally
+    # — the `+=` accumulation OR the `!sp.fading` filter that decides whether a fading
+    # spirit is counted — changes nothing observable. (The SCORED path — flow.rs `finish`
+    # — is fully outcome-asserted in rules.rs; only the abandonment cosmetic tally is inert.)
+    # NOTE: line:col below track this checkout; reconcile if the file shifts.
+    "decide.rs:30:40: replace \\+= with -= in decide_impl",
+    "decide.rs:30:40: replace \\+= with \\*= in decide_impl",
+    "decide.rs:31:40: replace \\+= with -= in decide_impl",
+    "decide.rs:31:40: replace \\+= with \\*= in decide_impl",
+    "decide.rs:27:20: delete ! in decide_impl",
+
+    # --- combat::full_exchange, the `&& redirect > 0` guard on the Grief/Promise redirect ---
+    # `damage_redirect_to_partner` only ever returns Some((_, redirect, _)) with redirect >= 1:
+    #   * Grief Split returns `dmg - (hp - 1)`, reached only when `dmg >= hp` (its L129 gate),
+    #     so redirect >= hp - (hp - 1) = 1.
+    #   * Promise returns the full `dmg`, reached only on a lethal blow (dmg >= hp >= 1).
+    # redirect == 0 is therefore unreachable, so `redirect > 0` and `redirect >= 0` agree on
+    # every input (and when None, the whole `if let Some(..) && ..` is false regardless).
+    # The mutant is genuinely equivalent. (The redirect AMOUNT and the partner-banish boundary
+    # are pinned in bond_auras.rs: grief_split_redirects_exactly_the_overflow_to_the_partner,
+    # grief_split_overflow_banishes_the_partner_at_exactly_lethal.)
+    "combat.rs:301:21: replace > with >= in full_exchange",
+
+    # --- rng::below, the modulo-zone rejection boundary `if v < zone` ---
+    # zone = u64::MAX - (u64::MAX % n) is the largest multiple of n that fits, so it is
+    # the FIRST biased value: [0, zone) accepts, [zone, MAX] rejects-and-redraws. `< zone`
+    # -> `<= zone` changes behaviour ONLY when v == zone -- a single 1-in-2^64 draw the
+    # mutant would WRONGLY accept (one biased value). No fixed seed in any finite test
+    # produces v == zone for the small n the engine uses, so no deterministic test can
+    # distinguish the two -- genuinely equivalent. The range/coverage properties that
+    # WOULD catch a real boundary error run via ironstate's assert_entropy_contract
+    # (rng.rs tests::rng_obeys_the_entropy_source_contract).
+    "rng.rs:56:18: replace < with <= in Rng::below",
+]

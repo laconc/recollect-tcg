@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Recollect card-art PLACEHOLDER — paper & ink, a fading Memory.
+
+  This is NOT illustration. It is a deliberately plain stand-in shown wherever a
+  card has no master art yet (assets/cards-src/<key>.png absent). Real art drops
+  in by filename and replaces it; nothing else changes. See card_images.md.
+
+  5:7 portrait at the master resolution (1024×1434) so the placeholder rasterizes
+  at the same dimensions as real masters. Palette mirrors site/css/brand.css.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1434" viewBox="0 0 1024 1434">
+  <defs>
+    <!-- A faint vignette so the "memory" reads as fading toward the edges. -->
+    <radialGradient id="fade" cx="50%" cy="44%" r="72%">
+      <stop offset="0%" stop-color="#fbf8f0"/>
+      <stop offset="68%" stop-color="#f5f0e3"/>
+      <stop offset="100%" stop-color="#ece5d2"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Paper ground. -->
+  <rect width="1024" height="1434" fill="url(#fade)"/>
+
+  <!-- Double ink frame (hairline + inner rule), echoing the catalog card border. -->
+  <rect x="40" y="40" width="944" height="1354" fill="none"
+        stroke="#44434c" stroke-width="3" rx="14"/>
+  <rect x="62" y="62" width="900" height="1310" fill="none"
+        stroke="#d8d1bf" stroke-width="2" rx="9"/>
+
+  <!-- Centered ink emblem: a quill-stroke arc over a single point of light —
+       the act of telling a memory before it is illustrated. Abstract on purpose. -->
+  <g transform="translate(512 660)" fill="none" stroke="#17171f"
+     stroke-width="6" stroke-linecap="round">
+    <!-- arc / page-fold sweep -->
+    <path d="M -150 70 C -90 -120, 90 -120, 150 70" opacity="0.85"/>
+    <!-- under-rule -->
+    <path d="M -120 118 L 120 118" stroke="#d8d1bf" stroke-width="4"/>
+  </g>
+  <!-- point of light (gold accent from the palette) -->
+  <circle cx="512" cy="640" r="13" fill="#ebc72e"/>
+
+  <!-- Quiet caption: signals "art forthcoming" without leaking any card data. -->
+  <text x="512" y="900" text-anchor="middle"
+        font-family="Iowan Old Style, Palatino, Georgia, serif"
+        font-size="40" fill="#44434c" font-style="italic"
+        letter-spacing="0.5">a memory, not yet drawn</text>
+  <text x="512" y="958" text-anchor="middle"
+        font-family="Iowan Old Style, Palatino, Georgia, serif"
+        font-size="26" fill="#8a8474" letter-spacing="3">RECOLLECT</text>
+</svg>

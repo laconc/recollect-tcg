@@ -1,0 +1,113 @@
+[workspace]
+resolver = "3"
+members = [
+  "crates/recollect-core",
+  "crates/recollect-protocol",
+  "crates/recollect-server",
+  "crates/recollect-bot",
+  "crates/recollect-web",
+    "crates/recollect-cli",
+    "crates/recollect-determinism",
+    "crates/recollect-ffi",
+    "crates/recollect-journal-postgres",
+    "crates/recollect-verify",
+]
+# recollect-web needs the wasm32 target; exclude from default builds/tests.
+default-members = [
+  "crates/recollect-core",
+  "crates/recollect-protocol",
+  "crates/recollect-server",
+  "crates/recollect-bot",
+]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+# No license: all rights reserved. Crates are publish = false (never to crates.io).
+
+# Single source of dependency-version truth. Crates reference these with
+# `{ workspace = true }` and add only crate-specific `features` on top.
+[workspace.dependencies]
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+postcard = { version = "1", features = ["alloc"] }
+# Async runtime + network server
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+axum = { version = "0.8", features = ["ws"] }
+tokio-tungstenite = "0.29"
+futures-util = "0.3"
+# CLI arg parsing (the `recollect` binary)
+clap = { version = "4", features = ["derive"] }
+# Terminal cursor TUI (the `recollect` CLI's local-1v1 arrow-key mode) — ratatui draws
+# the board/cursor/legal-move panes and re-exports crossterm (raw mode + the key event
+# loop) as `ratatui::crossterm`, so crossterm needs no separate dependency line. CLI-ONLY:
+# never referenced by recollect-web (the wasm build pulls neither), so wasm32 is unaffected.
+ratatui = "0.30"
+# CORS for the HTTP surface, so a browser-served web client (different origin in
+# dev: trunk :8088 → server :8080) can reach POST /matches; `fs` lets the deploy
+# build serve the static site + wasm client itself (STATIC_DIR, §10.1 single-origin).
+tower-http = { version = "0.6", features = ["cors", "fs"] }
+# UniFFI: native (iOS/Android) bindings over recollect-core (D-25).
+uniffi = "0.28"
+# Postgres event journal
+tokio-postgres = "0.7"
+postgres = "0.19" # blocking client — test-only, for the sync Journal contract twin
+sha2 = "0.11"
+hex = "0.4"
+rand = "0.10"
+# Errors + identifiers
+thiserror = "2"
+uuid = { version = "1.10", features = ["v4"] }
+# Telemetry (always compiled; OTLP gated at runtime — see server/telemetry.rs)
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "json", "env-filter"] }
+opentelemetry = "0.32"
+opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.32", default-features = false, features = ["grpc-tonic", "trace", "logs", "metrics"] }
+opentelemetry-appender-tracing = "0.32"
+tracing-opentelemetry = "0.33"
+# Web (wasm) shell
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Window", "Document", "HtmlCanvasElement", "CanvasRenderingContext2d", "WebSocket", "MessageEvent", "console"] }
+# Model checking + property/integration testing
+stateright = "0.31"
+proptest = "1.4"
+tempfile = "3.10"
+# Ironstate family — the journal/lifecycle framework (published on crates.io).
+# recollect adopts its *contracts* (EntropySource, AggregateRules, Journal);
+# the deterministic stream stays recollect's own splitmix64 impl (see rng.rs).
+ironstate = { version = "0.1", default-features = false, features = ["derive"] }
+ironstate-aggregate = { version = "0.1", features = ["serde"] }
+ironstate-journal = { version = "0.1", features = ["serde"] }
+
+# Centralized lint policy — crates opt in with `[lints] workspace = true`.
+# Correctness lints stay at clippy's defaults (clippy runs with -D warnings in
+# CI); only these deliberately-subjective lints are allowed: the engine has a
+# few wide decide/evolve signatures, struct-then-assign in test/bench setup, and
+# grouped hex seeds in the fuzz corpora.
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+field_reassign_with_default = "allow"
+unusual_byte_groupings = "allow"
+items_after_test_module = "allow"
+
+# Ship-optimized profile for the deploy binaries (server, CLI): `cargo build --profile dist`.
+# strip + LTO shrink with no runtime cost (LTO is usually faster); opt-level "z" trades a
+# little runtime speed for size. Kept OFF [profile.release] on purpose: cargo opt-z/LTO make
+# rustc emit bulk-memory ops that Trunk's wasm-opt rejects, and the dev/sim --release builds
+# want speed. The wasm gets its own size pass (wasm-opt -Oz via Trunk), so release stays
+# default for it.
+# Dev/test builds: trim debuginfo to line-tables — keeps file:line in panic backtraces, but skips
+# the heavy variable/type info, so compiles are meaningfully faster and artifacts smaller. Flip
+# back to `debug = true` only when stepping in a debugger.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dist]
+inherits = "release"
+opt-level = "z"
+lto = true
+strip = true
+# panic = "abort" deliberately NOT set: it would abort the WHOLE server process on any
+# panic (instead of unwinding one task) — a reliability loss not worth the small size win.

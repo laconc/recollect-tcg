@@ -1,0 +1,25 @@
+[package]
+name = "recollect-core"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "Deterministic, sans-I/O rules engine for Recollect. No clocks, no threads, no floats, no HashMap iteration."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+# Ironstate aggregate runtime: GameState is an AggregateRules; Engine drives it
+# through execute against a journal (entropy contract was adopted earlier; the
+# aggregate + owned-Ctx restructure lands here). `ironstate` is derive-only (no
+# proptest) so the full `rand` crate stays out of core. The journal store lives
+# in recollect-journal-postgres, so core needs only the aggregate vocabulary.
+ironstate = { workspace = true }
+ironstate-aggregate = { workspace = true }
+
+[dev-dependencies]
+postcard = { workspace = true }
+proptest = { workspace = true }
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

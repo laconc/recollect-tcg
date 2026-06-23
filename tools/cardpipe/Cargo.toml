@@ -1,0 +1,36 @@
+# cardpipe — the card-art delivery pipeline (NOT part of the app/ workspace).
+#
+# This is a standalone build tool kept out of the Rust workspace on purpose: it
+# pulls image/SVG/WebP dependencies (resvg, image, webp → libwebp) that the game
+# engine never needs, and it must never widen the shipped crates' dep graph or
+# their build/test time. The empty `[workspace]` table below makes Cargo treat
+# this directory as its own root rather than folding it into app/'s workspace.
+#
+# Wired into `make site` via `make cards-images`. See docs/decisions/card_images.md.
+[package]
+name = "cardpipe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "cardpipe"
+path = "src/main.rs"
+
+# Keep this directory independent of the app/ workspace.
+[workspace]
+
+[dependencies]
+# Pure-Rust SVG rasterizer — turns the committed placeholder.svg into pixels.
+resvg = "0.47"
+# Encode/decode PNG + JPEG; resize masters to the delivered widths. WebP encoding
+# in `image` is lossless/limited, so we use the dedicated `webp` crate for the
+# small, quality-tunable lossy WebP the gzip budget needs.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+# libwebp bindings — the lossy WebP encoder that hits the ~30–80 KB target.
+webp = "0.3"
+# Read the generated catalog.json (read-only) for card keys/names/kinds.
+serde_json = "1"
+
+[profile.release]
+opt-level = 2

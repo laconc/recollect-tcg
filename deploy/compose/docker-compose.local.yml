@@ -1,0 +1,80 @@
+# Recollect — LOCAL overlay for the deploy stack.
+#
+# Runs the SAME single-origin deploy stack on your machine MINUS the Cloudflare Tunnel, so you
+# can play the real website end-to-end exactly as production serves it — the axum server serving
+# the built site + wasm client at one origin (STATIC_DIR), backed by on-box Postgres — at
+# http://localhost:8080. This validates the deploy artifacts (the site build, the static-serving
+# server, on-box Postgres) without any cloud, creds, or tunnel.
+#
+# Use the make target (recommended):    make deploy-local        → up at http://localhost:8080
+#                                       make deploy-local-down   → tear down
+# Or directly (overlay ON TOP of the base deploy compose, from the repo root):
+#   docker compose \
+#     -f deploy/compose/docker-compose.deploy.yml \
+#     -f deploy/compose/docker-compose.local.yml up -d --build
+#
+# Local-only credentials by name (never a real secret): the `make deploy-local` target exports a
+# throwaway POSTGRES_PASSWORD (see the Makefile's DEPLOY_LOCAL_ENV), the tunnel is removed entirely
+# (no TUNNEL_TOKEN needed), and SITE_ORIGIN points at localhost so the play client targets the
+# right origin. Running compose DIRECTLY (the command above) ⇒ export it yourself first:
+#   POSTGRES_PASSWORD=recollect-local-only docker compose -f …deploy.yml -f …local.yml up -d --build
+
+services:
+  # Publish the server's port so a browser (and `recollect --server`) can reach it directly.
+  server:
+    ports:
+      - "8080:8080"
+    environment:
+      # Local origin so the play client's baked default points back here.
+      SITE_ORIGIN: http://localhost:8080
+      # The base compose defaults OTLP at the on-box lgtm; locally that stack is scaled to zero
+      # (below), so make this empty ⇒ JSON logs only. Dev observability is the root `make up` stack.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  site-builder:
+    build:
+      args:
+        SITE_ORIGIN: http://localhost:8080
+        # No analytics beacon locally.
+        CF_WEB_ANALYTICS_TAG: ""
+
+  # Postgres on a laptop has no durable EBS data volume to bind-mount, so override the base's host
+  # bind mount (which targets /data/postgres on the box) with an ordinary NAMED volume. Overriding
+  # the SAME container target replaces the mount source — no /data needed, no PG_DATA_DIR to set —
+  # so a by-hand `compose -f deploy -f local up` just works. `make deploy-local-down` keeps the
+  # volume (plain `down`); add `-v` to that compose `down` to drop it.
+  postgres:
+    volumes:
+      - "pgdata:/var/lib/postgresql"
+
+  # The tunnel is meaningless locally — scale it to zero so `up` never starts it and no
+  # TUNNEL_TOKEN is required. (Compose has no per-service "disable"; replicas: 0 is the idiom.)
+  cloudflared:
+    deploy:
+      replicas: 0
+
+  # The self-hosted observability stack is for the BOX, not the laptop: it bind-mounts
+  # /data/observability and the host /proc|/sys, and dev observability is already the root
+  # `make up` (grafana/otel-lgtm) stack. Scale all three to zero so `make deploy-local` stays lean
+  # and needs no /data mount. (Same replicas: 0 idiom as cloudflared.) blackbox is the synthetic-
+  # monitoring probe sidecar — also box-only (its probe targets are the box's compose services).
+  lgtm:
+    deploy:
+      replicas: 0
+  node-exporter:
+    deploy:
+      replicas: 0
+  blackbox:
+    deploy:
+      replicas: 0
+
+# The named Postgres volume the override above uses — local-only; the box uses the durable EBS host
+# bind mount instead (see docker-compose.deploy.yml).
+volumes:
+  pgdata:
+
+# The on-box Postgres password is LOCAL-ONLY here (a throwaway name, matching the dev stack). The
+# base compose requires POSTGRES_PASSWORD; `make deploy-local` exports it (DEPLOY_LOCAL_ENV in the
+# Makefile), so the target needs no .env. To run compose by hand, export POSTGRES_PASSWORD first
+# (see the header). On the real box Pulumi GENERATES the password and cloud-init writes it to the
+# 0600 .env — it is never this local placeholder.

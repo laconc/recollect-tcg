@@ -1,0 +1,89 @@
+name: nightly-verification
+# Long-running verification that's too slow for per-PR CI: the fuzz soak, the
+# stateright model-check, mutation testing, and the dep audit. MANUAL-ONLY for now
+# — trigger via the Actions "Run workflow" button (workflow_dispatch) with tunable
+# inputs; re-add a `schedule:` block to automate. Locally: `make soak`,
+# `make test-verify`, `make mutants`, `make audit`, or `make nightly` for all.
+on:
+  workflow_dispatch:
+    inputs:
+      soak_seconds:
+        description: "fuzz soak wall-clock budget (seconds)"
+        default: "900"
+      mutants_file:
+        description: "cargo-mutants file glob to mutate"
+        default: "**/effects.rs"
+      mutants_timeout:
+        description: "per-mutant test timeout (seconds)"
+        default: "45"
+
+env:
+  CARGO_TERM_COLOR: always
+permissions:
+  contents: read
+
+jobs:
+  soak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          show-progress: false
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.96.0"
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: app
+      - name: fuzz soak (time-bounded) + golden replay corpus
+        run: |
+          make soak SECONDS="${{ github.event.inputs.soak_seconds || '900' }}"
+          (cd app && cargo test -p recollect-core --test golden_replay)
+
+  model-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          show-progress: false
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.96.0"
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: app
+      - name: stateright model-checker
+        run: make test-verify
+
+  mutants:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          show-progress: false
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.96.0"
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: app
+      - name: install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      - name: mutation testing (does the suite catch injected bugs?)
+        run: make mutants FILE="${{ github.event.inputs.mutants_file || '**/effects.rs' }}" TIMEOUT="${{ github.event.inputs.mutants_timeout || '45' }}"
+
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          show-progress: false
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.96.0"
+      - name: dependency vulnerability scan (RUSTSEC advisories over Cargo.lock)
+        run: make audit

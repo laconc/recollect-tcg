@@ -1,0 +1,56 @@
+name: recollect-foundation
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+description: >-
+  Recollect — FOUNDATION (run ONCE, with short-lived admin creds). The account-level,
+  rarely-changing scaffolding the per-release PLATFORM stack and CI depend on: an ECR
+  repository for the server image (scan-on-push + a lifecycle policy that expires old
+  images), the GitHub Actions OIDC identity provider, and a TIGHTLY-SCOPED IAM role CI
+  assumes via OIDC to push that ONE image — no stored AWS keys, ECR-push only, trust
+  pinned to this repo's main branch. Outputs the ECR repo URL + the CI role ARN, which
+  feed CI (the role to assume) and PLATFORM (`platform:serverImage = <repoUrl>:<gitRef>`).
+  `pulumi up` is the source of truth; this stack is created once and seldom touched.
+
+# Typed config (set with `pulumi config set recollect-foundation:<key> …`). NOTHING
+# deployment-unique is committed here — the GitHub org/repo and AWS region have NO real
+# default: you set them in your gitignored Pulumi.<stack>.yaml at deploy time, so this repo
+# stays generic and anyone can stand up their own foundation.
+config:
+  recollect-foundation:region:
+    type: string
+    # Generic default: us-east-1 is AWS's default region, not a value unique to one deployment.
+    # Keep FOUNDATION and PLATFORM in the SAME region so the box pulls the image AZ-cheaply.
+    default: us-east-1
+  recollect-foundation:githubRepo:
+    type: string
+    description: >-
+      REQUIRED — the GitHub "owner/repo" the CI role trusts (e.g. yourorg/recollect). The
+      OIDC trust policy is pinned to THIS repo's main branch (ref:refs/heads/main), so only
+      this repo's main-branch workflows can assume the role. Deployment-unique, no committed default.
+  recollect-foundation:imageName:
+    type: string
+    description: >-
+      The ECR repository name for the server image (e.g. recollect-server). The PLATFORM
+      stack's serverImage is `<repoUrl>:<gitRef>`; CI pushes `<repoUrl>:<sha>` + `:latest`.
+    default: recollect-server
+  recollect-foundation:expireUntaggedAfterDays:
+    type: integer
+    description: >-
+      Lifecycle: expire UNTAGGED images older than this many days (CI's old layer churn).
+    default: 14
+  recollect-foundation:keepReleaseImages:
+    type: integer
+    description: >-
+      Lifecycle: keep at most this many sha-tagged (`sha-…`) RELEASE images; older ones expire
+      so the repo can't grow without bound. Generous enough to roll back several releases.
+    default: 20
+  recollect-foundation:githubOidcThumbprint:
+    type: string
+    description: >-
+      OPTIONAL — a TLS thumbprint for token.actions.githubusercontent.com. Modern AWS (since
+      mid-2023) verifies GitHub's OIDC certificate against the trust store and IGNORES this
+      list, so it is EMPTY by default and the provider is created with no thumbprint. Pin one
+      only if your account/region still requires it (rare); see deploy/README.md.
+    default: ""

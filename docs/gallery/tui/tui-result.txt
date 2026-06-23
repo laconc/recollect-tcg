@@ -1,0 +1,24 @@
+
+══ Round 12/12 · Seat A to act ·  ══
+5 [░░░░░░░░][░░░░░░░░][░░░░░░░░][BCair 50°][░░░░░░░░]
+4 [░░░░░░░░][BSpar 65 ][   ·A   ][   ·B   ][░░░░░░░░]
+3 [░░░░░░░░][BTide 70 ][BTheE 80 ][   ·A   ][ABear 65°]
+2 [  ::..  ][BDriz  5!][BErra 35 ][ABris 50 ][░░░░░░░░]
+1 [AWron 40°][BMead 50°][░░░░░░░░][░░░░░░░░][░░░░░░░░]
+   a         b         c         d         e      (:: yours · .. theirs · ~ fading · ^ can evolve · ! Echo · ° held/lamplit · ⌂ landmark · ▒ fabrication · ░ dusk)
+   a1 A Wrong-Way Skylark      Atk 45  Def 10  HP  40/40  Wide Wonder °held (lamplit: scores, no interception, ground goes dark when it leaves)
+   b1 B Meadow Hare            Atk 55  Def 20  HP  50/50  Cross Harmony °held (lamplit: scores, no interception, ground goes dark when it leaves)
+   b2 B Drizzle Sprite         Atk 15  Def 10  HP   5/25  Cross Sorrow !Echo-live
+   c2 B Errata                 Atk 30  Def 30  HP  35/50  Slant Neutral
+   d2 A Bristleboar            Atk 60  Def 5   HP  50/50  Lance Fury
+   b3 B Tidebound Colossus     Atk 60  Def 20  HP  70/90  Cross Sorrow
+   c3 B The Empty Procession   Atk 90  Def 30  HP  80/80  Cross Fear
+   e3 A Bearer of Small Stones Atk 45  Def 25  HP  65/65  Cross Sorrow °held (lamplit: scores, no interception, ground goes dark when it leaves)
+   b4 B Sparkfather Vermilion  Atk 90  Def 20  HP  65/65  Cross Fury
+   d5 B Cairnling Sentinel     Atk 15  Def 20  HP  50/50  Cross Resolve °held (lamplit: scores, no interception, ground goes dark when it leaves)
+(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)
+Score if Nightfall struck now: A 6 — B 9
+You: 27 anima (your play budget — no fixed action count; End Turn when ready) · deck 3 · hand:
+Them: 25 anima · hand 0 · deck 3
+
+— NIGHTFALL — Score 6–9 · the match belongs to Seat B

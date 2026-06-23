@@ -1,0 +1,57 @@
+# Recollect — Blackbox exporter config for the on-box synthetic monitoring (mounted at
+# /etc/blackbox_exporter/config.yml in the `blackbox` sidecar of the deploy stack).
+#
+# This is NOT an otel-lgtm upstream file — it is OURS in full (the blackbox-exporter image ships a
+# small default config we deliberately replace, so every probe module is explicit and committed).
+# Prometheus (in the lgtm container) scrapes the blackbox `/probe` endpoint once per scrape interval
+# with `?module=<name>&target=<url>` (see observability/prometheus/prometheus.yaml); the exporter
+# performs the probe and returns `probe_success` (+ timing/TLS series). Grafana alert rules then
+# alert on `probe_success == 0` sustained for N minutes (see observability/grafana/provisioning/
+# alerting/recollect-alerts.yaml).
+#
+# IP protocol: the box's compose network is IPv4. The exporter defaults to trying IPv6 first, which
+# would add a failing AAAA lookup per probe; we pin `preferred_ip_protocol: ip4` with fallback so
+# the probe resolves cleanly. Timeouts are bounded well under the 30s scrape interval.
+
+modules:
+  # HTTP GET, succeed on a 200. Used for BOTH internal HTTP probes — the game server's /healthz
+  # (deep app-health: a 200 means axum is up AND, because the handler is reached through the live
+  # router, the process is serving) and the static site's landing page (the site-builder's
+  # index.html is being served). One module: both checks are "is a 200 served at this URL".
+  http_2xx:
+    prober: http
+    timeout: 8s
+    http:
+      method: GET
+      valid_status_codes: [200] # /healthz returns exactly 200 "ok"; the site index is a 200
+      # (No valid_http_versions pin: the status code IS the liveness signal; pinning the HTTP
+      # version only adds brittleness — a proxy/edge speaking a different version would false-alarm.)
+      preferred_ip_protocol: ip4
+      ip_protocol_fallback: true
+      follow_redirects: true
+
+  # Public-edge HTTPS probe (used ONLY by the OPT-IN external scrape job in prometheus.yaml). Same
+  # 2xx check but over TLS through Cloudflare, so it also exercises DNS + edge TLS + the tunnel.
+  # Records TLS-expiry series (probe_ssl_earliest_cert_expiry) for the cert-expiry alert.
+  https_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      valid_status_codes: [200]
+      preferred_ip_protocol: ip4
+      ip_protocol_fallback: true
+      fail_if_ssl: false
+      follow_redirects: true
+
+  # Bare TCP connect — opens (and immediately closes) a socket to the target host:port. Used for the
+  # WebSocket ORIGIN: a successful connect to the server's :8080 proves the ws listener is accepting
+  # connections at the transport layer (the `wss://…/matches/{id}/ws` upgrade rides this same port).
+  # A full WS handshake is not a blackbox module; tcp_connect is the standard liveness proxy for a
+  # ws origin (the doc's "how to add a probe" notes the deeper synthetic-WS option).
+  tcp_connect:
+    prober: tcp
+    timeout: 8s
+    tcp:
+      preferred_ip_protocol: ip4
+      ip_protocol_fallback: true

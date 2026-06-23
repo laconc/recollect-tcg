@@ -1,0 +1,15 @@
+[package]
+name = "recollect-protocol"
+publish = false       # proprietary; never publish to crates.io
+version.workspace = true
+edition.workspace = true
+description = "Versioned wire types between clients and the server. postcard on the wire (decided; see architecture.md); JSON remains only at the wasm/JS boundary and in tooling output."
+
+[dependencies]
+postcard = { workspace = true }
+recollect-core = { path = "../recollect-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
