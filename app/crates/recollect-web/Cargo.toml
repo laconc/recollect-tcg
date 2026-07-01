@@ -41,7 +41,7 @@ ab_glyph = "0.2"
 [dev-dependencies]
 recollect-core = { path = "../recollect-core" }
 ab_glyph = "0.2"
-png = "0.17"
+png = "0.18"
 
 [[example]]
 name = "shell_preview"
