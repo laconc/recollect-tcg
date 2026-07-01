@@ -139,31 +139,31 @@ func main() {
 			return err
 		}
 
-		// Lifecycle policy: bound the repo's storage. Rule 1 keeps the N most-recent images — release
-		// images are tagged with the bare commit SHA (plus a floating `latest` on the newest), which share
-		// no tag prefix to filter on, so this is a count over ANY tag status; rule 2 sweeps untagged churn
-		// (the dangling layers a re-push leaves behind). ECR evaluates rules low→high priority, so the
-		// count rule precedes the broad untagged rule.
+		// Lifecycle policy: bound the repo's storage. Rule 1 sweeps untagged churn (the dangling layers a
+		// re-push leaves behind); rule 2 keeps the N most-recent images — release images are tagged with the
+		// bare commit SHA (plus a floating `latest` on the newest), which share no tag prefix to filter on,
+		// so this is a count over ANY tag status. ECR requires a tagStatus=ANY rule to be the LOWEST-priority
+		// (last-evaluated) rule, so the untagged rule must come first (a lower rulePriority number).
 		lifecyclePolicy, err := json.Marshal(map[string]any{
 			"rules": []any{
 				map[string]any{
 					"rulePriority": 1,
-					"description":  fmt.Sprintf("Keep the %d most recent release images.", keepReleaseImages),
-					"selection": map[string]any{
-						"tagStatus":   "any",
-						"countType":   "imageCountMoreThan",
-						"countNumber": keepReleaseImages,
-					},
-					"action": map[string]any{"type": "expire"},
-				},
-				map[string]any{
-					"rulePriority": 2,
 					"description":  fmt.Sprintf("Expire untagged images older than %d days.", expireUntaggedAfterDays),
 					"selection": map[string]any{
 						"tagStatus":   "untagged",
 						"countType":   "sinceImagePushed",
 						"countUnit":   "days",
 						"countNumber": expireUntaggedAfterDays,
+					},
+					"action": map[string]any{"type": "expire"},
+				},
+				map[string]any{
+					"rulePriority": 2,
+					"description":  fmt.Sprintf("Keep the %d most recent release images.", keepReleaseImages),
+					"selection": map[string]any{
+						"tagStatus":   "any",
+						"countType":   "imageCountMoreThan",
+						"countNumber": keepReleaseImages,
 					},
 					"action": map[string]any{"type": "expire"},
 				},
