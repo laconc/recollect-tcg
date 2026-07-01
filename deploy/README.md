@@ -109,7 +109,7 @@ make foundation-up                      # CREATE the ECR repo + OIDC provider + 
 > defaults `region=us-east-2`, ensures your `PULUMI_CONFIG_PASSPHRASE` (prompting if unset), and
 > **prompts for `githubRepo`** if you haven't set it — so the four lines above are enough.
 > (`make pulumi-state-bucket` already did the `pulumi login`.) The **same preflight** fronts every
-> `deploy-*` target — see [The make targets' preflight](#the-make-targets-preflight) for the schema.
+> `platform-*` target — see [The make targets' preflight](#the-make-targets-preflight) for the schema.
 
 To set values up front instead of answering prompts (e.g. a non-interactive run), pre-seed the config —
 it lands in your gitignored `deploy/pulumi/foundation/Pulumi.<stack>.yaml`:
@@ -177,10 +177,10 @@ PLATFORM deploys.
 > Cloudflare token + account id + the `CF_PAGES_PROJECT` name — but that name is a **PLATFORM** output
 > (`pagesProjectName`), so it can't be wired until the box is up. Those are wired (and the full set of
 > every workflow's secrets/variables recapped) in
-> [PLATFORM → Wire the site-deploy outputs](#wire-platforms-site-deploy-outputs-into-github).
+> [PLATFORM → Wire the site-deploy outputs](#wire-platforms-site-platform-outputs-into-github).
 
 ### The make targets' preflight
-Every `foundation-*` / `deploy-*` **lifecycle** target (preview, up, refresh, destroy, outputs, ssm)
+Every `foundation-*` / `platform-*` **lifecycle** target (preview, up, refresh, destroy, outputs, ssm)
 runs `deploy/pulumi/preflight.sh` first, so a missing passphrase or unset config **asks** instead of
 failing mid-apply. In order, it:
 
@@ -223,7 +223,7 @@ the server image CI pushed to FOUNDATION's ECR (it never builds Rust on the 1 GB
 aws sso login                           # the DEFAULT profile (no --profile/AWS_PROFILE); named profile? add `--profile <name> && export AWS_PROFILE=<name>`
 export CLOUDFLARE_API_TOKEN=…           # the scoped custom token (Tunnel+Access+Pages+DNS) — see below
 
-make deploy-install                     # once: (cd deploy/pulumi/platform && npm install)
+make platform-install                     # once: (cd deploy/pulumi/platform && npm install)
 
 # REQUIRED, all deployment-unique (no committed defaults) — pre-seed them so you're not prompted for
 # seven values; they land in your gitignored Pulumi.<stack>.yaml. (cd to the project for config set.)
@@ -239,17 +239,17 @@ pulumi config set maintainerEmail      you@example.com
 #  tables under "Stack config" below.)
 
 cd ../../..                             # back to repo root
-make deploy-typecheck                   # tsc --noEmit (no cloud calls)
-make deploy-preview                     # review the plan
-make deploy-up                          # CREATE/UPDATE the box (it PULLS serverImage on boot)
-make deploy-outputs                     # site URL, grafanaUrl, instanceId, the SSM command
+make platform-typecheck                   # tsc --noEmit (no cloud calls)
+make platform-preview                     # review the plan
+make platform-up                          # CREATE/UPDATE the box (it PULLS serverImage on boot)
+make platform-outputs                     # site URL, grafanaUrl, instanceId, the SSM command
 ```
 
-> **The preflight fronts the `deploy-*` targets too.** `make deploy-preview` / `-up` select/create the
+> **The preflight fronts the `platform-*` targets too.** `make platform-preview` / `-up` select/create the
 > `prod` stack, default `region=us-east-2`, ensure both **`PULUMI_CONFIG_PASSPHRASE`** and
 > **`CLOUDFLARE_API_TOKEN`** (prompting silently for either if unset), and **prompt for any of the seven
 > required inputs you didn't pre-seed** above — so a missing value asks instead of failing mid-apply.
-> `deploy-outputs` / `deploy-ssm` need only the passphrase. See
+> `platform-outputs` / `platform-ssm` need only the passphrase. See
 > [The make targets' preflight](#the-make-targets-preflight).
 
 `serverImage` is the crux: it is **FOUNDATION's `repoUrl` output at the `sha-<commit>` tag CI pushed**.
@@ -289,11 +289,11 @@ so a fresh or public clone never red-fails.
 `nightly.yml` + `mutation.yml` need nothing beyond `GITHUB_TOKEN`.
 
 **Redeploy a new release** (after CI has pushed its image): bump `gitRef` + `serverImage` to the new
-SHA and `make deploy-up` (a `gitRef` change re-provisions the box via `userDataReplaceOnChange`), or
+SHA and `make platform-up` (a `gitRef` change re-provisions the box via `userDataReplaceOnChange`), or
 keep the box and update it in place over SSM:
 
 ```bash
-make deploy-ssm
+make platform-ssm
 sudo recollect-update <NEW_SHA_OR_TAG>  # re-points .env at the new image tag, ECR-pulls, recreates
 ```
 
@@ -338,7 +338,7 @@ Pages** — a separate origin; see [`deploy/site/README.md`](site/README.md).)
 
 **No inbound ports.** The Cloudflare Tunnel (`cloudflared`) dials *out* to Cloudflare, so the
 EC2 security group has **zero inbound rules**. Admin is keyless via **SSM Session Manager**
-(`make deploy-ssm`) — no SSH key, no port 22. (Want SSH instead? Add a key pair + a port-22
+(`make platform-ssm`) — no SSH key, no port 22. (Want SSH instead? Add a key pair + a port-22
 ingress rule to `deploy/pulumi/platform/index.ts`; the tunnel means you don't need to.)
 
 **Edge TLS, and why no Origin CA cert.** §10.1 mentions a Cloudflare Origin CA cert for
@@ -381,7 +381,7 @@ How it works, end to end:
   `rootBlockDevice`, not an `ebsBlockDevice` on the instance), **nothing sets delete-on-termination on
   it** — it has its own lifecycle and is **not** torn down when the box goes away. It carries the tag
   `recollect:data = true`. (No `protect`/`retainOnDelete` is set — see why under *recreate* next — so a
-  real `make deploy-destroy` still cleanly deletes it rather than wedging teardown.)
+  real `make platform-destroy` still cleanly deletes it rather than wedging teardown.)
 - **On recreate the volume moves to the new box.** When Pulumi replaces the instance (e.g. a `gitRef`
   bump under `userDataReplaceOnChange`), it replaces only the **`VolumeAttachment`** — that resource's
   `instanceId` input changed. The **`Volume`'s** own inputs (size/type/AZ) did **not** change, so
@@ -475,7 +475,7 @@ sits behind a **Cloudflare Zero Trust Access** application (free tier, ≤ 50 se
    is denied (no policy grants them in).
 
 Grafana itself runs **anonymous-Admin** (the otel-lgtm default) — which is **safe only because**
-Access is the real authentication in front; nothing public can reach it. (`make deploy-ssm` +
+Access is the real authentication in front; nothing public can reach it. (`make platform-ssm` +
 `docker logs` is the break-glass if Access ever locks you out.) The Grafana URL is surfaced as the
 **`grafanaUrl`** stack output.
 
@@ -587,7 +587,7 @@ live target file **from your domain** with the committed helper, then it self-ac
 hot-reloads within ~5 min — no restart):
 
 ```bash
-make deploy-ssm                                   # onto the box
+make platform-ssm                                   # onto the box
 cd /opt/recollect
 # Set your domain explicitly, OR omit it — the script reads OBS_GRAFANA_DOMAIN from /opt/recollect/.env
 # (the bare domain cloud-init already wrote from the Pulumi `domain`):
@@ -631,7 +631,7 @@ That sum **exceeds 1 GB** under load — which is exactly why the box runs a **4
 working set is modest and the cold/bulk pages live in swap, so steady-state RAM pressure stays
 manageable and the **host dashboard's Swap-used % + the `recollect-swap-high` CloudWatch alarm** are
 the canaries. **If swap thrashes under real load, the documented fallback is `t3.small` (2 GB)** —
-`pulumi config set instanceType t3.small && make deploy-up` (not free-tier; the budget guard emails,
+`pulumi config set instanceType t3.small && make platform-up` (not free-tier; the budget guard emails,
 as expected). This is the deliberate trade: self-hosted observability *fits* the free box **because of
 the swap**, with `t3.small` as the pressure valve.
 
@@ -700,16 +700,16 @@ aws ssm start-session --region us-east-2 --target "$INSTANCE" \
 ```
 
 If Grafana isn't on the box's loopback (it's on the compose network by default), the most reliable
-break-glass is simply to **open a shell and read it from inside**: `make deploy-ssm`, then
+break-glass is simply to **open a shell and read it from inside**: `make platform-ssm`, then
 `docker exec -it recollect-lgtm-1 wget -qO- localhost:3000/api/health` to confirm it's healthy, and
-**fix the Access app** (`pulumi config set maintainerEmail … && make deploy-up`) — the Access path is
+**fix the Access app** (`pulumi config set maintainerEmail … && make platform-up`) — the Access path is
 the intended one; the port-forward is only to diagnose.
 
 ### 3. The box itself — SSM Session Manager (keyless, no SSH, no port 22)
 There is **no SSH** and **no inbound port**. Admin is the AWS **Session Manager**:
 
 ```bash
-make deploy-ssm            # = aws ssm start-session --region us-east-2 --target <instanceId>
+make platform-ssm            # = aws ssm start-session --region us-east-2 --target <instanceId>
 # on the box:
 sudo tail -f /var/log/recollect-bootstrap.log                      # cloud-init / first-boot progress
 docker compose --project-directory /opt/recollect/deploy/compose \
@@ -744,7 +744,7 @@ The out-of-band alarms live in **CloudWatch** in `us-east-2`:
   ```
 - **The custom host metrics** (mem/swap/disk) appear under **CloudWatch → Metrics → Recollect/Host**
   once the CloudWatch agent has run (give it ~5–10 min after boot). If they're missing, check the
-  agent on the box: `make deploy-ssm`, then
+  agent on the box: `make platform-ssm`, then
   `sudo systemctl status amazon-cloudwatch-agent` and
   `sudo cat /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log`.
 
@@ -772,7 +772,7 @@ Install each program's dependencies (once per stack):
 
 ```bash
 make foundation-install    # = (cd deploy/pulumi/foundation && npm install)
-make deploy-install        # = (cd deploy/pulumi/platform   && npm install)
+make platform-install        # = (cd deploy/pulumi/platform   && npm install)
 ```
 
 ---
@@ -863,7 +863,7 @@ PLATFORM (run per release) — everything FOUNDATION needs is NOT required here;
   can assume the instance role.
 - **SSM** — nothing to *create* (the box uses the managed `AmazonSSMManagedInstanceCore`); your
   operator session needs `ssm:StartSession` (+ `TerminateSession`/`ResumeSession`) to run
-  `make deploy-ssm`.
+  `make platform-ssm`.
 - **CloudWatch + SNS** — create the alarms and the SNS topic/subscription (`cloudwatch:PutMetricAlarm`,
   `DescribeAlarms`, `DeleteAlarms`; `sns:CreateTopic`, `Subscribe`, `GetTopicAttributes`,
   `ListSubscriptionsByTopic`, `DeleteTopic`).
@@ -917,7 +917,7 @@ ID**) as the `cloudflareAccountId` / `cloudflareZoneId` stack config below.
 ### Granting Grafana access to more people
 The Cloudflare Access allow policy includes exactly one email by default (`maintainerEmail`). To add
 or change who can reach Grafana, **add emails to the policy** — the canonical (IaC) way is to widen
-the `includes` in `index.ts` (the `grafanaAccessPolicy` resource) to a list and `make deploy-up`:
+the `includes` in `index.ts` (the `grafanaAccessPolicy` resource) to a list and `make platform-up`:
 
 ```ts
 // in deploy/pulumi/platform/index.ts — the ZeroTrustAccessPolicy "grafana-maintainer":
@@ -929,7 +929,7 @@ includes: [
 ```
 
 (Single-maintainer quick path: `pulumi config set maintainerEmail other@example.com && make
-deploy-up` swaps the one allowed address.) Newly-allowed people reach Grafana exactly as in
+platform-up` swaps the one allowed address.) Newly-allowed people reach Grafana exactly as in
 [Access §1](#1-grafana--httpsgrafanayour-domaincom-behind-cloudflare-access) — visit the URL, enter
 their email, paste the one-time PIN. Changes apply on the next `pulumi up`; no box rebuild.
 
@@ -937,7 +937,7 @@ their email, paste the one-time PIN. Changes apply on the next `pulumi up`; no b
 | Secret | Lives in | Created by | Rotate by |
 |---|---|---|---|
 | **AWS creds** (SSO session or access keys) | your shell env / `~/.aws` (SSO cache) | you (IAM IC or IAM user) | `aws sso login` again (SSO auto-expires) / rotate the IAM access key |
-| **`CLOUDFLARE_API_TOKEN`** | your shell env | you (custom token above) | **Roll** it on the API Tokens page; re-export; re-run `make deploy-up` |
+| **`CLOUDFLARE_API_TOKEN`** | your shell env | you (custom token above) | **Roll** it on the API Tokens page; re-export; re-run `make platform-up` |
 | **on-box Postgres password** | Pulumi state (encrypted) **+** the box's `0600` `/opt/recollect/.env` | **Pulumi generates it** (`random.RandomPassword`) — never an input | delete the random resource / `pulumi up` to regenerate (compose-internal; no published port) |
 | **Cloudflare Tunnel connector token** | Pulumi state (encrypted) → injected into the box `.env` | **Pulumi** reads it back from the tunnel | recreate the tunnel via `pulumi up` |
 | **`cfBeaconToken`** (Web Analytics) | Pulumi **config secret** (`--secret`, encrypted in state) | you (Cloudflare → Web Analytics) | re-issue in Cloudflare; `pulumi config set --secret cfBeaconToken …` |
@@ -949,7 +949,7 @@ their email, paste the one-time PIN. Changes apply on the next `pulumi up`; no b
 > repo stays generic. The rendered user-data (with the tunnel token + Postgres password) is a
 > **tracked Pulumi secret** (encrypted in state) and lands on the box only as the `0600` root-only
 > `.env` + the encrypted EBS root. Inspect a secret with
-> `pulumi stack output <name> --show-secrets` or, on the box, `make deploy-ssm` →
+> `pulumi stack output <name> --show-secrets` or, on the box, `make platform-ssm` →
 > `sudo cat /opt/recollect/.env`. The `maintainerEmail`/`alarmEmail`/`budgetEmail` are **not**
 > secrets (plain config).
 
@@ -1050,7 +1050,7 @@ above is the quick path):
 
 ```bash
 cd deploy/pulumi/platform
-pulumi stack init prod            # one-time — or skip it: the `make deploy-*` preflight inits/selects it
+pulumi stack init prod            # one-time — or skip it: the `make platform-*` preflight inits/selects it
 
 # required — all DEPLOYMENT-UNIQUE; the repo ships no real value, you supply yours here. They land
 # in your gitignored Pulumi.<stack>.yaml (never git).
@@ -1092,22 +1092,22 @@ pulumi config set --secret cfBeaconToken  <CF_WEB_ANALYTICS_TOKEN>
 
 ```bash
 # 0. (once) install deps + log in to a Pulumi backend (Pulumi Cloud or `pulumi login --local`)
-make deploy-install
+make platform-install
 pulumi login            # or: pulumi login --local
 
 # 1. set the config above (AWS_/CLOUDFLARE_ env + `pulumi config set …`, incl. serverImage)
 
 # 2. type-check (no cloud calls)
-make deploy-typecheck
+make platform-typecheck
 
 # 3. preview the plan — review every resource before creating anything
-make deploy-preview
+make platform-preview
 
 # 4. create the infra (EC2 + Cloudflare tunnel + DNS + budgets) — the box PULLS serverImage
-make deploy-up
+make platform-up
 
 # 5. read the outputs (site URL, instance id, the SSM session command)
-make deploy-outputs
+make platform-outputs
 ```
 
 `pulumi up` returns in ~1 minute, but the **box keeps working** for a few more: cloud-init
@@ -1116,7 +1116,7 @@ and **builds the wasm site** (the site is the only on-box build now — the serv
 compiled), then starts the stack. Watch it:
 
 ```bash
-make deploy-ssm                                   # keyless shell on the box (SSM)
+make platform-ssm                                   # keyless shell on the box (SSM)
 #   on the box:
 sudo tail -f /var/log/recollect-bootstrap.log     # cloud-init progress (ECR login + pull + up)
 docker compose --project-directory /opt/recollect/deploy/compose \
@@ -1132,15 +1132,15 @@ codes.
 **Push first, then deploy:** merge to `main` so CI builds + pushes `${ECR_REPO_URL}:sha-<commit>`.
 Then either re-point the live box in place, or replace it:
 ```bash
-make deploy-ssm
+make platform-ssm
 sudo recollect-update <NEW_SHA_OR_TAG>     # re-points .env IMAGE_REF → :<ref>, ECR-pulls, recreates + prunes
 ```
-Or change `gitRef` + `serverImage` and `make deploy-up` — `userDataReplaceOnChange` re-provisions a
+Or change `gitRef` + `serverImage` and `make platform-up` — `userDataReplaceOnChange` re-provisions a
 fresh box that pulls the new image.
 
 ### Tear down
 ```bash
-make deploy-destroy        # PLATFORM: destroys the EC2 box + Cloudflare tunnel/DNS (asks: type 'unwrite')
+make platform-destroy        # PLATFORM: destroys the EC2 box + Cloudflare tunnel/DNS (asks: type 'unwrite')
 make foundation-destroy    # FOUNDATION: destroys the ECR repo + OIDC provider + CI role (rarely — only
                            #             when retiring the whole deployment; CI can no longer push after)
 ```
@@ -1179,7 +1179,7 @@ pulls.
 ### Smoke-test the image before launch
 
 `make deploy-local` lets *you* click around; **`make deploy-smoke`** proves the built artifact
-works **without a human** — run it before any real `make deploy-up` (and in CI on an x86_64 runner):
+works **without a human** — run it before any real `make platform-up` (and in CI on an x86_64 runner):
 
 ```bash
 make deploy-smoke          # build the deploy images → up → smoke the site + game + journal → tear down
@@ -1239,7 +1239,7 @@ custom metrics** (≤ 10), **basic 5-minute** metrics (no detailed monitoring), 
 on `/data`** (`swapSizeGb` — [Durable data](#durable-data--surviving-instance-recreation)), which the
 self-hosted observability stack is explicitly sized to lean on (see
 [the RAM math](#does-it-fit-1-gb--swap--free-tier)). If swap thrashes under steady load, the fallback
-is **`t3.small`** (2 GB): `pulumi config set instanceType t3.small && make deploy-up`. The
+is **`t3.small`** (2 GB): `pulumi config set instanceType t3.small && make platform-up`. The
 **`recollect-swap-high` CloudWatch alarm** + the host dashboard's Swap-used % are the tells (also watch
 the OOM-killer in the bootstrap log / `dmesg`). (`t3.small` is not free-tier — the budget guard emails;
 that's expected.)

@@ -124,7 +124,7 @@ forces the line path):
 - [ ] Deploy host — **host/box dashboard** shows real CPU/mem/**swap**/disk from `node-exporter`; the swap panel is non-empty (the box uses the 4 GB swap).
 - [ ] Deploy host — **retention/storage**: `/data/observability` exists on the durable volume and stays bounded (~1–2 GB) over time; a box recreate (`gitRef` bump) preserves the dashboards + history.
 - [ ] Deploy host — **CloudWatch out-of-band**: the SNS email subscription is **confirmed** (clicked the confirmation email); `recollect-*` alarms exist in CloudWatch and the `Recollect/Host` custom metrics (mem/swap/disk) appear; an induced condition (e.g. fill a disk in a test) pages the email.
-- [ ] Deploy host — **break-glass**: `make deploy-ssm` reaches the box keylessly (no SSH); the SSM port-forward fallback for Grafana works if Access is misconfigured.
+- [ ] Deploy host — **break-glass**: `make platform-ssm` reaches the box keylessly (no SSH); the SSM port-forward fallback for Grafana works if Access is misconfigured.
 
 ## Build artifacts
 - [ ] `make site` reports the wasm bundle under the 3 MB gzipped budget.

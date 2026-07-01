@@ -57,7 +57,7 @@ variable isn't set, so a public fork never fails red.
 ## 1. The Pulumi IaC — the Pages project, domains, and DNS
 
 Everything Cloudflare-side is **declarative in `deploy/pulumi/platform/index.ts`** (the same stack
-that runs the game-server tunnel), created on `make deploy-up`:
+that runs the game-server tunnel), created on `make platform-up`:
 
 | Resource (in `platform/index.ts`) | What it is |
 |---|---|
@@ -204,7 +204,7 @@ built `dist/` is git-ignored.
 
 | Value | Lives in | Created by | Rotate by |
 |---|---|---|---|
-| Pages **project** + apex/`www` **bindings** + **DNS** | Pulumi state (PLATFORM) | **Pulumi IaC** (`platform/index.ts`) | edit `index.ts` / the `pagesProjectName`,`gameSubdomain` config + `make deploy-up` |
+| Pages **project** + apex/`www` **bindings** + **DNS** | Pulumi state (PLATFORM) | **Pulumi IaC** (`platform/index.ts`) | edit `index.ts` / the `pagesProjectName`,`gameSubdomain` config + `make platform-up` |
 | `CLOUDFLARE_API_TOKEN` (Pages:Edit) | GitHub **secret** | you ([§3 step A](#3-the-residual-manual-steps-what-pulumi-cant-do)) | roll it on the API Tokens page; re-set the secret |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub **secret** | you ([§3 step B](#3-the-residual-manual-steps-what-pulumi-cant-do)) | n/a (stable) — update the secret if you change accounts |
 | `CF_PAGES_PROJECT` | GitHub **variable** (non-secret) | you, from the `pagesProjectName` output ([§3](#3-the-residual-manual-steps-what-pulumi-cant-do)) | change the `pagesProjectName` config + the variable together |
