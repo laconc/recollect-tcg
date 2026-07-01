@@ -542,11 +542,16 @@ func main() {
 		}
 		// Attach at /dev/sdf (Nitro exposes it as an NVMe device user-data resolves from /dev/sdf).
 		// deleteOnTermination defaults FALSE — a separate volume's attachment never tears it down.
+		// DeleteBeforeReplace: on a box REPLACE the volume must move to the new instance, but an EBS
+		// volume can only be attached to ONE instance at a time. Pulumi's default create-before-delete
+		// would try to attach the (still-attached) volume to the new box first → `VolumeInUse`. Deleting
+		// the OLD attachment first detaches the volume from the outgoing box, then it attaches to the new
+		// one — the durable-volume-across-replace flow works cleanly.
 		if _, err := ec2.NewVolumeAttachment(ctx, "recollect-data", &ec2.VolumeAttachmentArgs{
 			DeviceName: pulumi.String("/dev/sdf"),
 			VolumeId:   dataVolume.ID(),
 			InstanceId: instance.ID(),
-		}, awsProviderOpt); err != nil {
+		}, awsProviderOpt, pulumi.DeleteBeforeReplace(true)); err != nil {
 			return err
 		}
 
