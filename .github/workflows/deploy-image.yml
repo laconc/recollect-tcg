@@ -61,7 +61,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
           role-session-name: gha-recollect-deploy-image
 
       # `docker login` to the private ECR registry using the assumed-role creds (no password stored).
@@ -71,15 +71,16 @@ jobs:
 
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
-      # Image metadata: the immutable `sha-<commit>` tag PLATFORM deploys + a moving `latest`. The
-      # `sha-` prefix matches FOUNDATION's lifecycle policy (it keeps the N most-recent `sha-…` images).
+      # Image metadata: the immutable commit-SHA tag the box pulls + a moving `latest`. No tag prefix —
+      # the tag IS the git SHA, so the box's `recollect-update <sha>` can check out that ref AND pull its
+      # image in one step. FOUNDATION's lifecycle policy keeps the N most-recent images by count.
       - name: compute image tags + labels
         id: meta
         run: |
           repo='${{ vars.ECR_REPO_URL }}'
           sha='${{ github.sha }}'
           {
-            echo "tags=${repo}:sha-${sha},${repo}:latest"
+            echo "tags=${repo}:${sha},${repo}:latest"
             echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "version=$(grep -m1 '^version' app/Cargo.toml | cut -d'"' -f2)"
           } >> "$GITHUB_OUTPUT"
@@ -106,14 +107,52 @@ jobs:
             VERSION=${{ steps.meta.outputs.version }}
             SOURCE_URL=https://github.com/${{ github.repository }}
 
+      # CD: roll the RUNNING box to the freshly-pushed image IN PLACE (no box replacement). Send the
+      # locked-down `recollect-update` SSM document (FOUNDATION) to the box — targeted by its Name tag,
+      # passing THIS commit's SHA — and the box's recollect-update helper checks out that ref, pulls the
+      # image tagged with it, and recreates the server container. Best-effort (`continue-on-error`): a box
+      # that's absent/booting must not red the push — the image is in ECR, and a later run or a
+      # `make platform-up` still rolls it. Region + account come from repo SECRETS (the doc ARN).
+      - name: roll out to the box (in-place, via SSM recollect-update)
+        continue-on-error: true
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          doc="arn:aws:ssm:${AWS_REGION}:${ACCOUNT_ID}:document/recollect-update"
+          cid=$(aws ssm send-command --region "$AWS_REGION" \
+            --document-name "$doc" \
+            --targets "Key=tag:Name,Values=recollect-server" \
+            --parameters "GitRef=${GIT_SHA}" \
+            --query 'Command.CommandId' --output text)
+          echo "SSM command: $cid"
+          # The invocation registers a moment after send — resolve the target instance with a short retry.
+          iid=""
+          for _ in $(seq 1 10); do
+            iid=$(aws ssm list-command-invocations --region "$AWS_REGION" --command-id "$cid" \
+              --query 'CommandInvocations[0].InstanceId' --output text 2>/dev/null || true)
+            [ -n "$iid" ] && [ "$iid" != "None" ] && break
+            sleep 3
+          done
+          if [ -z "$iid" ] || [ "$iid" = "None" ]; then
+            echo "::warning::no running box tagged recollect-server picked up the rollout — skipped"
+            exit 0
+          fi
+          echo "target instance: $iid"
+          aws ssm wait command-executed --region "$AWS_REGION" --command-id "$cid" --instance-id "$iid" || true
+          aws ssm get-command-invocation --region "$AWS_REGION" --command-id "$cid" --instance-id "$iid" \
+            --query '{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}' --output json
+
       - name: summarize
         run: |
           {
             echo "### Pushed server image to ECR"
             echo ""
-            echo "- \`${{ vars.ECR_REPO_URL }}:sha-${{ github.sha }}\` (immutable — deploy this)"
+            echo "- \`${{ vars.ECR_REPO_URL }}:${{ github.sha }}\` (immutable commit tag — the box pulls this)"
             echo "- \`${{ vars.ECR_REPO_URL }}:latest\`"
             echo ""
-            echo "Deploy it: set PLATFORM's \`serverImage\` to the \`sha-\` tag and \`make platform-up\`,"
-            echo "or on the box: \`sudo recollect-update <git-ref>\`."
+            echo "Rolled the box in place via SSM (\`recollect-update ${{ github.sha }}\`) — see the step above."
+            echo "For a fresh box instead: set PLATFORM \`serverImage\` to the ref + \`make platform-up\`."
           } >> "$GITHUB_STEP_SUMMARY"
