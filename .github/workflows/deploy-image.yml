@@ -37,7 +37,7 @@ permissions:
 # CI role's trust is pinned to this repo's MAIN branch (the OIDC `sub` `…:ref:refs/heads/main`), so a
 # PR's token (a different `sub`) could not assume the role anyway. Keeping the role main-only is the
 # security win (a fork PR can never push); to also push on tags/PRs, broaden the `sub` in
-# foundation/index.ts and add the matching trigger here.
+# foundation/main.go and add the matching trigger here.
 jobs:
   push-to-ecr:
     name: build + push server image to ECR (OIDC)
@@ -56,7 +56,7 @@ jobs:
 
       # Trade the GitHub OIDC token for SHORT-LIVED AWS creds by assuming the FOUNDATION CI role.
       # No access keys are stored anywhere — the role's trust policy is pinned to this repo's main
-      # branch (foundation/index.ts), and the creds expire with the job.
+      # branch (foundation/main.go), and the creds expire with the job.
       - name: configure AWS credentials (OIDC — no stored keys)
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
         with:
