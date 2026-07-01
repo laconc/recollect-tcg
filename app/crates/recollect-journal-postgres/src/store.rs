@@ -17,14 +17,19 @@ use tokio_postgres::Client;
 /// the async store here and the contract test's sync twin drive these tables, so
 /// proving the twin proves the storage for both.
 ///
-/// The setup is bracketed by a session advisory lock: `CREATE TABLE IF NOT EXISTS`
-/// does *not* take a lock strong enough to keep two sessions from racing into a
-/// duplicate `pg_type` insert (E23505), so concurrent first-time initialization —
-/// several test connections, or a horizontally-scaled startup — would otherwise
-/// flake. The lock serializes that window; everyone after the winner sees the
-/// tables already present and no-ops.
+/// The setup runs inside a transaction under a *transaction-scoped* advisory
+/// lock. `CREATE TABLE IF NOT EXISTS` does *not* take a lock strong enough to
+/// keep two sessions from racing into a duplicate `pg_type` insert (E23505) or
+/// type create (E42710), so concurrent first-time initialization — several test
+/// connections, or a horizontally-scaled startup — would otherwise flake.
+/// `pg_advisory_xact_lock` holds until COMMIT, so the loser waits until the
+/// winner's tables are *committed and visible*, then no-ops on IF NOT EXISTS.
+/// (A *session* lock released before the implicit commit — the previous form —
+/// freed the loser while the new tables were still invisible, so it re-created
+/// them and collided on the row-type.)
 pub const JOURNAL_SCHEMA: &str = r#"
-SELECT pg_advisory_lock(8765309);
+BEGIN;
+SELECT pg_advisory_xact_lock(8765309);
 CREATE TABLE IF NOT EXISTS journal_events (
     stream_id      TEXT   NOT NULL,
     seq            BIGINT NOT NULL,
@@ -41,7 +46,7 @@ CREATE TABLE IF NOT EXISTS journal_snapshots (
     state          BYTEA  NOT NULL,            -- postcard A
     PRIMARY KEY (stream_id, at_seq)
 );
-SELECT pg_advisory_unlock(8765309);
+COMMIT;
 "#;
 
 fn store_err<E: std::error::Error + Send + Sync + 'static>(e: E) -> JournalError {

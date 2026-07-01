@@ -136,8 +136,21 @@ fn hash_token(token: &str) -> Vec<u8> {
     Sha256::digest(token.as_bytes()).to_vec()
 }
 
+/// Fixed key for the advisory lock that serializes concurrent migrations in
+/// [`Journal::connect`]. Any distinct constant works; this spells "RECOLL".
+const MIGRATION_ADVISORY_LOCK: i64 = 0x5245_434F_4C_4C;
+
 impl Journal {
     /// Connect and migrate. The connection task is spawned onto tokio.
+    ///
+    /// The migration runs under a transaction-scoped advisory lock. `CREATE
+    /// TABLE IF NOT EXISTS` is NOT concurrency-safe — two sessions can each
+    /// create a table's companion row-type and collide on
+    /// `pg_type_typname_nsp_index` (SQLSTATE 23505). Serializing the DDL lets
+    /// concurrent `connect()`s — the parallel integration tests, and a
+    /// multi-replica server boot against a fresh database — migrate one at a
+    /// time. The lock releases at COMMIT; a caller that already has the schema
+    /// takes the lock, finds every object present (IF NOT EXISTS), and returns.
     pub async fn connect(url: &str) -> Result<Journal, PgError> {
         let (client, conn) = tokio_postgres::connect(url, NoTls).await?;
         tokio::spawn(async move {
@@ -145,7 +158,13 @@ impl Journal {
                 tracing::error!(error = %e, "postgres connection closed");
             }
         });
-        client.batch_execute(SCHEMA).await?;
+        client
+            .batch_execute(&format!(
+                "BEGIN;\nSELECT pg_advisory_xact_lock({lock});\n{schema}\nCOMMIT;",
+                lock = MIGRATION_ADVISORY_LOCK,
+                schema = SCHEMA,
+            ))
+            .await?;
         Ok(Journal { client })
     }
 
