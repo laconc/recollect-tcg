@@ -10,6 +10,11 @@ ignore = [
   # moves off them. (RUSTSEC-2025-0141 bincode, RUSTSEC-2024-0436 paste)
   "RUSTSEC-2025-0141",
   "RUSTSEC-2024-0436",
+  # ttf-parser: "unmaintained" advisory (NOT a vulnerability), pulled transitively
+  # by ab_glyph — a DEV-dependency of recollect-web (text in the gallery renders).
+  # No safe upgrade is available upstream; drop this ignore when ab_glyph moves to
+  # a maintained parser (e.g. skrifa). (RUSTSEC-2026-0192)
+  "RUSTSEC-2026-0192",
 ]
 
 [licenses]

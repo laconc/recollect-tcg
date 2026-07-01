@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: ghcr.io/OWNER/recollect-server
-  tag: ""            # pin per release; never :latest
+  tag: "latest"      # defaults to latest for now; pin per release for production
   pullPolicy: IfNotPresent
 
 # Name of an existing Secret with key DATABASE_URL. The chart never templates

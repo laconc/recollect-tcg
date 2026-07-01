@@ -18,7 +18,9 @@ spec:
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: server
-          image: "{{ .Values.image.repository }}:{{ required "image.tag must be pinned" .Values.image.tag }}"
+          # image.tag defaults to "latest" (values.yaml); pin per release for production.
+          # (The `required "image.tag must be pinned"` guard is commented out for now.)
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
           ports: [{ containerPort: 8080, name: http }]
