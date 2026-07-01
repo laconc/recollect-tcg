@@ -96,7 +96,16 @@ const repo = new aws.ecr.Repository(
   {
     name: imageName,
     imageScanningConfiguration: { scanOnPush: true },
-    imageTagMutability: "IMMUTABLE",
+    // Tags are immutable EXCEPT `latest`. Release images are pinned by the
+    // immutable `sha-<commit>` tag (what PLATFORM deploys), but CI also pushes a
+    // moving `:latest` for convenience — which an all-immutable repo rejects on
+    // every push after the first ("tag already exists and is immutable").
+    // IMMUTABLE_WITH_EXCLUSION keeps `sha-*` immutable and lets `latest` be
+    // overwritten. Updating mutability is an in-place change (no repo replace).
+    imageTagMutability: "IMMUTABLE_WITH_EXCLUSION",
+    imageTagMutabilityExclusionFilters: [
+      { filterType: "WILDCARD", filter: "latest" },
+    ],
     // A `pulumi destroy` of FOUNDATION should cleanly remove the repo even if images remain — this
     // stack is operator-managed scaffolding, not a data store; the images are rebuildable from git.
     forceDelete: true,
