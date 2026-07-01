@@ -194,7 +194,13 @@ func main() {
 			ClientIdLists:   pulumi.StringArray{pulumi.String("sts.amazonaws.com")},
 			ThumbprintLists: thumbprints,
 			Tags:            pulumi.StringMap{"Name": pulumi.String("recollect-github-oidc")},
-		}, awsProviderOpt)
+			// AWS AUTO-MANAGES the thumbprint for the well-known GitHub endpoint (it populates/rotates
+			// one regardless of what we send), so our empty `thumbprintLists` perpetually diffs against
+			// the value AWS returns — a benign but noisy drift on every preview. Ignore changes to the
+			// field: modern AWS validates GitHub's cert against its own trust store and does not rely on
+			// this list, so leaving it to AWS is correct. (A create still applies a pinned thumbprint if
+			// `githubOidcThumbprint` is configured; ignoreChanges only affects subsequent updates.)
+		}, awsProviderOpt, pulumi.IgnoreChanges([]string{"thumbprintLists"}))
 		if err != nil {
 			return err
 		}
