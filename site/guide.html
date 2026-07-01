@@ -4,19 +4,31 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Recollect — player guide</title>
-  <meta name="description" content="A player's guide to the Recollect web client: the canvas-native game — tap a piece to light its targets, tap or drag to act, hover or long-press to inspect — reachable by mouse, touch, and keyboard alike, walked screen by screen." />
+  <meta name="description" content="How to play Recollect in your browser: start a match against the AI or host a 1v1 / 2v2 with a friend, read the board, and reach every move by mouse, touch, or keyboard. The whole game is drawn on the canvas — tap a card to lift it, tap a glowing tile to act." />
   <link rel="stylesheet" href="css/brand.css" />
   <style>
-    /* Page-scoped touches for the walkthrough — the paper & ink palette only.
+    /* Page-scoped touches for the guide — the paper & ink palette only.
        Motion is already disabled under prefers-reduced-motion by brand.css. */
+
+    /* The contents nav — mirrors the rules / lore page TOC. */
+    .page-toc {
+      border: 1px solid var(--rule); border-radius: var(--radius);
+      background: #fbf8f0; padding: var(--space); margin: 1.5em 0 2em;
+    }
+    .page-toc h2 { margin: 0 0 0.4em; font-size: 1.2rem; }
+    .page-toc ol { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: var(--space); }
+    .page-toc li { break-inside: avoid; margin: 0 0 0.35em; max-width: none; }
+    @media (max-width: 38rem) { .page-toc ol { columns: 1; } }
+
+    /* A faithful, non-interactive sketch of a region of the canvas surface —
+       the regions the client draws, in the same palette. Not a screenshot; a
+       diagram, captioned for meaning. */
     .guide-fig {
       border: 1px solid var(--rule); border-left: 4px solid var(--seat-a);
       border-radius: var(--radius); background: #fbf8f0;
-      padding: var(--space); margin: 1.2em 0; max-width: none;
+      padding: var(--space); margin: 1.4em 0; max-width: none;
     }
     .guide-fig figcaption { font-style: italic; color: var(--ink-soft); margin-bottom: 0.6em; }
-    /* A faithful, non-interactive mock of the canvas surface — the regions the
-       client draws, sketched in the same palette. Not a screenshot; a diagram. */
     .mock { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .mock-card, .mock-fab, .mock-strip {
       font: inherit; font-size: 0.95rem; line-height: 1.2;
@@ -31,22 +43,25 @@
       border-radius: var(--radius); border-width: 1px; background: #fff; color: var(--ink-soft);
       font-variant-numeric: tabular-nums; width: 100%;
     }
+    .mock-status {
+      font-variant-numeric: tabular-nums; color: var(--ink-soft);
+      border: 1px dashed var(--rule); border-radius: var(--radius);
+      padding: 0.5rem 0.75rem; background: #fff;
+    }
+
     /* The little affordance glyphs, inline in prose. */
     .dot { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%;
       background: var(--seat-a); vertical-align: middle; }
     .chev { color: var(--seat-a); font-weight: 700; }
     /* The recede / devolve glyph — a DOWNWARD amber chevron (evolve is the upward green one). */
     .chev-down { color: var(--gold); font-weight: 700; }
-    .mock-status {
-      font-variant-numeric: tabular-nums; color: var(--ink-soft);
-      border: 1px dashed var(--rule); border-radius: var(--radius);
-      padding: 0.5rem 0.75rem; background: #fff;
-    }
+
     kbd {
       font: inherit; font-size: 0.85rem; padding: 0.1em 0.45em;
       border: 1px solid var(--ink-soft); border-bottom-width: 2px; border-radius: 4px;
       background: #fff; color: var(--night);
     }
+
     /* The controls table — readable on paper, wraps on phones. */
     .guide-table { width: 100%; border-collapse: collapse; margin: 1em 0; max-width: none; }
     .guide-table th, .guide-table td {
@@ -56,9 +71,18 @@
     .guide-table th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); }
     .guide-table caption { text-align: left; color: var(--ink-soft); font-style: italic; margin-bottom: 0.4em; }
     .scroll-x { overflow-x: auto; }
-    /* The ASCII canvas-regions diagram: a decorative figure (the figcaption carries
-       the meaning). Focusable so a keyboard user can scroll it on a narrow viewport. */
+
+    /* The ASCII canvas-regions diagram: a decorative figure (the figcaption
+       carries the meaning). Focusable so a keyboard user can scroll it on a
+       narrow viewport. */
     .ascii-mock { margin: 0; overflow-x: auto; line-height: 1.35; }
+
+    /* The "phases" cards — a light, scannable trio. */
+    .phases { display: grid; gap: var(--space); grid-template-columns: 1fr; margin: 1.2em 0; }
+    @media (min-width: 48rem) { .phases { grid-template-columns: repeat(3, 1fr); } }
+    .phase { border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--space); background: #fbf8f0; max-width: none; }
+    .phase h3 { margin: 0 0 0.35em; }
+    .phase p { color: var(--ink-soft); margin: 0; max-width: none; }
   </style>
 </head>
 <body>
@@ -73,45 +97,105 @@
         <a href="rules.html">Rules</a>
         <a href="lore.html">Lore</a>
         <a href="contact.html">Contact</a>
+        <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="options-panel">Options</button>
       </nav>
+    </div>
+    <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+      <div class="options-inner">
+        <h2 class="options-title">Options</h2>
+        <div class="site-settings" role="group" aria-label="Site settings">
+          <label class="setting" for="opt-reduced-motion">
+            <input type="checkbox" id="opt-reduced-motion" />
+            <span>Reduced motion</span>
+          </label>
+        </div>
+      </div>
     </div>
   </header>
 
   <main id="main">
     <article class="prose container">
-      <h1>Player guide — the web client</h1>
-      <p class="note">How to play Recollect in your browser, screen by screen. The
-        client draws the whole game on a canvas, and you play right on it — touch a
-        piece, its targets light up, tap or drag to act. This guide walks the screens
-        and shows how to reach every move with a mouse, a finger, or the keyboard
-        alone. For the rules themselves, see <a href="rules.html">Rules in brief</a>;
-        to start a game, the <a href="play.html">Play page</a>.</p>
+      <h1>Player guide</h1>
+      <p class="note">How to play Recollect in your browser — start a match, read the
+        board, and reach every move with a mouse, a finger, or the keyboard alone. The
+        client draws the whole game on a canvas, and you play right on it: touch a card to
+        lift it, the tiles it can reach light up, then tap or drag to act. For the rules
+        themselves — scoring, combat, the Dusk — see <a href="rules.html">Rules in
+        brief</a>; to jump straight in, the <a href="play.html">Play page</a>.</p>
 
-      <p><strong>A note on words.</strong> Spirits are <strong>banished</strong>
-        from a match, never "killed." Only the <strong class="ink-b">Solace</strong>
-        <strong>Unwrites</strong>, and only the Solace's register speaks of
-        "forgetting." The Memory's final rounds are the <strong>Dusk</strong>, then
-        <strong>Nightfall</strong>. The screens use this language; so does this guide.</p>
+      <p><strong>A note on words.</strong> Spirits are <strong>banished</strong> from a
+        Memory, never "killed" or "destroyed." Only the
+        <strong class="ink-b">Solace</strong> <strong>unwrites</strong>, and only the
+        Solace's register speaks of "forgetting." A <strong>Stray</strong> is a wild
+        spirit the Memory surfaces. The match's final rounds are the <strong>Dusk</strong>,
+        then <strong>Nightfall</strong>. The game uses this language; so does this guide.</p>
 
-      <h2>The shape of the screen</h2>
-      <p>The browser client draws <strong>the whole game on a canvas</strong> in the
-        game's paper &amp; ink palette — the board, the HUD, your hand, and every
-        action you can take. The layout is <strong>responsive</strong> — it reflows
-        for phones, tablets, and desktops: the canvas scales to the viewport (staying
-        square and sharp on high-DPI screens, re-fitting on resize or rotate), the
-        in-canvas controls are touch-sized for an easy tap, and nothing scrolls
-        sideways or clips. On a landscape phone the board sits beside the bands; in
-        portrait it stacks, so you can play one-handed.</p>
-      <p>In <strong>every match — local vs-AI, online 1v1 PvP, and 2v2 — you play
-        entirely on the canvas</strong>: you tap a piece or card to select it, then a
-        glowing target to act, or drag between them. (Online play draws the same full
-        shell, built from the server's redacted view — you only ever see your own seat.
-        The one board-only view left is <strong>Watch a 2v2</strong>.) Top to bottom, the
-        canvas regions are:</p>
+      <nav class="page-toc" aria-labelledby="contents">
+        <h2 id="contents">On this page</h2>
+        <ol>
+          <li><a href="#start">Starting a match</a></li>
+          <li><a href="#screen">The shape of the screen</a></li>
+          <li><a href="#turn">Your turn — Flow, Main, Fade</a></li>
+          <li><a href="#acting">Acting on the board</a></li>
+          <li><a href="#evolve">Evolve &amp; recede</a></li>
+          <li><a href="#dusk">The Dusk &amp; Nightfall</a></li>
+          <li><a href="#controls">Controls — mouse, touch, keyboard</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="start">Starting a match</h2>
+      <p>Open the game from the <a href="play.html">Play page</a> and you land on the
+        picker, <em>Choose your story</em>. Up top sits an <strong>Opponent</strong>
+        dropdown — <strong>Easy</strong>, <strong>Normal</strong>, <strong>Hard</strong>,
+        or <strong>Expert</strong> — then three <strong>deck styles</strong>, each shown
+        with its one-line voice ("All teeth…") and an at-a-glance read of the deck — its
+        resonance lean, tempo, aggression, and body-vs-spell mix, plus a preview of the
+        cards it opens with — so you choose on substance, not just flavour.</p>
       <figure class="guide-fig">
-        <figcaption>The canvas regions, top to bottom — opponent strip, board, HUD, hand tray, and the two floating buttons.</figcaption>
-        <pre class="ascii-mock" tabindex="0" role="img" aria-label="Diagram of the canvas regions, top to bottom: the opponent strip, the board, the HUD with score, Anima and the clock, the hand tray of cards, and the floating Glimpse and End Turn buttons.">┌─────────────────────────────────────────────┐
-│  the Solace          score 5 (3 erased) ▮▮▮▮ │  opponent strip (their hand = backs)
+        <figcaption>The picker — a difficulty dropdown, then three deck styles, then the online options.</figcaption>
+        <div class="mock">
+          <span class="mock-status">Opponent: Normal ▾</span>
+        </div>
+        <p style="margin:0.7em 0 0"><strong>Embertide</strong> — All teeth. Arrive loudly, chain hard…<br>
+          <span class="note">14 spirits · 6 spellbook · opens: Cinderling, Tide-Caller, Hush…</span></p>
+        <p style="margin:0.4em 0 0"><strong>The Long Watch</strong> — Hold ground, blunt every arrival…<br>
+          <span class="note">16 spirits · 4 spellbook · opens: Wardstone, Hush…</span></p>
+      </figure>
+      <p>Two ways in:</p>
+      <ul>
+        <li><strong>Quick Play vs the AI.</strong> Pick a difficulty, then click a deck
+          style — you're straight into a match against the bot, no waiting for anyone to
+          show up. You take the first or second word; the opener is announced as the match
+          begins.</li>
+        <li><strong>Host a match with a friend.</strong> Choose <strong>Play
+          online</strong> to set up your own game: pick <strong>1v1</strong> or
+          <strong>2v2</strong>, fill each seat with a player or a bot (in 2v2 any mix
+          works — an ally can be a bot, an opponent a human), set the bot difficulty and
+          which faction you contend against, and Recollect hands you an
+          <strong>invite code</strong> for each human seat. Send the code; they join with
+          it. To take a seat in someone else's game, choose <strong>Play online</strong> →
+          <strong>join</strong> and enter their code.</li>
+      </ul>
+      <p>There's also <strong>Watch a 2v2</strong> — spectate four AI players on the
+        larger 6×6 board. However you start, every match runs the same rules and the same
+        canvas, and you only ever see your own seat (you never see an opponent's hand or
+        deck). See the <a href="play.html">Play page</a> for the host / join forms.</p>
+
+      <h2 id="screen">The shape of the screen</h2>
+      <p>The browser client draws <strong>the whole game on a canvas</strong> in the
+        game's paper &amp; ink palette — the board, the HUD, your hand, and every action
+        you can take, set in a real serif type that matches the rest of the site. The
+        layout is <strong>responsive</strong>: it reflows for phones, tablets, and
+        desktops — the canvas scales to fit the viewport (staying sharp on high-DPI
+        screens, re-fitting on resize or rotate), the controls are touch-sized for an easy
+        tap, and nothing scrolls sideways or clips. On a wide screen the game sits as a
+        centred, framed "table"; in portrait it stacks so you can play one-handed. Top to
+        bottom, the canvas regions are:</p>
+      <figure class="guide-fig">
+        <figcaption>The canvas regions, top to bottom — the opponent strip, the board, the HUD, your hand, and the two floating controls.</figcaption>
+        <pre class="ascii-mock" tabindex="0" role="img" aria-label="A diagram of the canvas regions, top to bottom: the opponent strip showing their name and score and their hand as card backs; the board, a five-by-five page (six-by-six in 2v2); the HUD with your score, your Anima, and a twelve-pip round clock; your hand of cards; and the floating Glimpse and End Turn buttons.">┌─────────────────────────────────────────────┐
+│  the Solace          score 5 (3 erased) ▮▮▮▮ │  opponent strip (their hand = card backs)
 │              ┌───────────────┐                │
 │              │     · ·       │                │  the board (5×5 page; 6×6 in 2v2):
 │              │  the board  ^ │                │  a quiet · dot = a piece that can act;
@@ -119,7 +203,7 @@
 │              └───────────────┘                │
 │  3  ◆ 4           Round 3   ▮▮▮○○○○○○○○○ ⟳     │  HUD: your score · Anima · the 12-pip clock
 │   ┌───┐ ┌───┐ ┌───┐               ┌─────────┐ │
-│   │ 2 │ │ 1 │ │ 3·│  your hand    │ Glimpse │ │  hand tray (real cards; · = playable);
+│   │ 2 │ │ 1 │ │ 3·│  your hand    │ Glimpse │ │  your hand (real cards; · = a legal play);
 │   │Cin│ │Hsh│ │Tcl│  (tap to lift)├─────────┤ │  the buttons float lower-right
 │   └───┘ └───┘ └───┘               │End Turn │ │
 │                                   └─────────┘ │
@@ -127,106 +211,122 @@
 │      │ reach Cross · Mobile · ★ ● ● ●  │      │
 │      └─────────────────────────────────┘      │
 └─────────────────────────────────────────────┘
-  (below the canvas: a hidden actions list + a live status line + New game)</pre>
+  (an accessible mirror — a live status line + a full actions tree — sits in the
+   accessibility layer: read by screen readers, invisible on screen)</pre>
       </figure>
       <ul>
-        <li><strong>Board (canvas).</strong> The page itself — your spirits and the
-          opponent's, terrain, impressions, and the Dusk edge as it darkens. It
-          animates between states (unless your system prefers reduced motion, which it
-          honors). At rest, a quiet <span class="dot" aria-hidden="true"></span>
-          <strong>dot</strong> sits on any of your pieces with an available action, a
-          green <span class="chev" aria-hidden="true">^</span> <strong>chevron</strong>
-          (upward) marks a base that can <strong>Evolve</strong>, and an amber
-          <span class="chev-down" aria-hidden="true">v</span> <strong>chevron</strong>
-          (downward) marks a <strong>standing-Faded</strong> form that can
+        <li><strong>The board.</strong> The page itself — your spirits and the
+          opponent's, terrain, impressions, and the Dusk edge as it darkens. At rest, a
+          quiet <span class="dot" aria-hidden="true"></span> <strong>dot</strong> sits on
+          any of your pieces with an available action, an upward green
+          <span class="chev" aria-hidden="true">^</span> <strong>chevron</strong> marks a
+          base that can <strong>evolve</strong>, and a downward amber
+          <span class="chev-down" aria-hidden="true">v</span> chevron marks a form that can
           <strong>recede</strong> (devolve). A small corner dot on each of your
-          <strong>Mobile</strong> spirits also cues its move this turn:
-          <strong>green</strong> = it can still take its one free step;
-          <strong>dim</strong> = it is rested (it already moved, or just arrived and is
-          summoning-sick). A spirit of yours <strong>banished in combat</strong> doesn't
-          vanish at once — it stands <strong>Faded</strong> for a turn, lit with a warm
-          <strong>amber rescue glow</strong> (brighter than a hopeless fade): a glance
-          says <em>this one can be saved this turn</em>. The Solace's Unwritten leave
-          <strong>no</strong> mark — its forgetting scores off the board (see the HUD and
-          the status line), not as a stain on the page. <strong>You play right on the
-          board:</strong> tap one of your pieces (or a hand card) and the tiles it can
-          reach <strong class="ink-a">glow green</strong> (an engageable target
-          pulses brighter) — tap a glow to act, <em>or</em> drag from the piece to the
-          target.</li>
-        <li><strong>HUD.</strong> Your <strong>score</strong>, your <strong>Anima</strong>
-          (the ◆ drop — your play budget, the real limiter since there's no fixed action
-          count), and the <strong>round</strong> on a 12-pip clock (the lit pips count
-          rounds elapsed; the <strong>Dusk</strong> pips past round 8 darken; the final
-          <strong>Nightfall</strong> pip is ringed).</li>
-        <li><strong>Opponent strip.</strong> Their name, their running
-          <strong>score</strong> (including the Solace's off-board erasure tally, shown
-          as <code>score N (M erased)</code> when non-zero), and their hand as that many
-          <strong>face-down backs</strong> — a count only; you never see their cards.</li>
-        <li><strong>Your hand (tray).</strong> Your cards as real placeholder cards
-          (cost · name · the attack/defense/health stat block). A quiet
-          <span class="dot" aria-hidden="true"></span> marks a card that has a legal play
-          this turn (a dimmed card has none); a green <span class="chev" aria-hidden="true">^</span>
-          marks an evolution <strong>form</strong> card. Tap a card to <strong>lift</strong>
-          it (it rises with a gild halo) and its legal tiles glow — tap a glow to place
-          it, or drag the card onto a tile. A card whose only play is instant (a Ritual
-          or an Unwriting) resolves the moment you pick it up.</li>
+          <strong>Mobile</strong> spirits cues its move: <strong>green</strong> = it can
+          still take its one free step this turn; <strong>dim</strong> = it's rested (it
+          moved already, or just arrived and is summoning-sick). A spirit of yours
+          <strong>banished in combat</strong> doesn't vanish at once — it stands
+          <strong>Faded</strong> for a turn under a warm <strong>amber rescue glow</strong>:
+          a glance says <em>this one can be saved this turn</em>. The Solace's unwritten
+          leave <strong>no</strong> mark on the page — its forgetting scores off the board
+          (watch the HUD and the status line).</li>
+        <li><strong>The HUD.</strong> Your <strong>score</strong>, your
+          <strong>Anima</strong> (the ◆ drop — your play budget, the real limiter since
+          there's no fixed action count), and the <strong>round</strong> on a 12-pip clock
+          (the lit pips count rounds elapsed; the <strong>Dusk</strong> pips past round 8
+          darken; the final <strong>Nightfall</strong> pip is ringed).</li>
+        <li><strong>The opponent strip.</strong> Their name, their running
+          <strong>score</strong> — including the Solace's off-board erasure tally, shown as
+          <code>score N (M erased)</code> when it's non-zero — and their hand as that many
+          <strong>face-down card backs</strong>: a count only, never their cards.</li>
+        <li><strong>Your hand.</strong> Your cards as real placeholder cards (cost · name ·
+          the attack / defense / health stat block). A quiet
+          <span class="dot" aria-hidden="true"></span> marks a card with a legal play this
+          turn (a dimmed card has none); a green
+          <span class="chev" aria-hidden="true">^</span> marks an evolution
+          <strong>form</strong> card. Tap a card to <strong>lift</strong> it (it rises with
+          a gilt halo) and its legal tiles light up — tap one to place it, or drag the card
+          onto a tile.</li>
         <li><strong>End Turn &amp; Glimpse.</strong> The two floating buttons lower-right —
-          the only global controls. <strong>End Turn</strong> (filled, primary) passes
-          the turn (nothing auto-ends); <strong>Glimpse</strong> (outlined) burns a hand
-          card, then peeks your top card — keep it, or bottom it for an Anima. Evolve and
-          Reclaim are <strong>contextual</strong> affordances on the eligible piece, not
-          global buttons.</li>
-        <li><strong>Inspect panel.</strong> Hover a card or piece with the mouse, or
-          long-press it on touch, to float a panel beside it — full stats, keywords,
-          rules text, and a passive <strong>reach grid</strong> (★ the card, ● each tile
-          it could threaten).</li>
-        <li><strong>Status line + New game.</strong> Below the canvas: a live
-          <strong>status line</strong> (the round, the running score, your Anima, whose
-          turn) that announces each change aloud, and a <strong>New game</strong> control
-          that returns to the deck-style picker.</li>
+          the only global controls. <strong>End Turn</strong> (filled) passes the turn —
+          nothing auto-ends. <strong>Glimpse</strong> (outlined) burns a hand card, then
+          peeks the top card of your deck — keep it, or bottom it for an Anima. Evolve and
+          Reclaim aren't buttons here; they're <strong>contextual</strong> affordances on
+          the eligible piece.</li>
+        <li><strong>The inspect panel.</strong> Hover a card or piece with the mouse, or
+          long-press it on touch, to float a panel beside it — full stats, keywords, rules
+          text, and a passive <strong>reach grid</strong> (★ the card, ● each tile it could
+          threaten). Inspecting is a read, not a move — it shows what a piece
+          <em>could</em> threaten, softly; selecting shows what you can hit right now,
+          brightly.</li>
+        <li><strong>The accessible mirror.</strong> A live <strong>status line</strong>
+          (the round, the score, your Anima, whose turn) announces each change aloud, and a
+          full <strong>actions tree</strong> mirrors every affordance as a labeled button —
+          so the whole match is reachable by keyboard and screen reader. It lives in the
+          accessibility layer: present to assistive tech, invisible on screen.</li>
       </ul>
 
-      <h2 id="walkthrough">A walkthrough, screen by screen</h2>
-      <p>Four screens, in the order you meet them: <strong>the picker</strong> →
-        <strong>the board</strong> → <strong>the Dusk</strong> →
-        <strong>Nightfall</strong>.</p>
+      <h2 id="turn">Your turn, in plain terms</h2>
+      <p>A turn moves through three phases — <strong>Flow → Main → Fade</strong> — and then
+        you end it. You rarely think about the names; the canvas folds them into the
+        affordances. But here's the shape of it.</p>
+      <div class="phases">
+        <article class="phase">
+          <h3>Flow — the turn opens</h3>
+          <p>You draw a card and gain <strong>Anima</strong> (your income, which grows in
+            the early rounds). If your hand is over its cap, a <strong>Release</strong>
+            affordance sends one card to the bottom of your deck.</p>
+        </article>
+        <article class="phase">
+          <h3>Main — the heart of it</h3>
+          <p>No fixed action count — you act as far as your <strong>Anima</strong> reaches.
+            Play cards, move your Mobile spirits, engage enemies in reach, evolve or
+            recede, Glimpse, Reclaim. Each option appears only when it's legal.</p>
+        </article>
+        <article class="phase">
+          <h3>Fade — the turn closes</h3>
+          <p>At the <em>end</em> of the turn, a spirit of yours banished in combat that
+            stood Faded through this Main — and that you saved by neither evolving nor
+            receding — dissolves now, and the banisher's impression is laid.</p>
+        </article>
+      </div>
+      <p>In <strong>Main</strong>, here's the full range of what you can do — each surfaces
+        as its own affordance the moment it's available:</p>
+      <ul>
+        <li><strong>Play</strong> cards: spirits onto tiles; spells, terrain, and
+          fabrications as their cards describe.</li>
+        <li><strong>Move</strong> each <strong>Mobile</strong> spirit once, for free — but
+          never the turn it arrived (summoning sickness). A free move can carry it into an
+          engagement.</li>
+        <li><strong>Evolve</strong> or <strong>recede</strong> a spirit — see
+          <a href="#evolve">Evolve &amp; recede</a> below.</li>
+        <li><strong>Call</strong> a Kindred (one living Kindred per caller).</li>
+        <li><strong>Glimpse</strong> once: burn a card of your choice from your hand, then
+          peek the top of your deck and keep it (no Anima) or bottom it for +1 Anima. It
+          costs a hand card and thins your deck, so it's a deliberate move — not every
+          turn.</li>
+        <li><strong>Reclaim</strong> one of your own standing spirits to cash it back for
+          Anima.</li>
+        <li><strong>Overwrite</strong> a tile, <strong>reveal</strong> a lurker, or make
+          any <strong>choice</strong> an effect offers.</li>
+      </ul>
+      <p>Standing spirits never act on their own, but they still
+        <strong>retaliate</strong> when struck and <strong>intercept</strong> through their
+        reach. When you're done, press <strong>End Turn</strong> and play passes — nothing
+        auto-ends. In a vs-AI match you then <strong>watch</strong> the bot take its turn,
+        paced a beat at a time and captioned, and your affordances return when it's your
+        word again. The match runs <strong>twelve rounds</strong>. The full income table,
+        scoring, and Held Ground live in the <a href="rules.html">rules</a>.</p>
 
-      <h3>1 · The picker — choose your telling</h3>
-      <p>The game opens on <em>Choose your telling</em>. Up top is an
-        <strong>Opponent</strong> dropdown — <strong>Easy</strong>,
-        <strong>Normal</strong>, <strong>Hard</strong>, or <strong>Expert</strong> —
-        then three deck styles, each shown with its voice ("All teeth…"), an objective
-        preview (how many spirits and spellbook cards, the cost curve, the cards it
-        opens with), and a click-to-start. Click a style to begin a Quick Play match
-        against the AI.</p>
+      <h2 id="acting">Acting on the board</h2>
+      <p>You play <strong>right on the canvas</strong>. There are two ways to make a move,
+        and they do the same thing: pick up a spirit or a hand card, and its legal
+        destinations <strong>light up green</strong> (an engageable target pulses
+        brighter); then <strong>tap a glow</strong>, <em>or</em> <strong>drag</strong> onto
+        it.</p>
       <figure class="guide-fig">
-        <figcaption>The picker — a difficulty dropdown, then three styles, then watch / online.</figcaption>
-        <div class="mock">
-          <span class="mock-status">Opponent: Normal ▾</span>
-        </div>
-        <p style="margin:0.7em 0 0"><strong>Embertide</strong> — All teeth. Arrive loudly, chain hard…<br>
-          <span class="note">14 spirits · 6 spellbook · curve 1:3 2:4 3:5 4:2 5:1 · opens: Cinderling, Tide-Caller, Hush…</span></p>
-        <p style="margin:0.4em 0 0"><strong>The Long Watch</strong> — Hold ground, blunt every arrival…<br>
-          <span class="note">16 spirits · 4 spellbook · curve 1:5 2:5 3:4 4:1 5:1 · opens: Wardstone, Hush…</span></p>
-      </figure>
-      <p>The picker also offers <strong>Watch a 2v2</strong> (spectate four AI
-        players on the 6×6 board) and <strong>Play online</strong> (host a 1v1 or
-        2v2 match, or join one with an invite code — see
-        <a href="play.html">Play</a>).</p>
-
-      <h3>2 · The board — your turn</h3>
-      <p>This is where the match lives, drawn whole on the canvas. The opponent strip
-        sits above the board; the HUD, your hand, and the two floating buttons sit
-        below. <strong>You act by touching the canvas</strong> — tap a piece or card,
-        then a glowing target, or drag between them.</p>
-      <figure class="guide-fig">
-        <figcaption>The opponent strip — their name, their score (the Solace's erasure tally folded in), their hand as backs.</figcaption>
-        <div class="mock">
-          <span class="mock-strip">the Solace &nbsp; · &nbsp; score 5 (3 erased) &nbsp; · &nbsp; hand ▮ ▮ ▮ ▮</span>
-        </div>
-      </figure>
-      <figure class="guide-fig">
-        <figcaption>Your hand — real cards (cost · name · the A/D/HP stat block). The dotted card has a legal play; tap to lift.</figcaption>
+        <figcaption>Your hand — real cards (cost · name · the A/D/HP stat block). The dotted card has a legal play; tap to lift it.</figcaption>
         <div class="mock">
           <span class="mock-card"><strong>2 · Cinderling</strong> <span class="stat">A3 / D1 / HP2</span></span>
           <span class="mock-card"><strong>1 · Hush</strong> <span class="stat">A0 / D0 / HP1</span></span>
@@ -234,76 +334,100 @@
         </div>
       </figure>
       <figure class="guide-fig">
-        <figcaption>The two floating buttons, lower-right — End Turn (primary) and Glimpse (outlined). The only global controls.</figcaption>
+        <figcaption>The two floating buttons, lower-right — End Turn (filled) and Glimpse (outlined). The only global controls.</figcaption>
         <div class="mock">
           <span class="mock-fab secondary">Glimpse</span>
           <span class="mock-fab">End Turn</span>
         </div>
       </figure>
-      <p>Three things on this screen carry the rules that decide a match:</p>
+      <p>A few things read straight off the board:</p>
       <ul>
-        <li><strong>The score is a contest of presence — and of forgetting.</strong>
-          The HUD shows your score; the opponent strip shows theirs. The
+        <li><strong>The score is a contest of presence — and of forgetting.</strong> The
+          HUD shows your score, the strip the opponent's. The
           <strong class="ink-b">Solace</strong> scores its board presence
-          <strong>plus</strong> an off-board <strong>erasure tally</strong> — every
-          banish or Unwriting it lands. Its Unwritten leave no mark on the page, so when
-          that tally is non-zero the strip splits it out, e.g.
-          <code>score 5 (3 erased)</code>; at Nightfall it folds into the total.</li>
-        <li><strong>Anima is the limiter, not an action count.</strong> There is
-          <strong>no fixed number of actions</strong> — you play as far as your Anima
-          reaches, then end the turn. The HUD shows your Anima as the ◆ drop, your play
-          budget.</li>
+          <strong>plus</strong> an off-board <strong>erasure tally</strong> — every banish
+          or unwriting it lands. Its unwritten leave no mark, so when that tally is
+          non-zero the strip splits it out, e.g. <code>score 5 (3 erased)</code>; at
+          Nightfall it folds into the total.</li>
+        <li><strong>Anima is the limiter, not an action count.</strong> There's no fixed
+          number of moves — you play as far as your Anima (the ◆ drop) reaches, then end
+          the turn.</li>
         <li><strong>Move cues.</strong> A green corner dot on one of your Mobile spirits
-          means it can still take its <em>one free step</em> this turn; a dim dot means
-          it's rested — it has already moved, or it just arrived and is
-          <strong>summoning-sick</strong> (it can't step until next turn).</li>
+          means it can still take its <em>one free step</em>; a dim dot means it's rested —
+          it moved already, or it just arrived and is <strong>summoning-sick</strong> (it
+          can't step until next turn).</li>
       </ul>
+      <p><strong>Overwriting onto a tile.</strong> Pick up a spirit and tap a tile an
+        <strong>enemy</strong> holds (when it's a legal target, it lights up): you play
+        <em>onto</em> it and resolve one exchange — <strong>win and your spirit takes the
+        tile</strong>, <strong>lose and it dissolves</strong>. You can also Overwrite onto
+        a <strong>Stray</strong> (a wild spirit the Memory surfaces): a
+        <strong>revealed</strong> Stray is <strong>fought</strong> the same way, while a
+        <strong>hidden</strong> one — a veiled spirit you can't yet see by name — is
+        <strong>denied entry</strong>: it slips away with no impression and no reveal, and
+        your spirit simply takes the cleared tile. The full rules live in the
+        <a href="rules.html#strays">rules</a>.</p>
+
+      <h2 id="evolve">Evolve &amp; recede</h2>
       <p><strong>Evolution is a card you play.</strong> A Primal or Fabled
-        <strong>form</strong> sits in your deck and is drawn to hand like any spirit
-        (it wears a green <span class="chev" aria-hidden="true">^</span> chevron in the
-        tray). To evolve, pick up the <strong>form card</strong> and tap the matching
+        <strong>form</strong> sits in your deck and is drawn to hand like any spirit (it
+        wears a green <span class="chev" aria-hidden="true">^</span> chevron in your hand).
+        To evolve, pick up the <strong>form card</strong> and tap the matching
         <strong>base</strong> it can land on — a <strong>Primal</strong> onto one of your
         <strong>Fading</strong> bases (the last-round rescue), a <strong>Fabled</strong>
         onto a <strong>healthy</strong> base the turn after it arrived. You can't evolve a
         base you hold no form card for.</p>
       <p><strong>Devolution is the mirror — also a card you play.</strong> When a form of
-        yours is <strong>banished in combat</strong> it stands <strong>Faded</strong> for
-        a turn (the amber rescue glow). To <strong>recede</strong> it — the rescue — pick
-        up a <strong>base</strong> card from your hand and tap that Faded form: it steps
-        back a tier to the base, restored to full, and wears a downward amber
+        yours is <strong>banished in combat</strong> it stands <strong>Faded</strong> for a
+        turn (the amber rescue glow). To <strong>recede</strong> it — the rescue — pick up a
+        <strong>base</strong> card from your hand and tap that Faded form: it steps back a
+        tier to the base, restored to full, and wears a downward amber
         <span class="chev-down" aria-hidden="true">v</span> chevron to tell it apart from
         evolve's upward green one. Because it can recede and then climb again, a spirit can
-        <strong>evolve↔devolve cycle</strong> for as long as you hold the forms and bases
-        to feed it. (You <strong>revert</strong> as a Lorekeeper, <strong>recede</strong>
-        as the Solace — the same move, your faction's word.)</p>
-      <p><strong>Nothing auto-ends.</strong> When you're done, press
-        <strong>End Turn</strong> and play passes. In a vs-AI game you then
-        <strong>watch</strong> the bot take its turn, paced action by action (each move a
-        beat apart, captioned), and your affordances return when it's your turn again.</p>
+        <strong>evolve↔devolve cycle</strong> for as long as you hold the forms and bases to
+        feed it. (You <strong>revert</strong> as a Lorekeeper, <strong>recede</strong> as
+        the Solace — the same move, your faction's word.)</p>
+      <p><strong>Throughlines — lining your spirits up.</strong> Get
+        <strong>three or more of your spirits sharing one Imprint</strong> into a connected,
+        side-by-side run and a <strong>Throughline completes</strong>: the spirit that
+        closes it gains <strong>+10 Attack / +10 Defense and a full heal</strong>. The board
+        threads the line and the announcement calls it. The buff is <strong>once per
+        spirit</strong> — but the becoming cycle can reset it: fading, evolving to a Primal,
+        and devolving all hand the spirit a clean slate to earn it again, while evolving to a
+        <strong>Fabled keeps it locked</strong>. The short version: <em>Fabled keeps;
+        everything else resets.</em> And because devolving is an <strong>arrival</strong>, a
+        base that recedes straight into a standing line <strong>re-completes the Throughline
+        on the spot</strong>. The full account is in the
+        <a href="rules.html#throughlines">rules</a>.</p>
 
-      <h3>3 · The Dusk — the page begins to close</h3>
-      <p>At the end of round 8 the <strong>Dusk</strong> falls and the page's empty
-        edges go dark. An occupied edge tile is <strong>held</strong> — it stands,
-        scores, may step away (the ground darkening behind it), and retaliates if
-        struck, but it no longer intercepts and accepts no new writing. The Solace's
-        Unwritten are <strong>not</strong> held: the Dusk sweeps them from the margin
-        (the never-remembered are not kept). Rounds 9–12 are fought on the inner board
-        plus whatever is still held.</p>
-
-      <h3>4 · Nightfall — the Memory closes</h3>
-      <p>Round 12 is <strong>Nightfall</strong>. The status line reads
-        <code>GAME OVER</code> with the result and the final score; whoever holds more
-        of the page wins (a tie is a draw, and the Memory keeps both names).
-        <strong>New game</strong> returns you to the picker.</p>
+      <h2 id="dusk">The Dusk &amp; Nightfall</h2>
+      <p>The board is a fading Memory, and it closes from the edges in. Both moments arrive
+        as animated set-pieces over the board (near-instant if your system prefers reduced
+        motion — the announcement always lands).</p>
+      <ul>
+        <li><strong>The Dusk.</strong> At the end of round 8 the <strong>Dusk</strong> falls
+          and the page's empty edges go dark. An occupied edge tile is
+          <strong>held</strong> — it stands lamplit, scores, may step away (the ground
+          darkening behind it), and retaliates if struck, but it no longer intercepts and
+          accepts no new writing. The Solace's unwritten are <strong>not</strong> held: the
+          Dusk sweeps them from the margin. Rounds 9–12 are fought on the inner board plus
+          whatever is still held.</li>
+        <li><strong>Nightfall.</strong> Round 12 is <strong>Nightfall</strong> — the Memory
+          closes. The canvas draws the <strong>result</strong> in the game's voice (the
+          Memory keeps the winner, or it's forgotten, or both are kept on a draw) with a
+          score breakdown over the final board, and three actions follow:
+          <strong>Rematch</strong>, <strong>New opponent</strong>, and <strong>Back to
+          site</strong>. Whoever holds more of the page wins; a tie is a draw, and the
+          Memory keeps both names.</li>
+      </ul>
 
       <h2 id="controls">Controls — mouse, touch, and keyboard</h2>
-      <p>There are two ways to act on the board, and they do the same thing. Pick up a
-        spirit or a hand card and its legal destinations <strong>glow green</strong> (an
-        engageable target pulses brighter); then <strong>tap a glow</strong>
-        <em>or</em> <strong>drag</strong> onto it. For screen-reader and keyboard play, a
-        <strong>virtual accessibility tree</strong> below the canvas mirrors every
-        affordance as a labeled button — select, then choose a highlighted target, and the
-        move is made.</p>
+      <p>Every move is reachable three ways. On the board, pick up a spirit or a hand card
+        and its legal destinations <strong>light up green</strong> (an engageable target
+        pulses brighter); then <strong>tap a glow</strong> <em>or</em> <strong>drag</strong>
+        onto it. For screen-reader and keyboard play, the <strong>actions tree</strong>
+        mirrors every affordance as a labeled button — select, then choose a highlighted
+        target, and the move is made.</p>
       <div class="scroll-x" tabindex="0" role="region" aria-label="Controls — every action, three ways to reach it">
       <table class="guide-table">
         <caption>Every action, three ways to reach it.</caption>
@@ -318,7 +442,7 @@
             <td><kbd>Tab</kbd> to the board, <kbd>↑↓←→</kbd> to the spirit, <kbd>Enter</kbd>, then to a glow, <kbd>Enter</kbd></td>
           </tr>
           <tr>
-            <td>Play / overwrite with a hand card</td>
+            <td>Play or overwrite with a hand card</td>
             <td>Click the card (it lifts), then a glowing tile — or drag it</td>
             <td>Tap the card, then a glowing tile — or drag it</td>
             <td>In the actions list: focus the card, <kbd>Enter</kbd>; focus a tile, <kbd>Enter</kbd></td>
@@ -354,7 +478,7 @@
             <td><kbd>Esc</kbd> (on the board), or re-activate the same button</td>
           </tr>
           <tr>
-            <td>Start a new game</td>
+            <td>Start a new match</td>
             <td>Click <strong>New game</strong></td>
             <td>Tap <strong>New game</strong></td>
             <td><kbd>Tab</kbd> to it, then <kbd>Enter</kbd> or <kbd>Space</kbd></td>
@@ -364,131 +488,42 @@
       </div>
       <p>The details that matter:</p>
       <ul>
-        <li><strong>Tap or drag, and the cues that guide you.</strong> On the board,
+        <li><strong>Tap or drag — same move.</strong> On the board,
           <strong>tap-then-target</strong> and <strong>drag</strong> make the same move.
           Picking up a <strong>form card</strong> lights the matching <strong>base</strong>
-          it can land on as an Evolve target. A quiet
-          <span class="dot" aria-hidden="true"></span> dot on a piece or card means it has
-          an available action; a green <span class="chev" aria-hidden="true">^</span>
-          chevron marks a Fading base (or a form card) that can evolve.</li>
+          it can land on; picking up a <strong>base card</strong> lights any
+          standing-Faded form it can recede.</li>
         <li><strong>Reach vs. targets — two reads, no clash.</strong>
           <strong>Inspect</strong> (hover / long-press) shows a card's <strong>reach</strong>
-          softly — what it <em>could</em> threaten. <strong>Select</strong> (pick up)
-          shows the <strong>engageable targets</strong> brightly — what you can hit right
-          now. Inspecting reveals possibility; selecting commits to action.</li>
+          softly — what it <em>could</em> threaten. <strong>Select</strong> (pick up) shows
+          the <strong>engageable targets</strong> brightly — what you can hit right now.</li>
         <li><strong>Touch is first-class.</strong> The responsive layout sizes every
-          in-canvas control as an easy tap (at least 44 pixels) on a real phone or
-          tablet — no fiddly targets, no stuck-hovered look after a tap.</li>
-        <li><strong>Keyboard- and screen-reader-reachable, end to end.</strong> The
-          board is one <kbd>Tab</kbd> stop with a gold focus cursor (arrows move it,
-          <kbd>Enter</kbd> or <kbd>Space</kbd> picks up and places, <kbd>Esc</kbd>
-          cancels), <em>and</em> a parallel text region narrates it tile by tile. On top
-          of that, a <strong>virtual accessibility tree</strong> below the canvas mirrors
-          every affordance — board tiles, hand cards, the opponent strip, End Turn, Glimpse
-          — as a real <code>&lt;button&gt;</code> that fires the <em>same</em> command the
-          canvas does, so the whole match is reachable by <strong>keyboard alone</strong>
-          and a screen reader announces each piece, card, and action. The live status
-          line narrates every change aloud. This is the accessible path — at parity with
-          the visual canvas, never a lesser one.</li>
+          control as an easy tap (at least 44 pixels) on a real phone or tablet — no fiddly
+          targets, no stuck-hovered look after a tap.</li>
+        <li><strong>Keyboard- and screen-reader-reachable, end to end.</strong> The board is
+          one <kbd>Tab</kbd> stop with a gilt focus cursor (arrows move it,
+          <kbd>Enter</kbd> or <kbd>Space</kbd> picks up and places, <kbd>Esc</kbd> cancels),
+          <em>and</em> a parallel text region narrates it tile by tile as a true grid
+          (each cell announced by its row and column). On top of that, the
+          <strong>actions tree</strong> mirrors every affordance — board tiles, hand cards,
+          the opponent strip, End Turn, Glimpse — as a real <code>&lt;button&gt;</code> that
+          fires the <em>same</em> command the canvas does. The live status line narrates
+          every change aloud. This is the accessible path — at parity with the visual
+          canvas, never a lesser one, to <strong>WCAG 2.1 AA</strong>.</li>
         <li><strong>Reduced motion.</strong> If your system prefers reduced motion, the
           client honors it and the board doesn't animate.</li>
       </ul>
 
-      <h2 id="your-turn">Your turn, in plain terms</h2>
-      <p>A turn moves through three phases — <strong>Flow → Main → Fade</strong> — and
-        then you end it. (The <strong>Fade</strong> is at the <em>end</em>, after Main.)
-        You won't often think about the names; the canvas folds them into the
-        affordances. But here's the shape of it. The full rules (the income table, the
-        Dusk, scoring, Held Ground) live in the <a href="rules.html">rules</a>, and in
-        depth in design reference §5, "The Clock":</p>
-      <ul>
-        <li><strong>Flow — the turn opens.</strong> You draw a card and gain
-          <strong>Anima</strong> (your income, which grows in the early rounds). If your
-          hand is over its cap, a <strong>Release</strong> affordance sends one card to
-          the bottom of your deck.</li>
-        <li><strong>Main — the heart of the turn.</strong> No fixed action count — you
-          act as far as your <strong>Anima</strong> reaches:
-          <strong>Play</strong> cards (spirits onto tiles; spells, terrain, and
-          fabrications as their cards describe); <strong>Evolve</strong> by playing a
-          form card from hand onto its matching base (a <strong>Primal</strong> onto a
-          <strong>Fading</strong> base, a <strong>Fabled</strong> onto a
-          <strong>healthy</strong> base the turn after it arrived);
-          <strong>Devolve</strong> — the rescue — by playing a <strong>base</strong> card
-          onto one of your <strong>standing-Faded</strong> forms to <strong>recede</strong>
-          it a tier (you <strong>revert</strong> as a Lorekeeper, <strong>recede</strong>
-          as the Solace; you may evolve↔devolve the same spirit again and again);
-          <strong>Call</strong> a Kindred (one living Kindred per caller);
-          <strong>Move</strong> each Mobile spirit once for free (but never the turn it
-          arrived — summoning sickness); <strong>Glimpse</strong> once (burn a hand card,
-          then peek your top card — keep it or bottom it for +1 Anima); and
-          <strong>Reclaim</strong> one of your own standing spirits to cash it back for
-          Anima. Overwriting, revealing a lurker, and any choice an effect offers each
-          surface as their own affordance when available. Standing spirits never act on
-          their own, but they still <strong>retaliate</strong> when struck and
-          <strong>intercept</strong> through their reach.</li>
-        <li><strong>Fade — the turn closes.</strong> At the <em>end</em> of your turn, a
-          spirit of yours that was <strong>banished in combat</strong> stood Faded through
-          this Main (your one window to evolve or recede it); if you saved it by neither,
-          it dissolves now and the banisher's impression is laid. (The Dusk is separate —
-          it sweeps the empty rim all at once when round 8 ends.)</li>
-        <li><strong>End turn.</strong> Nothing auto-ends — press <strong>End
-          Turn</strong> when you're done, and play passes. The match runs
-          <strong>twelve rounds</strong>; the Dusk falls at the end of round 8, and
-          Nightfall at round 12.</li>
-      </ul>
-      <p>You never have to guess which of these you can do: the dots, the glowing tiles,
-        and the floating buttons show what's available this moment, and the accessibility
-        tree mirrors each one. If it isn't offered, it isn't a legal move right now.</p>
-      <p><strong>Throughlines — lining your spirits up.</strong> Get
-        <strong>three or more of your spirits sharing one Imprint</strong> into a connected,
-        side-by-side run and a <strong>Throughline completes</strong>: the spirit that closes it
-        gains <strong>+10 Attack / +10 Defense and a full heal</strong>. The board threads the line
-        and the announcement calls it. The buff is <strong>once per spirit</strong> — but the becoming
-        cycle can reset it: <strong>fading, evolving to a Primal, and devolving</strong> all hand the
-        spirit a clean slate to earn it again, while <strong>evolving to a Fabled keeps it locked</strong>
-        (a Fabled continues its base's story, so a base that already earned the buff stays done). The
-        short version: <em>Fabled keeps; everything else resets.</em> And because <strong>devolving is an
-        arrival</strong> (like an evolution), a base that recedes straight into a standing line
-        <strong>re-completes the Throughline on the spot</strong> — the same +10/+10 and full heal a Primal
-        gets stepping into a line.</p>
-      <p><strong>Overwriting onto a tile.</strong> Pick up a spirit and tap a tile an
-        <strong>enemy</strong> holds (when it's a legal target it glows): you play <em>onto</em> it
-        and resolve one exchange — <strong>win and your spirit takes the tile</strong>,
-        <strong>lose and it dissolves</strong>. You can also Overwrite onto a <strong>Stray</strong>
-        (a lost dog the Memory surfaces): a <strong>revealed</strong> Stray is <strong>fought</strong>
-        the same way, while a <strong>hidden</strong> one — a veiled Wary you can't yet see by name — is
-        <strong>denied entry</strong>: it slips away with no impression and no reveal, and your spirit
-        simply takes the cleared tile. The full rules live in the
-        <a href="rules.html#strays">rules</a>.</p>
-
-      <h2 id="whats-next">What's coming</h2>
-      <p>The canvas-native client now draws the <strong>whole game</strong> — local 1v1,
-        online 1v1 PvP, and 2v2 — on the canvas: you watch the opponent's turn replayed a
-        beat at a time (captioned), the <strong>Dusk</strong> and <strong>Nightfall</strong>
-        arrive as animated on-canvas set-pieces, and the match ends on an in-canvas
-        <strong>result screen</strong> (the verdict, the score breakdown, and
-        Rematch / New opponent / Back to site). The one board-only view left is
-        <strong>Watch a 2v2</strong> (spectating four AI players). Still on the way:</p>
-      <ul>
-        <li><strong>The Souvenir.</strong> A shareable, provably-fair keepsake of a finished
-          match (the final board, the verdict, the seed) is planned for a later release.</li>
-      </ul>
-
       <p><a class="btn btn-primary" href="play.html">▶ Play now</a> <a class="btn" href="rules.html">The rules</a> <a class="btn" href="cards.html">See the cards</a></p>
-      <p class="note">Prefer the terminal? There's a companion
-        <a href="../docs/how_to_play_cli.md">command-line guide</a> for the
-        <code>recollect</code> client.</p>
     </article>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <span>Recollect</span>
-      <a href="rules.html">Rules</a>
-      <a href="lore.html">Lore</a>
-      <a href="contact.html">Contact</a>
       <span class="note">A fading Memory, told in paper &amp; ink.</span>
     </div>
   </footer>
+  <script src="options.js" defer></script>
 </body>
 </html>

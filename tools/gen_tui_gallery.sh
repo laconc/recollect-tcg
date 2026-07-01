@@ -2,7 +2,7 @@
 # Regenerate the docs/gallery/tui/ TEXT stills from the line-based terminal client
 # (recollect-cli's `tui_capture` example). It drives a SEEDED `recollect-core` engine
 # to each moment and writes the exact screen a player reads — the board render, the
-# "Legal tellings" menu, the inspect panel — as a committed `.txt` snapshot. This is
+# "Legal plays" menu, the inspect panel — as a committed `.txt` snapshot. This is
 # the line-based twin of tools/gen_gallery.sh (the wgpu shell's PNG gallery): no GPU,
 # no TTY, no seed lottery, so the goldens are DETERMINISTIC and reproducible anywhere.
 # NO_COLOR is set so the snapshots carry no ANSI escapes (stable bytes). See

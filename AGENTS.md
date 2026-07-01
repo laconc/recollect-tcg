@@ -46,7 +46,7 @@ is the default acceptance criterion — on top of the invariants below, never in
    side-data: `effects.json`, `evolution_{lines,split}.json`, `card_{keys,keywords}.json`).
    Edit a `[[card]]` in `cards.toml`, run `make catalog`. CI diffs via `make catalog-check`.
 4. **Vocabulary is law**: spirits are *banished* (never killed/slain/destroyed);
-   only the Solace *Unwrites*; "forgetting" is Solace-register only.
+   only the Solace *unwrites*; "forgetting" is Solace-register only.
 5. **Red tests are contracts**: `tests/suites/m1_backlog.rs` holds `#[ignore]`d
    specs for unbuilt features. Implement them; never delete them.
 6. **The effects ratchet** (`tests/suites/effects_coverage.rs`): the implemented/data-only

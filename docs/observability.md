@@ -71,12 +71,12 @@ what it measures.
 These are the deeper balance cuts the spec's §16 calls for, instrumented in prod (not
 just the offline sims). They emit from the **same command/event seam** the
 `matches_finished` counter uses: the per-match `MatchMetrics` accumulator
-(`metrics.rs`) lives on the `Session` (the single writer for a telling) and observes
+(`metrics.rs`) lives on the `Session` (the single writer for a match) and observes
 **every applied event batch** — player AND bot moves, 1v1 AND 2v2, in-memory AND
 journaled — because they all funnel through `Session::finish_apply` (the one post-apply
 funnel; it branches on the acting principal's kind only for the view-fan, so the metrics
 observation is shared across modes). Streaming counters fire as the events stream; the
-contraction-leader and the turn count are captured as the telling runs and folded in
+contraction-leader and the turn count are captured as the match runs and folded in
 at match end.
 
 | OTel name | Prometheus | Type | Labels (values) | Trigger event / emission point | Measures |
@@ -84,7 +84,7 @@ at match end.
 | `recollect.evolutions` | `recollect_evolutions_total` | counter | `kind` = `primal` \| `fabled` | one per `SpiritEvolved` (form tier read from the catalog: `rarity == "Fabled"`) | Evolutions per match (dashboard divides by finished matches). The bare `…_total` sums across `kind`; the breakdown is there for free. |
 | `recollect.devolutions` | `recollect_devolutions_total` | counter | — | one per `SpiritDevolved` (a banished form receded to a base — the §5 rescue) | Devolutions per match (dashboard divides by finished matches). Counted alongside evolutions because a **Devolution IS an arrival** (design §5), so the recede is a first-class form change, not a silent undo. |
 | `recollect.throughline_completed` | `recollect_throughline_completed_total` | counter | — | one per `ThroughlineCompleted` | Throughline completion rate (per match). |
-| `recollect.match_length_turns` | `recollect_match_length_turns_bucket` | histogram (u64 turns) | — | recorded **once at match end** (`MatchEnded` / `MatchAbandoned`); the value is the count of `TurnEnded` over the telling | Match length in turns (the dashboard reads the median via `histogram_quantile`). |
+| `recollect.match_length_turns` | `recollect_match_length_turns_bucket` | histogram (u64 turns) | — | recorded **once at match end** (`MatchEnded` / `MatchAbandoned`); the value is the count of `TurnEnded` over the match | Match length in turns (the dashboard reads the median via `histogram_quantile`). |
 | (labels on `recollect.matches.finished`) | `recollect_matches_finished_total{led_at_contraction,won}` | counter labels | `led_at_contraction` = `true` \| `false`; `won` = `true` \| `false` | the leader is captured at the Dusk `MemoryContracted` step (strict board-score lead by the §16 model); correlated with the result at match end | **Winrate when leading at contraction** (target ≤ 70 %): `…{led_at_contraction="true",won="true"}` / `…{led_at_contraction="true"}`. |
 
 **The contraction-leader rule.** At `MemoryContracted`, the accumulator scores the
@@ -98,7 +98,7 @@ result's winner.
 
 **Why turns, not rounds.** The §16 panel is "median match length (turns)"; a turn is
 finer-grained than a round (each round is both seats acting). The count is the literal
-number of `TurnEnded` facts the telling produced.
+number of `TurnEnded` facts the match produced.
 
 ---
 
@@ -115,7 +115,7 @@ command path carries `#[instrument]` spans, so a trace ties a command to its mat
 | `recover_match` | `matchmaking.rs` | `match_id` | Rebuilding a forgotten journaled match from the registry + journal (the #9 restart path). |
 | `healthz` | `lib.rs` | — | The liveness/readiness probe. |
 
-Notable log events: telling finished (info, with the result string + `reason`), seat
+Notable log events: match finished (info, with the result string + `reason`), seat
 reconnect (info, `?who`), seat vacated → arming the absence-forfeit grace (info, `?who`),
 the forfeit being issued (info, `?who`/`?seat`), journal append/finish failures (warn),
 the OTLP connection lifecycle (error on close). Log **bodies never carry private state** —
@@ -203,8 +203,8 @@ checks the live service is up on a schedule*, and **alerts** if it is not. This 
 on the **same self-hosted LGTM stack** (no extra SaaS, no extra AWS cost) via the Prometheus
 **Blackbox exporter** for the probes plus **Grafana alert rules** for the paging.
 
-Scope: this is the **deploy box** (`deploy/compose/docker-compose.deploy.yml`); the dev `make up`
-stack does not run the probes, and the local overlay scales the `blackbox` sidecar to zero (its
+Scope: this is the **deploy box** (`deploy/compose/docker-compose.deploy.yml`); the local stacks
+(`make up` / `make dev-up`) do not run the probes, and the local overlay scales the `blackbox` sidecar to zero (its
 internal targets are the box's own services, and the external probes are inert without a domain). It
 is **distinct** from the out-of-band **CloudWatch** box-health alarms (those watch the *host* —
 CPU/mem/swap/disk/EC2 status — from outside the box, so a wedged box still pages; see
@@ -436,7 +436,7 @@ dashboards are pre-provisioned. `make seed` (or any play) produces command/match
 traffic; drive a few matches (e.g. the bot fleet, or `recollect` vs the server bot) to
 populate the §16 panels. The unit + integration tests in
 `crates/recollect-server/src/{metrics,session}.rs` assert the accumulator classifies
-events and tallies a full telling correctly; the live dashboards are walked at release
+events and tallies a full match correctly; the live dashboards are walked at release
 time per `docs/manual_verification.md` (the observability stack section).
 
 **Synthetic monitoring (§5).** The probe + alert config is gated by static validation that mirrors

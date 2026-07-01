@@ -417,7 +417,7 @@ pub struct LocalGame {
     auto_rng: recollect_core::rng::Rng,
     /// The opponent's difficulty (defaults to Normal).
     difficulty: recollect_bot::Difficulty,
-    /// The NAMED character each seat fields this telling (e.g. "Corin Ashe"),
+    /// The NAMED character each seat fields this match (e.g. "Corin Ashe"),
     /// for the HUD (your name) + the opponent strip (their name), per
     /// `web_client_ux.md` §Opponent strip. Empty ⇒ fall back to the faction word
     /// ("the Solace" / "Lorekeepers"). Indexed by seat (`[A, B]`); the human is seat A.
@@ -448,7 +448,7 @@ impl LocalGame {
         }
     }
 
-    /// A local 2v2 telling on a 6×6 board (four seeded decks, slots
+    /// A local 2v2 match on a 6×6 board (four seeded decks, slots
     /// A1→B1→A2→B2). Drive it with `auto_play_turn` (AI watch) and render with
     /// `WebRenderer::draw_team(team_view_json())`.
     pub fn new_2v2(seed: u64) -> LocalGame {
@@ -469,7 +469,7 @@ impl LocalGame {
         }
     }
 
-    /// True for a 2v2 telling (the shell renders a 6×6 TeamView instead of 5×5).
+    /// True for a 2v2 match (the shell renders a 6×6 TeamView instead of 5×5).
     pub fn is_2v2(&self) -> bool {
         self.engine.state().is_2v2()
     }
@@ -517,7 +517,7 @@ impl LocalGame {
             .unwrap_or_default();
         // Name the two storytellers. Each seat fields a named character drawn
         // from the roster matching its faction, keyed by the chosen style + the seed (so
-        // the same telling always names the same pair, and different tellings vary them).
+        // the same match always names the same pair, and different matches vary them).
         let st = engine.state();
         let you_name = pick_character(st.rules.factions[0], your_style, seed);
         let opp_name = pick_character(st.rules.factions[1], opponent_style, seed ^ 0x5151);
@@ -639,9 +639,9 @@ impl LocalGame {
         serde_json::json!({ "beats": beats, "round_note": round_note }).to_string()
     }
 
-    /// The match-start announcement: **who opens** the telling, in the
+    /// The match-start announcement: **who opens** the match, in the
     /// game's register, always naming the first player (design §5, "Who opens the
-    /// telling"). Local 1v1 opens the human (seat A). Pushed into the `#status` live
+    /// match"). Local 1v1 opens the human (seat A). Pushed into the `#status` live
     /// region when the match begins, so the screen-reader narration and the on-canvas
     /// flourish are one source.
     pub fn opener_announcement(&self) -> String {
@@ -1101,7 +1101,7 @@ impl LocalGame {
         format!("{:?}", self.engine.state().active)
     }
 
-    /// True once the telling has ended.
+    /// True once the match has ended.
     pub fn is_over(&self) -> bool {
         matches!(
             self.engine.state().phase,
@@ -1139,7 +1139,7 @@ impl LocalGame {
     }
 
     /// The in-canvas **result screen** content as a
-    /// [`ResultScreen`](crate::shell::ResultScreen) JSON, once the telling has ended (else
+    /// [`ResultScreen`](crate::shell::ResultScreen) JSON, once the match has ended (else
     /// `null`). The verdict speaks in the game's voice — *the Memory keeps the winner* when a
     /// Lorekeeper holds the page, *the Memory is forgotten* when the Solace's erasure carried
     /// it, *both are kept* on a draw — tinted to the winner's ink. The breakdown lists each
@@ -1210,7 +1210,7 @@ impl LocalGame {
     /// breakdown as a readout, then the Rematch / New opponent / Back to site actions as
     /// actionable buttons firing the same verbs the canvas buttons do. The JS bridge
     /// renders these into the off-screen `#shell-a11y` group so a keyboard / screen-reader
-    /// user reaches the result at parity with the canvas. `null` (→ `[]`) mid-telling.
+    /// user reaches the result at parity with the canvas. `null` (→ `[]`) mid-match.
     pub fn result_a11y_json(&self, mode: &str) -> String {
         let screen_json = self.result_screen_json(mode);
         let screen: crate::shell::ResultScreen = match serde_json::from_str(&screen_json) {
@@ -1294,7 +1294,7 @@ impl LocalGame {
 }
 
 /// The **online / 2v2 in-canvas shell** seam: the same whole-game canvas shell
-/// the local 1v1 telling draws ([`LocalGame`]), but driven by the **server's redacted
+/// the local 1v1 match draws ([`LocalGame`]), but driven by the **server's redacted
 /// `PlayerView` / `TeamView` + its legal-move list** instead of a local engine (the
 /// server is authoritative online). Online PvP is launch-critical, and 2v2 rides the
 /// same shell.
@@ -1492,7 +1492,7 @@ impl OnlineShell {
         self.mulligan_legal(legal_json)
     }
 
-    /// The in-canvas **result screen** content once the telling has ended (else `null`),
+    /// The in-canvas **result screen** content once the match has ended (else `null`),
     /// as a [`ResultScreen`](crate::shell::ResultScreen) — the verdict (game's voice), the
     /// board+erasure breakdown, and the mode's actions. `mode` is `"pvp"` (online 1v1) or
     /// `"2v2"`: PvP relabels Rematch as an invite. Built purely from the view's `Finished`
@@ -1502,7 +1502,7 @@ impl OnlineShell {
     }
 
     /// The **virtual a11y tree for the result screen** (invariant 7) — the verdict +
-    /// breakdown as a readout, each action a button. `[]` mid-telling.
+    /// breakdown as a readout, each action a button. `[]` mid-match.
     pub fn result_a11y_json(&self, view_json: &str, team: bool, mode: &str) -> String {
         let screen_json = self.result_screen_json(view_json, team, mode);
         let screen: crate::shell::ResultScreen = match serde_json::from_str(&screen_json) {
@@ -1575,8 +1575,8 @@ fn faction_word(f: recollect_core::types::Faction) -> String {
 /// `faction` ([`recollect_core::quickplay::LOREKEEPER_CHARACTERS`] /
 /// `SOLACE_CHARACTERS`). The Quick Play `style`/disposition (0–4) selects the
 /// four-strong group so the name fits the deck the seat actually pilots; the `seed`
-/// picks which of the four (so the same telling always names the same character, and
-/// different tellings vary the face). Pure + re-derivable — and the within-group pick
+/// picks which of the four (so the same match always names the same character, and
+/// different matches vary the face). Pure + re-derivable — and the within-group pick
 /// uses the same wrapping the CLI/server roster indexing does, so the web names the
 /// kind of character those surfaces would for an equivalent match.
 fn pick_character(faction: recollect_core::types::Faction, style: u8, seed: u64) -> String {
@@ -1825,7 +1825,7 @@ impl LocalGame {
     }
 
     /// The player-facing label for `seat`: its named character (e.g. "Corin
-    /// Ashe") when one is fielded this telling, else the `faction` word fallback. Used by
+    /// Ashe") when one is fielded this match, else the `faction` word fallback. Used by
     /// the HUD (your name) and the opponent strip (their name).
     fn seat_label(&self, seat: recollect_core::types::Seat, faction: &str) -> String {
         let name = &self.char_names[seat as usize];
@@ -2175,7 +2175,7 @@ mod interaction {
         // Ending the turn is now legal and passes to the other seat.
         assert!(!g.end_turn().contains("reject"), "EndTurn legal");
         assert_eq!(g.active_seat(), "B", "turn passed to B");
-        assert!(!g.is_over(), "the telling continues");
+        assert!(!g.is_over(), "the match continues");
     }
 
     // ── the in-canvas Glimpse + Mulligan choice surfaces in the live shell model ──
@@ -2663,10 +2663,10 @@ mod interaction {
     // ── the result screen + the Dusk/Nightfall set-piece JSON ──────────
 
     #[test]
-    fn result_screen_json_is_null_until_the_telling_ends_then_carries_a_verdict() {
+    fn result_screen_json_is_null_until_the_match_ends_then_carries_a_verdict() {
         use recollect_core::state::Command;
         let mut g = LocalGame::new(7);
-        // Mid-telling: no result screen.
+        // Mid-match: no result screen.
         assert_eq!(g.result_screen_json("bot"), "null");
         assert_eq!(g.result_a11y_json("bot"), "[]");
         // Drive the match to its end by abandoning (a system forfeit ⇒ Finished). This
@@ -2674,7 +2674,7 @@ mod interaction {
         let seat = g.engine.state().active;
         g.engine
             .apply(seat, Command::MatchAbandoned { seat })
-            .expect("abandon ends the telling");
+            .expect("abandon ends the match");
         assert!(g.is_over());
         // Now the result screen carries a verdict (game's voice), a breakdown, and the
         // three actions — Rematch / New opponent / Back to site.

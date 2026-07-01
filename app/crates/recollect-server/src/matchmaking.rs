@@ -103,7 +103,7 @@ pub(crate) async fn create_match(
                 "A2": plain[2], "B2": plain[3],
             },
             // Commit–reveal: the published seed commitment (verify against the
-            // reveal pushed when the telling ends).
+            // reveal pushed when the match ends).
             "seed_commit": seed_commit.commit_hex(),
         }));
         let db_id = uuid::Uuid::new_v4().to_string();
@@ -425,7 +425,7 @@ pub(crate) async fn create_match(
         "protocol": PROTOCOL_VERSION,
         "account_a": account_a,
         // Commit–reveal: the published seed commitment (verify against the
-        // reveal pushed when the telling ends).
+        // reveal pushed when the match ends).
         "seed_commit": seed_commit_hex,
     }))
     .into_response()

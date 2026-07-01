@@ -178,7 +178,7 @@ pub struct CardDef {
     pub mobile: bool,
     pub steadfast: bool,
     pub relentless: bool,
-    /// Lurkers enter the telling face-down.
+    /// Lurkers enter the match face-down.
     #[serde(default)]
     pub lurk: bool,
     #[serde(default)]

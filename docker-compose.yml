@@ -28,7 +28,15 @@ services:
       - "3000:3000"   # grafana ui (anonymous admin: local-only)
       - "4317:4317"   # otlp grpc
       - "4318:4318"   # otlp http
-    volumes: ["lgtm:/data"]
+    volumes:
+      - "lgtm:/data"
+      # The Recollect dashboards-as-code — the SAME mounts the deploy stack uses — so `make up`'s
+      # Grafana loads our RED + game-design boards (under a "Recollect" folder), not just the stock
+      # LGTM ones. The provider yaml and the dashboard JSON must live in separate dirs (a Grafana
+      # requirement). RED + game-design light up once the server has traffic; host/synthetic stay
+      # empty in dev (no node-exporter/blackbox here — those run only in the deploy stack).
+      - "./deploy/compose/observability/grafana/provisioning/dashboards/recollect.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/recollect.yaml:ro"
+      - "./deploy/compose/observability/grafana/dashboards:/var/lib/grafana/dashboards/recollect:ro"
 
   server:
     build:

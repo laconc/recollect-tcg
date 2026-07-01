@@ -18,7 +18,7 @@ pub struct Session {
     /// Last applied client sequence number per SLOT (A1,B1,A2,B2). 1v1 uses
     /// the first two; 2v2 uses all four.
     last_seq: [u64; 4],
-    /// §16 game-design telemetry for THIS telling. Every applied batch (player and
+    /// §16 game-design telemetry for THIS match. Every applied batch (player and
     /// bot, 1v1 and 2v2) flows through `finish_apply` — the one post-apply funnel — so
     /// this accumulator sees them all: evolutions, Throughlines, the turn count, and the
     /// contraction leader. Aggregate counts only; it never touches a hand, the deck, or
@@ -34,7 +34,7 @@ pub struct ApplyOk {
     /// For the journal record: this command's event batch + entropy position.
     pub events: Vec<recollect_core::Event>,
     pub draws_after: u64,
-    /// Set when this command ended the telling: a result string for the
+    /// Set when this command ended the match: a result string for the
     /// match row, so the server can close the record and evict the session.
     pub finished: Option<String>,
 }
@@ -76,7 +76,7 @@ pub enum ApplyOutcome {
 }
 
 impl ApplyOutcome {
-    /// The result string when this command ended the telling (for the match record +
+    /// The result string when this command ended the match (for the match record +
     /// the actor's finish handling) — mode-agnostic.
     pub fn finished(&self) -> Option<&String> {
         match self {
@@ -140,7 +140,7 @@ impl Session {
         }
     }
 
-    /// A 2v2 telling — four decks, four slots A1→B1→A2→B2.
+    /// A 2v2 match — four decks, four slots A1→B1→A2→B2.
     pub fn new_2v2(seed: u64, decks: [Vec<recollect_core::CardId>; 4]) -> Session {
         let (engine, _events) = Engine::new_2v2(seed, canon_catalog(), decks);
         Session {
@@ -339,14 +339,14 @@ impl Session {
     }
 
     /// §16: which seat (if any) led the board at the Dusk contraction — captured by
-    /// the metrics accumulator as the telling ran, read at match end so the finish
+    /// the metrics accumulator as the match ran, read at match end so the finish
     /// counter can correlate "did the side leading at contraction go on to win?".
     /// `None` until the contraction happens (or if it was a tie).
     pub(crate) fn contraction_lead(&self) -> crate::metrics::ContractionLead {
         self.metrics.contraction_lead()
     }
 
-    /// Test seam: the §16 turn count the accumulator has tallied for this telling.
+    /// Test seam: the §16 turn count the accumulator has tallied for this match.
     #[cfg(test)]
     pub(crate) fn metrics_turns(&self) -> u64 {
         self.metrics.turns()
@@ -364,7 +364,7 @@ impl Session {
         )
     }
 
-    /// The result string for a finished telling (for the `matches` record).
+    /// The result string for a finished match (for the `matches` record).
     pub fn finished(&self) -> Option<String> {
         match &self.engine.state().phase {
             recollect_core::state::Phase::Finished {
@@ -523,16 +523,16 @@ mod tests {
         );
     }
 
-    /// §16 metrics wiring, end to end through the real engine: a full telling driven
+    /// §16 metrics wiring, end to end through the real engine: a full match driven
     /// to its result feeds every applied batch through the session's one funnel, so
     /// the accumulator tallies the turns over the whole match and observes the Dusk
-    /// contraction. An EndTurn-only telling keeps an empty board — so the contraction
+    /// contraction. An EndTurn-only match keeps an empty board — so the contraction
     /// fires with NO leader (a dead-even 0–0), exactly the `None` the panel must not
     /// count — and the turn tally climbs to the full 12-round clock (both seats each
     /// turn). This proves the events→`observe`→accumulator path the dashboard reads,
     /// not just the classifier in isolation.
     #[test]
-    fn the_metrics_accumulator_tracks_a_full_telling() {
+    fn the_metrics_accumulator_tracks_a_full_match() {
         use recollect_core::state::Phase;
         let mut s = Session::new(7, deck(), deck());
         // Drive both seats to do nothing but end their turns until the match ends.
@@ -558,17 +558,17 @@ mod tests {
                 applied_turns += 1;
             }
         }
-        assert!(s.is_finished(), "the EndTurn-only telling reached a result");
+        assert!(s.is_finished(), "the EndTurn-only match reached a result");
         // Every TurnEnded was counted — the length histogram's input is the real
         // per-turn tally, climbing in lockstep with the turns we drove.
         assert_eq!(
             s.metrics_turns(),
             applied_turns,
-            "the accumulator counted exactly the turns the telling played"
+            "the accumulator counted exactly the turns the match played"
         );
         assert!(
             s.metrics_turns() >= 12,
-            "a full 12-round telling tallies at least a dozen turns"
+            "a full 12-round match tallies at least a dozen turns"
         );
         // The contraction fired on an empty board: a 0–0 tie ⇒ no leader to correlate
         // (the panel's denominator excludes it — leading-at-contraction must be strict).
@@ -638,7 +638,7 @@ mod twovtwo_tests {
 
     #[test]
     fn solace_pve_session_runs_seat_b_as_a_normal_player() {
-        // In a Solace telling, seat B plays from its deck like any seat —
+        // In a Solace match, seat B plays from its deck like any seat —
         // there is no bespoke director command. It takes (and ends) its turn through the same
         // journaled path as the player.
         let deck: Vec<CardId> = (0..20).map(|_| CardId(0)).collect();

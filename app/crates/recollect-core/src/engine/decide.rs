@@ -355,7 +355,7 @@ fn decide_reclaim(
     // The catalog is immutable behind Arc, so a borrow suffices (no CardDef clone): the
     // name + cost we read live as long as the catalog, independent of the &mut sim mutation.
     let def = card(&ctx.catalog, sp.card);
-    // Its Parting fires (it leaves the telling deliberately).
+    // Its Parting fires (it leaves the match deliberately).
     fire_doctrine(
         &mut sim,
         &mut evs,
@@ -859,7 +859,7 @@ fn decide_set_orders(
     let mut sim = state.clone();
     let mut evs = Vec::new();
     let actor = ctx.actor;
-    // Free action: standing orders cost no telling.
+    // Free action: standing orders cost no action.
     match state.spirit_at(*tile) {
         Some(sp) if sp.owner == actor && !sp.fading => {}
         _ => return Err(Reject::TileEmpty),

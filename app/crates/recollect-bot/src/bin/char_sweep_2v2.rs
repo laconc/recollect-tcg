@@ -1,7 +1,7 @@
 //! 2v2 PvE win-rate probe — the 2v2 parity of `bin/char_sweep`.
 //!
 //! `char_sweep` measures the 1v1 PvE fight (player Lorekeeper vs Solace) per character; it does not
-//! cover the 6×6 2v2 telling. This binary measures the **2v2 PvE win rate** so the maintainer can
+//! cover the 6×6 2v2 match. This binary measures the **2v2 PvE win rate** so the maintainer can
 //! see whether the "too easy" 1v1 picture holds in 2v2, where two Lorekeepers (slots A1+A2) contend
 //! against two Solace (slots B1+B2) on the wider board with the longer (10-round) clock.
 //!
@@ -307,7 +307,7 @@ fn gap_note(p: f64, lo: f64, hi: f64) -> String {
 fn main() {
     let cat = canon_catalog();
     println!(
-        "2v2 PvE win-rate probe — parity of bin/char_sweep for the 6×6 2v2 telling (data only).\n\
+        "2v2 PvE win-rate probe — parity of bin/char_sweep for the 6×6 2v2 match (data only).\n\
          N={N} matches/character; PLAYER (team A / two Lorekeepers) win reported.\n\
          Target player-win bands: Hard 50-60%, Expert 30-40% (Expert is the hardest tier).\n\
          Two mirror tiers: Hard (both teams Hard) and Expert (both teams Expert)."

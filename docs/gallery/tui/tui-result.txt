@@ -16,7 +16,7 @@
    e3 A Bearer of Small Stones Atk 45  Def 25  HP  65/65  Cross Sorrow °held (lamplit: scores, no interception, ground goes dark when it leaves)
    b4 B Sparkfather Vermilion  Atk 90  Def 20  HP  65/65  Cross Fury
    d5 B Cairnling Sentinel     Atk 15  Def 20  HP  50/50  Cross Resolve °held (lamplit: scores, no interception, ground goes dark when it leaves)
-(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)
+(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered plays below)
 Score if Nightfall struck now: A 6 — B 9
 You: 27 anima (your play budget — no fixed action count; End Turn when ready) · deck 3 · hand:
 Them: 25 anima · hand 0 · deck 3

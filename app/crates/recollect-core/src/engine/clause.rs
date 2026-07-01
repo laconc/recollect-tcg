@@ -105,7 +105,7 @@ pub(crate) fn banish_or_replace(
     // 12**, when the Nightfall `finish` step dissolves every remaining fading
     // spirit BEFORE scoring — laying the banisher's impression so the OPPONENT
     // scores the tile. (Dissolving on defeat would rob the round of a body that
-    // should stand until the telling ends; dissolving *after* scoring would
+    // should stand until the match ends; dissolving *after* scoring would
     // wrongly let the faded spirit, not the banisher's impression, hold the tile.)
     // So there is no immediate dissolve here — the round-12 base lingers like any
     // other banished base, just with no Main left to be evolved in.

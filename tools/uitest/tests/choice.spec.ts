@@ -25,14 +25,14 @@ async function activate(page: Page, locator: Locator): Promise<void> {
   await page.keyboard.press("Enter");
 }
 
-/** Open a LOCAL telling and STOP at the opening Mulligan modal (don't auto-dismiss it) —
+/** Open a LOCAL match and STOP at the opening Mulligan modal (don't auto-dismiss it) —
  *  so a spec can exercise the modal itself. Mirrors startLocalGame's start, minus the
  *  dismiss. */
 async function startAtMulligan(page: Page): Promise<void> {
   await openPicker(page);
   await page.locator("#picker .style").first().click();
   // The Mulligan modal's button proves the opening modal is up (its a11y tree replaces the
-  // live game tree). It's offered at the very start of a fresh 1v1 telling.
+  // live game tree). It's offered at the very start of a fresh 1v1 match.
   await expect(keepHandButton(page)).toBeVisible({ timeout: 15_000 });
 }
 

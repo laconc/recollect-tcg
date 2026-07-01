@@ -99,21 +99,29 @@ the rest have generic defaults. Nothing real is committed — it lands in your g
 
 ```bash
 make foundation-install                 # once: (cd deploy/pulumi/foundation && npm install)
-cd deploy/pulumi/foundation
-pulumi login                            # or: pulumi login --local
-pulumi stack init prod                  # one-time
-
-pulumi config set githubRepo  yourorg/recollect     # REQUIRED — pins the CI role's trust to THIS repo's main
-pulumi config set region      us-east-2             # set to match your SSO profile's region; keep == PLATFORM's
-pulumi config set imageName   recollect-server      # optional (default) — the ECR repo name
-# optional lifecycle knobs (defaults shown):
-pulumi config set expireUntaggedAfterDays 14
-pulumi config set keepReleaseImages       20
-
-cd ../../..                             # back to repo root for the make targets
 make foundation-typecheck               # tsc --noEmit (no cloud calls)
 make foundation-preview                 # review every resource before creating anything
 make foundation-up                      # CREATE the ECR repo + OIDC provider + CI role
+```
+
+> **The lifecycle targets self-provision.** `make foundation-preview` / `-up` run a **preflight**
+> (`deploy/pulumi/preflight.sh`) that selects/creates the `prod` stack (override with `STACK=`),
+> defaults `region=us-east-2`, ensures your `PULUMI_CONFIG_PASSPHRASE` (prompting if unset), and
+> **prompts for `githubRepo`** if you haven't set it — so the four lines above are enough.
+> (`make pulumi-state-bucket` already did the `pulumi login`.) The **same preflight** fronts every
+> `deploy-*` target — see [The make targets' preflight](#the-make-targets-preflight) for the schema.
+
+To set values up front instead of answering prompts (e.g. a non-interactive run), pre-seed the config —
+it lands in your gitignored `deploy/pulumi/foundation/Pulumi.<stack>.yaml`:
+
+```bash
+cd deploy/pulumi/foundation
+pulumi config set githubRepo yourorg/recollect   # else preflight prompts for it (pins CI trust to this repo's main)
+pulumi config set region     us-east-2           # optional — preflight defaults this; keep == PLATFORM's
+pulumi config set imageName  recollect-server    # optional (default) — the ECR repo name
+pulumi config set expireUntaggedAfterDays 14     # optional lifecycle knobs (defaults shown)
+pulumi config set keepReleaseImages       20
+cd ../../..
 ```
 
 ### 3. Read the two outputs and wire them in
@@ -165,6 +173,40 @@ PLATFORM deploys.
 > couldn't assume it anyway, and a fork PR can never push. To also push on tags/PRs, broaden the `sub`
 > in `foundation/index.ts` and add the matching trigger.
 
+> **The site-deploy workflow's GitHub inputs come after PLATFORM.** `site-deploy.yml` also needs a
+> Cloudflare token + account id + the `CF_PAGES_PROJECT` name — but that name is a **PLATFORM** output
+> (`pagesProjectName`), so it can't be wired until the box is up. Those are wired (and the full set of
+> every workflow's secrets/variables recapped) in
+> [PLATFORM → Wire the site-deploy outputs](#wire-platforms-site-deploy-outputs-into-github).
+
+### The make targets' preflight
+Every `foundation-*` / `deploy-*` **lifecycle** target (preview, up, refresh, destroy, outputs, ssm)
+runs `deploy/pulumi/preflight.sh` first, so a missing passphrase or unset config **asks** instead of
+failing mid-apply. In order, it:
+
+1. **Secret env vars** — ensures each needed one is set, prompting *silently* for any that isn't:
+   `PULUMI_CONFIG_PASSPHRASE` (both projects) + `CLOUDFLARE_API_TOKEN` (PLATFORM preview/up/refresh/destroy).
+2. **AWS auth** — a soft `aws sts get-caller-identity` check; a miss prints the `aws sso login` hint, never blocks.
+3. **Stack** — selects `STACK` (default `prod`), creating it with `pulumi stack init` if absent.
+4. **Optional defaults** — sets `region=us-east-2` if unset.
+5. **Required config** — **auto-derived from the project's `Pulumi.yaml`**: every key with no
+   `default:` (so the prompt list can never drift from the schema — add a no-default key and it's
+   prompted automatically). Prompts for any you haven't set (FOUNDATION: `githubRepo`; PLATFORM:
+   `domain repoUrl gitRef serverImage cloudflareAccountId cloudflareZoneId maintainerEmail`).
+
+then runs the command in the project dir (one process, so a just-typed passphrase reaches `pulumi`).
+Override the stack per-invocation — `make foundation-up STACK=staging`; pre-seeding config with
+`pulumi config set` skips the matching prompts (for non-interactive runs). Schema + an example:
+
+```bash
+[STACK=prod] [ENVVARS="A B"] [REQUIRED="k1 k2"] [DEFAULTS="k=v …"] \
+  deploy/pulumi/preflight.sh <project-dir> <command> [args…]
+
+# what `make foundation-up` expands to:
+ENVVARS="PULUMI_CONFIG_PASSPHRASE" REQUIRED="githubRepo" DEFAULTS="region=us-east-2" \
+  bash deploy/pulumi/preflight.sh deploy/pulumi/foundation pulumi up
+```
+
 ---
 
 ## PLATFORM — run per release (the box that PULLS the image)
@@ -179,13 +221,13 @@ the server image CI pushed to FOUNDATION's ECR (it never builds Rust on the 1 GB
 ```bash
 # Admin session (same as FOUNDATION) + the Cloudflare token PLATFORM needs:
 aws sso login                           # the DEFAULT profile (no --profile/AWS_PROFILE); named profile? add `--profile <name> && export AWS_PROFILE=<name>`
-export CLOUDFLARE_API_TOKEN=…           # the scoped custom token (Tunnel+Access+DNS) — see below
+export CLOUDFLARE_API_TOKEN=…           # the scoped custom token (Tunnel+Access+Pages+DNS) — see below
 
 make deploy-install                     # once: (cd deploy/pulumi/platform && npm install)
-cd deploy/pulumi/platform
-pulumi stack init prod                  # one-time
 
-# REQUIRED, all deployment-unique (no committed defaults) — land in your gitignored Pulumi.<stack>.yaml:
+# REQUIRED, all deployment-unique (no committed defaults) — pre-seed them so you're not prompted for
+# seven values; they land in your gitignored Pulumi.<stack>.yaml. (cd to the project for config set.)
+cd deploy/pulumi/platform
 pulumi config set domain               your-domain.com
 pulumi config set repoUrl              https://github.com/yourorg/recollect.git
 pulumi config set gitRef               <COMMIT_SHA_OR_TAG>          # the release you're deploying
@@ -203,9 +245,48 @@ make deploy-up                          # CREATE/UPDATE the box (it PULLS server
 make deploy-outputs                     # site URL, grafanaUrl, instanceId, the SSM command
 ```
 
+> **The preflight fronts the `deploy-*` targets too.** `make deploy-preview` / `-up` select/create the
+> `prod` stack, default `region=us-east-2`, ensure both **`PULUMI_CONFIG_PASSPHRASE`** and
+> **`CLOUDFLARE_API_TOKEN`** (prompting silently for either if unset), and **prompt for any of the seven
+> required inputs you didn't pre-seed** above — so a missing value asks instead of failing mid-apply.
+> `deploy-outputs` / `deploy-ssm` need only the passphrase. See
+> [The make targets' preflight](#the-make-targets-preflight).
+
 `serverImage` is the crux: it is **FOUNDATION's `repoUrl` output at the `sha-<commit>` tag CI pushed**.
 The box's instance role grants **ECR read-only**, so cloud-init does a keyless `docker login` +
 `docker compose pull server` and runs the image — no on-box compile.
+
+### Wire PLATFORM's site-deploy outputs into GitHub
+The mirror of [FOUNDATION §3](#3-read-the-two-outputs-and-wire-them-in), now that PLATFORM is up: its
+**`pagesProjectName`** output names the Cloudflare Pages project CI uploads the website to. Wire the
+static-site workflow (`site-deploy.yml`) — the project name (its **ON switch**) + a Pages-scoped token
++ the account id:
+
+```bash
+gh variable set CF_PAGES_PROJECT      --body "$(cd deploy/pulumi/platform && pulumi stack output pagesProjectName)"
+gh secret   set CLOUDFLARE_API_TOKEN  --body '<a Pages:Edit token — see "Cloudflare credentials" below>'
+gh secret   set CLOUDFLARE_ACCOUNT_ID --body '<your Cloudflare account id>'
+```
+
+`site-deploy.yml` skips until `CF_PAGES_PROJECT` is set; full detail (the direct-upload `wrangler`
+step + rotation) is in [deploy/site/README.md §3](site/README.md#3-the-residual-manual-steps-what-pulumi-cant-do).
+
+#### Every GitHub Actions secret & variable (all workflows)
+With both stacks up, here's the complete set CI needs. `GITHUB_TOKEN` is auto-provided (nothing to set);
+the two **gate** inputs (`AWS_ROLE_ARN`, `CF_PAGES_PROJECT`) are ON switches whose job skips until set,
+so a fresh or public clone never red-fails.
+
+| Kind | Name | Used by | Set from | Wired in |
+|---|---|---|---|---|
+| variable | `AWS_ROLE_ARN` (gate) | `deploy-image.yml` | FOUNDATION output `ciRoleArn` | [FOUNDATION §3](#3-read-the-two-outputs-and-wire-them-in) |
+| variable | `AWS_REGION` | `deploy-image.yml` | FOUNDATION output `ecrRegion` | ↑ |
+| variable | `ECR_REPO_URL` | `deploy-image.yml` | FOUNDATION output `repoUrl` | ↑ |
+| variable | `CF_PAGES_PROJECT` (gate) | `site-deploy.yml` | PLATFORM output `pagesProjectName` | here ↑ |
+| secret | `CLOUDFLARE_API_TOKEN` | `site-deploy.yml` | a **Pages : Edit** token ([Cloudflare creds](#cloudflare-credentials-for-pulumis-cloudflare-provider--environment)) | here ↑ |
+| secret | `CLOUDFLARE_ACCOUNT_ID` | `site-deploy.yml` | your Cloudflare account id | here ↑ |
+| (auto) | `GITHUB_TOKEN` | `ci.yml` | provided by Actions — no setup | — |
+
+`nightly.yml` + `mutation.yml` need nothing beyond `GITHUB_TOKEN`.
 
 **Redeploy a new release** (after CI has pushed its image): bump `gitRef` + `serverImage` to the new
 SHA and `make deploy-up` (a `gitRef` change re-provisions the box via `userDataReplaceOnChange`), or
@@ -336,7 +417,7 @@ How it works, end to end:
 > **Local runs are unaffected.** `make deploy-local` (the `docker-compose.local.yml` overlay) points
 > Postgres at an ordinary **named volume**, so a laptop needs no `/data` mount; only the real box uses
 > the EBS bind mount. The overlay also **scales the observability stack (`lgtm` + `node-exporter`) to
-> zero** — dev observability is the root `make up` (`grafana/otel-lgtm`) stack, not this one.
+> zero** — local observability is the root `make dev-up` (`grafana/otel-lgtm`) stack (or `make up`), not this one.
 
 ---
 
@@ -937,6 +1018,13 @@ durable EBS), `recollect-sg`, `recollect-instance-role` / `recollect-instance-pr
 `recollect-alarms` (SNS), the seven `recollect-*` CloudWatch alarms, and the two
 `recollect-*-budget`s.
 
+> **The Pulumi state bucket carries the set too.** The bootstrap `create-state-bucket.sh`
+> (`make pulumi-state-bucket`) applies the same `Project` / `Environment` / `ManagedBy` / `Name`
+> tags to the S3 state bucket, plus **`Stack=state-backend`** — it underlies *both* stacks and is
+> bootstrap-created, never part of a `pulumi up`, so **don't `pulumi destroy` it**. `Repository`
+> stays config-driven there too (set `REPOSITORY=owner/repo` on the script to add it; omitted by
+> default rather than hardcoded).
+
 > **Cloudflare resources aren't AWS-tagged.** The Cloudflare provider takes no AWS tag set. Where a
 > Cloudflare resource supports a free-form **comment** — the four DNS records (website apex + `www`,
 > plus `play.` + `grafana.`) — Pulumi sets a consistent marker (`managed by Pulumi — recollect`). The
@@ -962,7 +1050,7 @@ above is the quick path):
 
 ```bash
 cd deploy/pulumi/platform
-pulumi stack init prod            # one-time
+pulumi stack init prod            # one-time — or skip it: the `make deploy-*` preflight inits/selects it
 
 # required — all DEPLOYMENT-UNIQUE; the repo ships no real value, you supply yours here. They land
 # in your gitignored Pulumi.<stack>.yaml (never git).
@@ -1107,7 +1195,7 @@ CLI sees):
   *not* enough); `GET /healthz` is `ok`. One origin, one server image.
 - **The game (over ws).** It mints a real PvP match via `POST /matches` and drives **both seats**
   with two headless `recollect online join --json` clients (`deploy/smoke_game.py`). It asserts the
-  match is created, **moves apply over the wire**, the telling advances (to a result, or a healthy
+  match is created, **moves apply over the wire**, the match advances (to a result, or a healthy
   move budget), and — the **redaction** invariant — a client's view never carries the opponent's
   hand (only a count), and the two seats are dealt different hands.
 - **The journal.** A `journal_events` row exists in the on-box Postgres — proving the
@@ -1194,7 +1282,7 @@ deploy/
 ```
 
 > The repo-root **`Dockerfile`** (the hardened `--profile dist` server image) and
-> **`docker-compose.yml`** (the dev stack: Postgres + Grafana LGTM, `make up`) stay at the root —
+> **`docker-compose.yml`** (the dev stack: Postgres + Grafana LGTM, `make dev-up`) stay at the root —
 > they're shared contracts: **CI builds the server from that one Dockerfile** for both GHCR (the
 > dev/kind-integration registry) and **ECR** (`deploy-image.yml` → the production registry the box
 > pulls), and `make deploy-local`/`make deploy-smoke` build it locally via the BUILD overlay. The

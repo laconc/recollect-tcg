@@ -31,14 +31,27 @@
         <a href="rules.html" aria-current="page">Rules</a>
         <a href="lore.html">Lore</a>
         <a href="contact.html">Contact</a>
+        <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="options-panel">Options</button>
       </nav>
+    </div>
+    <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+      <div class="options-inner">
+        <h2 class="options-title">Options</h2>
+        <div class="site-settings" role="group" aria-label="Site settings">
+          <label class="setting" for="opt-reduced-motion">
+            <input type="checkbox" id="opt-reduced-motion" />
+            <span>Reduced motion</span>
+          </label>
+        </div>
+      </div>
     </div>
   </header>
 
   <main id="main">
     <article class="prose container">
       <h1>Rules in brief</h1>
-      <p class="note">Enough to start a telling. The finer points you'll pick up at the board.</p>
+      <p class="note">Enough to start a match. The finer points you'll pick up at the board.</p>
 
       <nav class="page-toc" aria-labelledby="contents">
         <h2 id="contents">On this page</h2>
@@ -50,7 +63,7 @@
           <li><a href="#becoming">Becoming &amp; receding</a></li>
           <li><a href="#strays">Strays &amp; the wild</a></li>
           <li><a href="#dusk">The Dusk</a></li>
-          <li><a href="#two-tellings">The two tellings</a></li>
+          <li><a href="#two-readings">The two readings</a></li>
         </ol>
       </nav>
 
@@ -136,7 +149,7 @@
         call it a <strong>recede</strong>.</p>
 
       <h2 id="strays">Strays &amp; the wild</h2>
-      <p>Now and then the Memory stirs and a <strong>Stray</strong> — a lost dog — surfaces on an inner
+      <p>Now and then the Memory stirs and a <strong>Stray</strong> — a wild spirit — surfaces on an inner
         tile, scoring for no one until someone claims it. You can <strong>befriend</strong> it (it joins
         you, and your collection, for good) or <strong>banish</strong> it like any spirit. Some Strays
         surface in the open; a <strong>Wary</strong> one surfaces <strong>veiled</strong> — present, but
@@ -161,9 +174,9 @@
         What still stands when the Memory closes is what you keep. (The Dusk is its own moment, not
         the turn-end Fade — it sweeps the empty rim all at once.)</p>
 
-      <h2 id="two-tellings">The two tellings</h2>
+      <h2 id="two-readings">The two readings</h2>
       <p>The <strong class="ink-a">Lorekeepers</strong> fight to keep the memory
-        written. The <strong class="ink-b">Solace</strong> <strong>Unwrite</strong> it:
+        written. The <strong class="ink-b">Solace</strong> <strong>unwrite</strong> it:
         they take a spirit off the page gently, leave no Impression, and deny the keeper their proof.</p>
       <p>The two even <em>become</em> differently. Where a Lorekeeper spirit ascends toward legend
         — a Primal, then perhaps a <strong>Fabled</strong> — an Unwritten <strong>deepens</strong>:
@@ -180,10 +193,9 @@
   <footer class="site-footer">
     <div class="container">
       <span>Recollect</span>
-      <a href="lore.html">Lore</a>
-      <a href="cards.html">Card catalog</a>
       <span class="note">A fading Memory, told in paper &amp; ink.</span>
     </div>
   </footer>
+  <script src="options.js" defer></script>
 </body>
 </html>

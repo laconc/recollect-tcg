@@ -95,8 +95,9 @@ config:
     description: >-
       OPTIONAL (R2-1, defense-in-depth) — your Cloudflare Zero Trust org/team name (the `<team>` in
       `<team>.cloudflareaccess.com`). SET ⇒ the grafana tunnel ingress also validates the Access JWT
-      at the connector (origin-side, bound to the Grafana Access app's AUD). UNSET ⇒ edge-only Access
-      (the default posture). Deployment-unique, so no committed default. See deploy/README.md "R2-1".
+      at the connector (origin-side, bound to the Grafana Access app's AUD). EMPTY (the default) ⇒
+      edge-only Access (the default posture). See deploy/README.md "R2-1".
+    default: ""
   recollect-platform:alarmEmail:
     type: string
     description: >-
@@ -113,10 +114,10 @@ config:
       Instance ROOT volume size (GiB). Default 10 so root (10) + the durable /data volume (20) =
       30 GiB fit entirely in the 30 GB/12-month EBS free tier ($0) — the #31 cost fix.
     default: 10
-  # Secrets (do not set without --secret). NOTE: the on-box Postgres password is NOT here —
-  # Pulumi GENERATES it (random.RandomPassword in index.ts), since Postgres is compose-internal
-  # (no published port) and needs no operator-managed credential.
-  recollect-platform:cfBeaconToken:
-    type: string
-    secret: true
-    default: ""
+  # Two secrets are intentionally NOT typed config keys here:
+  #  - the on-box Postgres password — Pulumi GENERATES it (random.RandomPassword in index.ts), since
+  #    Postgres is compose-internal (no published port) and needs no operator-managed credential.
+  #  - cfBeaconToken (Cloudflare Web Analytics) — an OPTIONAL secret. Pulumi rejects a `secret: true`
+  #    key that also carries a (plaintext) `default` ("must be encrypted as it's secret"), so rather
+  #    than declare it, index.ts reads it with `cfg.getSecret("cfBeaconToken") ?? ""` (empty ⇒ no
+  #    beacon). Set it ENCRYPTED to enable analytics: `pulumi config set --secret cfBeaconToken <token>`.

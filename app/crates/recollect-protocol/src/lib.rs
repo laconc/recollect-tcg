@@ -103,7 +103,7 @@ pub enum ServerMsg {
     Pong {
         v: u16,
     },
-    /// Commit–reveal: pushed to each seat when the telling ends, disclosing
+    /// Commit–reveal: pushed to each seat when the match ends, disclosing
     /// the match seed and the salt behind the commitment published at creation
     /// (the POST response's `seed_commit`). A client recomputes
     /// `SHA-256(seed_le ‖ salt)`, checks it equals `commit`, then replays its

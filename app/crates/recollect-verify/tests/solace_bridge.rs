@@ -46,7 +46,7 @@ fn one_v_one_bounded_frontier_holds_every_invariant() {
 }
 
 /// The 2v2 four-slot path under formal coverage — the same bounded BFS over the
-/// 6×6 telling (init via `new_2v2_with_opener`, actions from the active slot's team,
+/// 6×6 match (init via `new_2v2_with_opener`, actions from the active slot's team,
 /// redaction from all four slots via `view_for_slot`). The 6×6 board × four hands
 /// branches hard, so the bound is TIGHT (3-card decks, round ≤ 2); even so the frontier
 /// is non-trivial, and EVERY property (validity, liveness, determinism, no-seed-leak,
@@ -73,7 +73,7 @@ fn two_v_two_bounded_frontier_holds_every_invariant() {
 }
 
 /// 2v2-rotation guard: the 2v2 model genuinely drives the four-slot rotation (not a degenerate
-/// 1v1-shaped run). The opening state is a real 6×6 telling with `active_slot = A1`,
+/// 1v1-shaped run). The opening state is a real 6×6 match with `active_slot = A1`,
 /// and the acting seat the model keys on is that slot's team — so the BFS explores the
 /// A1→B1→A2→B2 turn order. (If a regression collapsed 2v2 init to a 1v1 board, this
 /// fails before the always-properties could pass vacuously over a wrong shape.)
@@ -89,7 +89,7 @@ fn two_v_two_model_opens_a_real_team_board() {
         SeatSlot::A1,
         [recollect_core::types::Faction::Lorekeeper; 2],
     );
-    assert!(e.state().is_2v2(), "the 2v2 init is a four-slot telling");
+    assert!(e.state().is_2v2(), "the 2v2 init is a four-slot match");
     assert_eq!(e.state().board_w, 6, "on the 6×6 board");
     assert_eq!(e.state().active_slot, SeatSlot::A1, "A1 opens");
     // The active slot's team is the seat the model keys legal_commands/apply on.
@@ -267,7 +267,7 @@ fn solace_mode_drafts_a_real_solace_deck() {
 /// in A's hand and the Anima to pay. From that root, `legal_commands` offers the Devolve,
 /// the BFS expands it, and the properties hold on every resulting state — closing the gap
 /// where the recede had no formal coverage. (RED if the recede leaked the played base
-/// pre-reveal, diverged on re-run, or stranded the telling with no legal command.)
+/// pre-reveal, diverged on re-run, or stranded the match with no legal command.)
 #[test]
 fn devolution_is_reachable_in_the_frontier_and_holds_every_invariant() {
     use recollect_core::state::Phase;

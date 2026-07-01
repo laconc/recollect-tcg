@@ -10,7 +10,8 @@
 # It also installs the lightweight CloudWatch agent (the §11 out-of-band box-health metrics).
 #
 # Pulumi renders the @@PLACEHOLDERS@@ below from config/secrets and ships this as the instance's
-# user-data. In Pulumi state the rendered blob is a tracked SECRET (encrypted). On the box it is
+# user-data — gzip-COMPRESSED (index.ts) so it fits EC2's 16 KiB user_data cap; cloud-init on AL2023
+# decompresses it before running. In Pulumi state the rendered blob is a tracked SECRET (encrypted). On the box it is
 # the EBS root volume (encrypted at rest) and is also retrievable from the instance metadata
 # service by anything ON the box — which is why IMDSv2 is REQUIRED with hop-limit 1 (index.ts), so
 # an SSRF in the app can't reach 169.254.169.254 to read it. The script is idempotent: re-running

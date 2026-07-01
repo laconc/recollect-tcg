@@ -12,7 +12,7 @@ Enter
 Wait+Screen@20s /choose a style/
 Type "1"
 Enter
-Wait+Screen@20s /Legal tellings/
+Wait+Screen@20s /Legal plays/
 # Focus the hand, drop to Frenzy Kit (hand index 1), and lift it.
 Tab
 Sleep 400ms

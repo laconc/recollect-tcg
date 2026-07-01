@@ -55,7 +55,7 @@ test.describe("site navigation — rules page", () => {
     const toc = page.locator("nav.page-toc");
     await expect(toc).toBeVisible();
     // Each major section is a TOC entry; assert the known ones are present + linked.
-    for (const id of ["goal", "your-turn", "combat", "becoming", "dusk", "two-tellings"]) {
+    for (const id of ["goal", "your-turn", "combat", "becoming", "dusk", "two-readings"]) {
       await expect(toc.locator(`a[href="#${id}"]`)).toHaveCount(1);
       await expect(page.locator(`h2#${id}`)).toHaveCount(1);
     }

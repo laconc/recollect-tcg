@@ -16,14 +16,25 @@
   (installs `cargo-nextest` on demand; see docs/testing.md). `make doc`,
   `make probes`, `make catalog`, `make catalog-check`
 
-## The compose stack (`make up`)
-postgres:18.4 + grafana/otel-lgtm (Grafana :3000; logs/metrics/traces over
-OTLP :4317/:4318) + the server built from the root `Dockerfile` (static musl,
-distroless/static nonroot runtime). OpenTelemetry is always compiled in; the
-compose `server` sets `OTEL_EXPORTER_OTLP_ENDPOINT`, so it exports to the LGTM
-stack — unset it (e.g. `make server`) and you get JSON logs only. `make seed` mints two demo
-accounts and a match — tokens print ONCE. `make db-test` runs the postgres
-integration suite against the stack.
+## The local stacks: `make up` (full experience) vs `make dev-up` (fast loop)
+
+Two local stacks, for two jobs:
+
+- **`make up` — the FULL local experience** (the production mirror). The real **website + game at
+  :8080** (the axum server serving the built site + wasm client from one origin) **and Grafana + the
+  Recollect dashboards at :3000**, backed by on-box Postgres — the closest thing to production you can
+  run on a laptop. It is the deploy stack run locally (minus the Cloudflare Tunnel), so it validates
+  the real artifacts. `make down` stops it, `make nuke` deletes its volumes, `make logs` tails the server.
+- **`make dev-up` — the FAST inner loop** (no site build). postgres:18.4 + grafana/otel-lgtm (Grafana
+  :3000; OTLP :4317/:4318) + the API server built from the root `Dockerfile` (static musl,
+  distroless/static nonroot runtime). You iterate the engine/server here and run `make server` against
+  it; the site isn't built, so it stays quick. `make dev-down` stops it.
+
+(A leaner third option, **`make deploy-local`**, is the full single-origin **site** at :8080 *without*
+the observability stack — see Deployment below.) OpenTelemetry is always compiled in; the compose
+`server` sets `OTEL_EXPORTER_OTLP_ENDPOINT` so it exports to LGTM — unset it (e.g. plain `make server`)
+and you get JSON logs only. `make seed` mints two demo accounts and a match (tokens print ONCE);
+`make db-test` runs the postgres integration suite against the running stack.
 
 **Signals in Grafana** (:3000 → Explore): traces are the server's `#[instrument]`
 command spans (Tempo); logs are the `tracing` JSON events (Loki); metrics
@@ -42,11 +53,76 @@ pre-provisioned (read-only): **Recollect — service (RED)**, **Recollect —
 game-design (§16)**, and the **host/box** view.
 
 ## Teardown, carefully
+These act on the **`make up`** (full) stack; the fast loop's teardown is **`make dev-down`**.
 1. `make db-backup` — pg_dump to `backups/`, timestamped. Run this first.
-2. `make down` — stops containers, KEEPS volumes. The default.
-3. `make nuke` — deletes volumes; demands you type `unwrite`.
+2. `make down` — stops the `make up` containers, KEEPS volumes. The default.
+3. `make nuke` — deletes its volumes; demands you type `unwrite`.
 
 ## Deployment
+
+### Provision from nothing → everything (the make-driven runbook)
+
+The whole deploy in order, driven by `make`. **Validate locally first** — `make up` (play the real
+site + watch the dashboards) and `make deploy-smoke` (black-box: site + game + journal, auto-teardown).
+Then steps 1–7; they need a short-lived **admin AWS session** (`aws sso login`), a **Cloudflare account
+with your domain's zone added**, and the **domain**. Run from the repo root. The per-key detail (SSO
+setup, the Cloudflare token's exact scopes, every Pulumi config key) is in
+[`deploy/README.md`](../deploy/README.md) — this is the concise path.
+
+0. **Push** (once): `git push -u origin main` — the repo + CI workflows on GitHub.
+1. **Pulumi state backend** (once): set the secrets passphrase, then create the hardened S3 state
+   bucket + `pulumi login`:
+   ```
+   export PULUMI_CONFIG_PASSPHRASE='<a-strong-passphrase>'   # store it in your password manager
+   make pulumi-state-bucket
+   ```
+2. **FOUNDATION** (once — the ECR repo + GitHub-OIDC CI push role). The lifecycle targets run a
+   preflight that creates the `prod` stack, defaults `region`, and prompts for
+   `PULUMI_CONFIG_PASSPHRASE` + `githubRepo` if unset (deploy/README.md "The make targets' preflight"):
+   ```
+   make foundation-install
+   make foundation-preview && make foundation-up && make foundation-outputs   # prompts for githubRepo
+   ```
+   Pre-seed to skip the prompt:
+   `(cd deploy/pulumi/foundation && pulumi config set githubRepo laconc/recollect-tcg)`
+3. **Wire FOUNDATION's outputs into GitHub Actions VARIABLES** (turns CI's ECR push on):
+   ```
+   gh variable set AWS_ROLE_ARN --body "$(cd deploy/pulumi/foundation && pulumi stack output ciRoleArn)"
+   gh variable set ECR_REPO_URL --body "$(cd deploy/pulumi/foundation && pulumi stack output repoUrl)"
+   gh variable set AWS_REGION   --body "$(cd deploy/pulumi/foundation && pulumi stack output ecrRegion)"
+   ```
+4. **CI builds + pushes the server image** to ECR — automatic on every push to `main`
+   (`.github/workflows/deploy-image.yml`), or **Actions → deploy-image → Run workflow**. Note the
+   `sha-<commit>` tag PLATFORM deploys.
+5. **PLATFORM** (per release — the EC2 box that PULLS the image + Cloudflare). `make deploy-up` runs
+   the preflight (creates the stack, defaults `region`, prompts for `PULUMI_CONFIG_PASSPHRASE`,
+   `CLOUDFLARE_API_TOKEN`, and any required input you didn't pre-seed below):
+   ```
+   export CLOUDFLARE_API_TOKEN='<scoped token: Tunnel+Access+Pages+DNS edit — see deploy/README.md>'
+   make deploy-install
+   (cd deploy/pulumi/platform \
+      && pulumi config set domain recollect-tcg.com \
+      && pulumi config set repoUrl https://github.com/laconc/recollect-tcg.git \
+      && pulumi config set gitRef <SHA> \
+      && pulumi config set serverImage "$(cd ../foundation && pulumi stack output repoUrl):sha-<SHA>" \
+      && pulumi config set cloudflareAccountId <CF_ACCOUNT_ID> \
+      && pulumi config set cloudflareZoneId <CF_ZONE_ID> \
+      && pulumi config set maintainerEmail you@example.com)
+   make deploy-preview && make deploy-up && make deploy-outputs
+   ```
+6. **Wire the static-site Pages deploy** (GitHub SECRETS + a var) so `site-deploy.yml` uploads `dist/`:
+   ```
+   gh secret   set CLOUDFLARE_API_TOKEN  --body '<a Pages:Edit token>'
+   gh secret   set CLOUDFLARE_ACCOUNT_ID --body '<CF account id>'
+   gh variable set CF_PAGES_PROJECT      --body "$(cd deploy/pulumi/platform && pulumi stack output pagesProjectName)"
+   ```
+7. **Verify:** `https://recollect-tcg.com` (site + game) and `https://grafana.recollect-tcg.com`
+   (Grafana behind Cloudflare Access — your `maintainerEmail` + a one-time PIN), then walk
+   `docs/manual_verification.md`.
+
+**Redeploy:** push to `main` → CI pushes a new image → bump `gitRef`+`serverImage` + `make deploy-up`
+(or in place: `make deploy-ssm` → `sudo recollect-update <SHA>`). **Teardown:** `make deploy-destroy`
+(PLATFORM only; FOUNDATION stays up across releases).
 
 ### Launch host — EC2 + Cloudflare Tunnel (the lean §10.1 target)
 The playtest deploy is **two Pulumi projects** under `deploy/pulumi/` + a deploy compose under
@@ -81,16 +157,17 @@ per-resource `Name`); the `environment` config (default `production`) sets the `
 - `make deploy-typecheck` / `make deploy-preview` — gate the PLATFORM plan (no cloud calls / a dry run)
 - `make deploy-up` / `make deploy-outputs` / `make deploy-ssm` / `make deploy-destroy` — live infra
   (`deploy-outputs` prints the `grafanaUrl`, `alarmTopicArn`, `ssmSession`, …)
-- `make deploy-local` — run the **same single-origin stack locally** (no tunnel; the observability
-  stack is scaled to zero — dev observability is `make up`) and play the real website end-to-end at
-  `http://localhost:8080`; `make deploy-local-down` tears it down. Local/smoke layer the **BUILD
+- `make deploy-local` — run the single-origin stack locally, the **LEAN** variant (no tunnel,
+  observability scaled to zero) and play the real website end-to-end at `http://localhost:8080`;
+  `make deploy-local-down` tears it down. For the site **with** observability use **`make up`** (the
+  full mirror); for the fast db+Grafana+API loop, **`make dev-up`**. Local/smoke layer the **BUILD
   overlay** (`docker-compose.build.yml`) to compile the server image locally — they need no ECR.
 - `make deploy-smoke` — **smoke-test the built deploy artifact from the OUTSIDE before a launch**
   (`deploy/smoke.sh`). It builds the deploy images, brings up the local stack, polls `/healthz`,
   then asserts the artifact as a black box: the **website** (`GET /` title+nav, the wasm play client
   under `/client/` and its JS/wasm assets actually serve — the trunk-boot class — plus `/healthz`),
   the **game** (a real PvP match driven over ws by two headless `recollect online --json` clients —
-  moves apply, the telling advances, and **redaction holds**: a client never receives the opponent's
+  moves apply, the match advances, and **redaction holds**: a client never receives the opponent's
   hand), and the **journal** (a `journal_events` row in the on-box Postgres — the Postgres-authoritative
   path worked in the image). It **always tears down** (a trap, even on failure/interrupt), dumps the
   server logs on failure, and is idempotent + re-runnable. Needs Docker + `jq`/`python3` (it builds

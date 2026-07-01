@@ -20,7 +20,20 @@
         <a href="rules.html">Rules</a>
         <a href="lore.html">Lore</a>
         <a href="contact.html">Contact</a>
+        <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="options-panel">Options</button>
       </nav>
+    </div>
+    <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+      <div class="options-inner">
+        <h2 class="options-title">Options</h2>
+        <div class="site-settings" role="group" aria-label="Site settings">
+          <label class="setting" for="opt-reduced-motion">
+            <input type="checkbox" id="opt-reduced-motion" />
+            <span>Reduced motion</span>
+          </label>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -48,9 +61,9 @@
             edges close in. What still stands when the Memory shuts is what you keep.</p>
         </article>
         <article class="feature">
-          <h3>Two tellings</h3>
+          <h3>Two readings</h3>
           <p>The Lorekeepers fight to keep the memory written. The Solace would
-            <em>Unwrite</em> it — lift a spirit away, leave no mark, call it mercy. Spirits
+            <em>unwrite</em> it — lift a spirit away, leave no mark, call it mercy. Spirits
             are never destroyed; defeated, they are <em>banished</em> back to the page, and
             may be told again.</p>
         </article>
@@ -63,7 +76,7 @@
     </section>
 
     <section class="section container" aria-labelledby="start">
-      <h2 id="start">Start a telling</h2>
+      <h2 id="start">Start a match</h2>
       <p>Play the AI right away, or host a match of your own: pick 1v1 or 2v2, set how hard
         the bots play, and send a friend the code.</p>
       <p><a class="btn btn-primary" href="play.html">Play now</a></p>
@@ -73,12 +86,9 @@
   <footer class="site-footer">
     <div class="container">
       <span>Recollect</span>
-      <a href="rules.html">Rules in brief</a>
-      <a href="cards.html">Card catalog</a>
-      <a href="lore.html">Lore</a>
-      <a href="feedback.html">Feedback</a>
       <span class="note">A fading Memory, told in paper &amp; ink.</span>
     </div>
   </footer>
+  <script src="options.js" defer></script>
 </body>
 </html>

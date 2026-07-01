@@ -179,7 +179,7 @@ event.)*
 The user asked for kind locally; the red team pushed back on *kind for every loop* (T-4) and we landed on tiers — kind stays, but as parity, not friction:
 
 1. **Tier 1 — seconds:** `make test`, `make sim`. Pure logic; this is where TDD lives.
-2. **Tier 2 — services:** `make up` → Postgres, Valkey, and `grafana/otel-lgtm` (Grafana+Tempo+Loki+Mimir+OTLP in one container) on localhost; `make server` against them. Sub-second rebuilds.
+2. **Tier 2 — services:** `make dev-up` → Postgres + `grafana/otel-lgtm` (Grafana+Tempo+Loki+Mimir+OTLP in one container) on localhost; `make server` against them. Sub-second rebuilds. (`make up` is the full local mirror — site + game + observability.)
 3. **Tier 3 — cluster parity:** `scripts/kind-integration.sh` builds the hardened image, loads it into kind, applies the restricted-PSS kustomize overlay. Used before merging anything that touches deploy/runtime behavior.
 4. **CI — ephemeral kind:** `scripts/kind-integration.sh` creates a throwaway cluster per run (random name, trap-deleted), deploys, smoke-tests health + match creation; M1 extends it with a bot Job playing full matches over WS and a **chaos step**: kill the pod mid-match, assert snapshot-resume hash equality.
 
@@ -389,4 +389,4 @@ TDD loop in practice: write the L0 test from the spec sentence → red → imple
 4. Spectator/replay-sharing privacy model (replays expose hands post-hoc — fine after match end? probably, since commit–reveal already discloses the seed).
 5. Whether to upstream the Ironstate v0.5 proposals (§4.3) or carry a local fork until Kassian v1 extraction happens.
 
-*Determinism is the anti-cheat. The log is the truth. The Memory keeps both tellings.*
+*Determinism is the anti-cheat. The log is the truth. The Memory keeps both readings.*

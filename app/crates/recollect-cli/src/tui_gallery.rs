@@ -1,7 +1,7 @@
 //! The TUI gallery's moments — one source of truth for the `tui_capture` example
 //! AND the `tui_gallery` snapshot test. Each moment drives a SEEDED `recollect-core`
 //! engine to a point of interest and returns the exact text screen the line-based
-//! client prints there: [`render_engine`], the numbered "Legal tellings" menu
+//! client prints there: [`render_engine`], the numbered "Legal plays" menu
 //! ([`tui_menu_string`]), and [`inspect_card`].
 //!
 //! It is deterministic in (seed, catalog) — no GPU, no TTY, no stdin — so the
@@ -71,7 +71,7 @@ fn board_screen() -> String {
     render_engine(&e, Seat::A)
 }
 
-/// The opening DECISION menu — the numbered "Legal tellings", which at the opening
+/// The opening DECISION menu — the numbered "Legal plays", which at the opening
 /// includes the once-per-match `Mulligan` entry alongside Glimpse / End turn / plays.
 fn mulligan_screen() -> String {
     let e = new_engine();

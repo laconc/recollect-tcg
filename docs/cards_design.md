@@ -272,7 +272,7 @@ Unwritten spirits share the rule: ***Unwritten** — when it banishes a spirit, 
 
 **The Confluence** · Landmark · L · 3 — *Spirits here +10/+10 and count as adjacent to all four diagonals.*
 *Physical (for the board artist):* Two rivers of different-colored ink braiding through one tile without ever mixing — they take turns. Standing stones at the bank, worn smooth on both sides, as if argued against politely for centuries.
-*Lore:* Where tellings meet, neither yields and neither breaks. The water has worked out what the Narrators are still fighting about: you can share a bed without sharing a color. Spirits who stand here come away larger, and slightly more reasonable.
+*Lore:* Where retellings meet, neither yields and neither breaks. The water has worked out what the Narrators are still fighting about: you can share a bed without sharing a color. Spirits who stand here come away larger, and slightly more reasonable.
 
 **The Blank Page** · Fabrication · L · 3 — *Trap — the engager loses all printed Traits and Keywords permanently.*
 *Physical:* Face-down, it is indistinguishable from any Fabrication. Revealed, it is a sheet of perfect, breathing white. The longer it's looked at, the less the looker has to say.
@@ -339,7 +339,7 @@ The Archive keeps your ledger — Foundlings befriended, Foundlings banished —
 
 ## 6. Vocabulary & naming
 
-**The Banish law (all cards).** Recollect's rules never *kill, slay, destroy,* or *die*. A defeated spirit is **banished from the telling**; its impression falls in the **banisher's color**. Strays offer **banish or befriend**. The Unwritten **Unwrite**: where one banishes a spirit, the memory is erased entirely — nothing falls where it stood, and the Solace banks the erasure off-board (so forgetting *scores*); an Unwritten that *itself* dissolves also leaves nothing. *Forgetting* is the Solace's register and only the Solace's — a Fear card may misplace you, never unwrite you. (The full faction lore is in `decisions/naming.md`.)
+**The Banish law (all cards).** Recollect's rules never *kill, slay, destroy,* or *die*. A defeated spirit is **banished from the match**; its impression falls in the **banisher's color**. Strays offer **banish or befriend**. The Unwritten **Unwrite**: where one banishes a spirit, the memory is erased entirely — nothing falls where it stood, and the Solace banks the erasure off-board (so forgetting *scores*); an Unwritten that *itself* dissolves also leaves nothing. *Forgetting* is the Solace's register and only the Solace's — a Fear card may misplace you, never unwrite you. (The full faction lore is in `decisions/naming.md`.)
 
 **Naming principles.** The "-ling" family (Dawnling, Cinderling, Tearling, Sproutling, Hushling, Pebbling, Oathling, Cloudling, Duetling…) is protected vocabulary: it is how this game says *small and beloved*. Spirits mostly keep evocative species-style names; Uncommon and above may take personal names; Legendaries follow the *"Name, comma, a clause you want to read twice"* pattern.
 
@@ -354,7 +354,7 @@ Across the 419 designed cards, **chapter-1 lore and a physical** live in `cards.
 
 The former §4 (the full per-Resonance index), §5 (Kindred-callers, the Paradox
 Legendaries, the Solace PvE set, the Foundlings, the curve-fill evolution bases), and
-§9 ("The Telling Completed" — every card's lore + physical) were the per-card DATA. That
+§9 ("The Cards Completed" — every card's lore + physical) were the per-card DATA. That
 data now lives in **`app/crates/recollect-core/data/cards.toml`**, one `[[card]]` block
 per card, carrying identity + stats + reach + imprints + keywords + rules + the effect IR
 + evolution lineage + lore + physical. The architecture totals above (the 419, the rarity

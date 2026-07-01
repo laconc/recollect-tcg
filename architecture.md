@@ -161,7 +161,7 @@ via OIDC (the FOUNDATION CI half).
 **Model-check scope (`recollect-verify`).** The one `EngineModel` (`model.rs`) bridges
 the real `recollect-core` aggregate to stateright and runs in THREE shapes, selected by
 `Mode`: **1v1 duel**, **Solace PvE** (the two differ only by seat B's faction), and
-**2v2 team** (M3 — the four-slot 6×6 telling: init `new_2v2_with_opener`, actions from
+**2v2 team** (M3 — the four-slot 6×6 match: init `new_2v2_with_opener`, actions from
 the active slot's team via `legal_commands(active_slot.team())`, redaction from all four
 slots via `view_for_slot`). Every property (validity, liveness, determinism, no-seed-leak,
 redaction, abandonment) is asserted exhaustively on every reachable state of each mode's

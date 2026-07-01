@@ -244,7 +244,7 @@ fn move_cues(view: &PlayerView, legal: &[Command]) -> crate::scene::MoveCues {
 }
 
 /// Build the **online 1v1** [`ShellModel`] from a redacted [`PlayerView`] + the server's
-/// legal commands + the seat display names. The same shell the local 1v1 telling draws —
+/// legal commands + the seat display names. The same shell the local 1v1 match draws —
 /// board, HUD, hand, affordances, the a11y inputs — but sourced purely from the view (you
 /// see only YOUR seat; the opponent is counts/backs). `you_name` / `opp_name` are the
 /// session display names (empty falls back to the faction word).
@@ -253,7 +253,7 @@ fn move_cues(view: &PlayerView, legal: &[Command]) -> crate::scene::MoveCues {
 /// only your hand; the opponent rides as `opponent.hand_count` (face-down backs). The
 /// erasure tally folds into the opponent's score only when the public `solace_erasures`
 /// is nonzero AND the opponent is the conventional Solace seat (B) — in a Lorekeeper PvP
-/// telling it stays 0, so the score is pure board points.
+/// match it stays 0, so the score is pure board points.
 pub fn shell_model_for_player_view(
     view: PlayerView,
     legal: &[Command],
@@ -432,10 +432,10 @@ pub fn shell_model_for_team_view(
     model
 }
 
-/// The in-canvas **result screen** content for an online / 2v2 telling, built purely
+/// The in-canvas **result screen** content for an online / 2v2 match, built purely
 /// from the view's `Finished` phase + the redacted tiles + the public erasure tally —
 /// no engine. `team` selects the 2v2 `TeamView` (the human is the team seat); `mode` is
-/// `"pvp"` / `"2v2"`. Returns `"null"` mid-telling or on a malformed view.
+/// `"pvp"` / `"2v2"`. Returns `"null"` mid-match or on a malformed view.
 ///
 /// The verdict speaks in the game's voice (the Memory keeps / is forgotten / both kept),
 /// the breakdown lists each seat's board points (the Solace's erasure tally folded in),

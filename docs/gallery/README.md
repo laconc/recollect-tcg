@@ -147,7 +147,7 @@ viewport).
 | File | Page |
 | --- | --- |
 | `web/site-index-{desktop,phone}.png` | **Home** — the landing page (the pitch + the calls to action). |
-| `web/site-rules-{desktop,phone}.png` | **Rules in brief** — a table of contents over anchored sections: the goal, the turn (**Flow → Main → Fade**), combat, **Becoming &amp; receding** (evolution + the **recede** rescue + the evolve↔devolve cycle), the Dusk, and the two tellings (incl. the **Solace Deepenings** — the Primal-only, gentle-or-malign deepenings). |
+| `web/site-rules-{desktop,phone}.png` | **Rules in brief** — a table of contents over anchored sections: the goal, the turn (**Flow → Main → Fade**), combat, **Becoming &amp; receding** (evolution + the **recede** rescue + the evolve↔devolve cycle), the Dusk, and the two readings (incl. the **Solace Deepenings** — the Primal-only, gentle-or-malign deepenings). |
 | `web/site-guide-{desktop,phone}.png` | **Player guide** — the canvas client walked screen by screen: the affordances (incl. the **standing-Faded** amber rescue glow + the downward **recede** chevron), the controls table (with the **Devolve / recede** row), and the turn phases in order. |
 | `web/site-lore-{desktop,phone}.png` | **Lore** — the hand-authored world (the two storytellers, the six resonances), then a **table of contents** over every card's lore **sectioned by resonance** (the six registers · Remnants &amp; Neutral · the Solace · the Foundlings); each entry links to its catalog tile. |
 | `web/site-cards-{desktop,phone}.png` | **Card catalog** — the full card grid (generated from `cards.toml`), each tile carrying **base↔evolution cross-navigation** (a base links to its Primal/Fabled form(s), menus shown as alternatives; a form links back) and a link to the card's **lore** entry. |
@@ -208,7 +208,7 @@ The CLI has **two** interactive faces, and the `.txt` goldens record both:
 
 - The **line REPL** stills (`tui/tui-*.txt`) — the exact screens a player reads in the
   line-based UI (`hotseat` / `watch` / online / piped): [`render_engine`], the numbered
-  "Legal tellings" menu, and [`inspect_card`], captured as plain `.txt`. The line render
+  "Legal plays" menu, and [`inspect_card`], captured as plain `.txt`. The line render
   is already text, so — unlike the wgpu shell's PNG gallery above — the gallery just captures
   the strings the render functions build (`render.rs` builds and returns a `String`; the
   callers print it).
@@ -251,7 +251,7 @@ The **line REPL** stills:
 | File | Moment |
 |---|---|
 | `tui/tui-board.txt` | The opening board, Seat A to act (round 1) — projections, score, hand. |
-| `tui/tui-mulligan.txt` | The opening "Legal tellings" menu — offers the once-per-match **Mulligan**. |
+| `tui/tui-mulligan.txt` | The opening "Legal plays" menu — offers the once-per-match **Mulligan**. |
 | `tui/tui-glimpse-burn.txt` | After **Glimpse**: the Glimpse **burn** prompt (one `Burn <card>` entry per hand card). |
 | `tui/tui-glimpse-keep-bottom.txt` | After burning one: the **keep-or-bottom** prompt on the peeked top card. |
 | `tui/tui-inspect.txt` | The `i 0` inspect panel for a hand card — stats, keywords, rules, reach grid. |
@@ -279,7 +279,7 @@ the cursor TUI driven in a headless terminal, so they carry what plain text can'
 | `tui/shot-pickup.png` | Frenzy Kit **lifted** — every legal landing tile lit **gold** `< >` (select-shows-targets). |
 | `tui/shot-inspect.png` | The **inspect** overlay (`i`) — the full card + the **reach grid** (inspect-shows-reach). |
 | `tui/shot-glimpse.png` | The **Glimpse** prompt — the burn-a-card choice overlay, brass-gold options. |
-| `tui/shot-mulligan.png` | The opening **Mulligan** — the `mull` verb in the mini-buffer, the Mulligan telling in the list. |
+| `tui/shot-mulligan.png` | The opening **Mulligan** — the `mull` verb in the mini-buffer, the Mulligan play in the list. |
 | `tui/shot-result.png` | **Nightfall** — the closing board (the Dusk-darkened rim) + the result line, from a seeded `watch` playout. |
 | `tui/cursor.gif` | The motion clip — the gold cursor steering the page, then a **pickup → place** (a spirit arrives). |
 
@@ -306,5 +306,5 @@ background, PAPER text, the gold cursor/targets/overlays, the SEAT inks). The th
 once in [`tools/tui_tapes/_common.tape`](../../tools/tui_tapes/_common.tape); every scene
 `Source`s it.
 
-> A note on words. Spirits are **banished**, never "killed"; only the Solace **Unwrites**;
+> A note on words. Spirits are **banished**, never "killed"; only the Solace **unwrites**;
 > "forgetting" is Solace-register. The screens use this language; so does this gallery.

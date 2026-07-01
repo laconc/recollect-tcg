@@ -34,7 +34,7 @@ fn main() {
         println!("  explored {n} unique reachable states; all invariants hold.");
     }
 
-    // The 2v2 four-slot telling. The 6×6 board × four hands branches HARD, so the
+    // The 2v2 four-slot match. The 6×6 board × four hands branches HARD, so the
     // bound is tighter (3-card decks, round ≤ 2) — a shallow but exhaustive frontier on
     // which redaction (all four slots via `view_for_slot`), liveness, determinism,
     // no-seed-leak, validity, and abandonment all hold over the 2v2 path.

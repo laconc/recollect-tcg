@@ -10,7 +10,7 @@ import { openPicker, startLocalGame } from "./helpers";
 //     the virtual a11y tree (#shell-a11y) that mirrors the wgpu canvas. The canvas
 //     itself is opaque to axe (and to assistive tech — that is WHY the a11y tree
 //     exists), so we scan the DOM around it: the nav, the picker, and the sr-only
-//     mirror once a telling is live.
+//     mirror once a match is live.
 //
 // We assert ZERO violations at the WCAG 2.0/2.1 A + AA conformance levels (the bar
 // the brand doc sets). axe's tags select exactly those success criteria; a failure
@@ -91,14 +91,14 @@ test.describe("accessibility — axe-core WCAG 2.1 AA sweep", () => {
 
   test("the live game's virtual a11y tree has no WCAG 2.1 AA violations", async ({ page }) => {
     desktopOnly();
-    // A live local telling builds #shell-a11y (the actionable ARIA mirror) + #board-sr
+    // A live local match builds #shell-a11y (the actionable ARIA mirror) + #board-sr
     // + #status — the screen-reader path for the canvas. It must be a clean a11y subtree
     // while a game is in progress. Needs a GL surface for the shell to mount; on a
     // no-GPU sandbox startLocalGame times out and the test skips rather than fails.
     try {
       await startLocalGame(page);
     } catch (_) {
-      test.skip(true, "no GL surface — the canvas shell didn't mount (a11y tree needs a live telling)");
+      test.skip(true, "no GL surface — the canvas shell didn't mount (a11y tree needs a live match)");
       return;
     }
     await expectNoAxeViolations(page, "live play", (b) => b.exclude("#board"));

@@ -247,7 +247,7 @@ pub fn render_engine(engine: &Engine, seat: Seat) -> String {
         out,
         "{}",
         dim(
-            "(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)"
+            "(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered plays below)"
         )
     );
     // The Solace (Seat B) scores its board presence PLUS its off-board erasure
@@ -553,7 +553,7 @@ pub fn narrate_with(engine: &Engine, before: &recollect_core::GameState, events:
                 }
             )),
             Event::SpiritBecameFading { tile, .. } => Some(format!(
-                "{} is banished from the telling.",
+                "{} is banished from the match.",
                 name_at(engine, &cur, *tile)
             )),
             Event::Overwrote {

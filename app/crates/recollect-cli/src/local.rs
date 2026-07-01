@@ -217,7 +217,7 @@ fn pick_style(seat: &str, seed: u64, auto: bool) -> u8 {
         return offers[0].id;
     }
     let cat = canon_catalog();
-    println!("\n{seat} — the Memory offers three tellings:");
+    println!("\n{seat} — the Memory offers three plays:");
     for (i, s) in offers.iter().enumerate() {
         println!("  {}. {:<18} {}", i + 1, bold(s.name), s.blurb);
         // The OBJECTIVE shape, beside the voice: resonance lean · aggression · tempo ·
@@ -247,7 +247,7 @@ fn pick_style(seat: &str, seed: u64, auto: bool) -> u8 {
     }
 }
 
-/// The numbered "Legal tellings" menu as a `String` — every legal command for
+/// The numbered "Legal plays" menu as a `String` — every legal command for
 /// `seat`, each on its own line through the canonical [`describe`] labeler, plus
 /// the one-line input hint. Built (not printed) so [`prompt_command`] can emit it
 /// AND the `tui_capture` example can snapshot the same menu the player reads (the
@@ -257,7 +257,7 @@ pub(crate) fn menu_string(engine: &Engine, seat: Seat) -> String {
     use std::fmt::Write as _;
     let legal = engine.legal_commands(seat);
     let mut out = String::new();
-    let _ = writeln!(out, "\nLegal tellings:");
+    let _ = writeln!(out, "\nLegal plays:");
     for (i, c) in legal.iter().enumerate() {
         let _ = writeln!(out, "  {i:>3}. {}", describe(engine, seat, c));
     }
@@ -333,7 +333,7 @@ fn move_for_line(line: &str, legal: &[Command], w: u8) -> Result<Command, String
     }
     match verbs::parse(line, w) {
         Some(intent) => verbs::resolve(intent, legal).ok_or_else(|| {
-            "no legal Evolve/Reclaim on that tile — read the numbered tellings".into()
+            "no legal Evolve/Reclaim on that tile — read the numbered plays".into()
         }),
         None => Err(verbs::USAGE.into()),
     }

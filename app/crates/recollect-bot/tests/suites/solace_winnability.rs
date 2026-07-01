@@ -44,7 +44,7 @@ fn the_solace_pve_fight_is_winnable_and_fair() {
     let n = 150u64;
     let mut player_wins = 0u64;
     for seed in 0..n {
-        // A real PvE telling — the player (A) fields a Lorekeeper deck, the Solace (B) a
+        // A real PvE match — the player (A) fields a Lorekeeper deck, the Solace (B) a
         // faction-pure Solace deck; both piloted by the faction-aware bot.
         let da = generate_deck((seed % 6) as u8, seed, &cat);
         let db = generate_deck_for(

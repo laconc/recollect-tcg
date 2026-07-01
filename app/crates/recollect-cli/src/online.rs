@@ -82,7 +82,7 @@ pub async fn run(server: String, action: Action, json: bool) {
     }
     // Auto-reconnect: a dropped socket re-Hellos the same match (the server keeps
     // it in memory, or rebuilds a journaled one); only a clean quit or a finished
-    // telling ends the loop. Connect failures back off and eventually give up.
+    // match ends the loop. Connect failures back off and eventually give up.
     let mut connect_fails = 0u32;
     loop {
         match play_socket(&ws_url, &token, json, &cat, &mut seq, &mut lines).await {
@@ -114,7 +114,7 @@ pub async fn run(server: String, action: Action, json: bool) {
 enum Outcome {
     /// The user typed `q` or stdin closed.
     Quit,
-    /// The telling reached a result; nothing to reconnect to.
+    /// The match reached a result; nothing to reconnect to.
     Finished,
     /// The socket dropped mid-game; reconnect and resume.
     Dropped,

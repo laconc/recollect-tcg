@@ -19,7 +19,20 @@
         <a href="rules.html">Rules</a>
         <a href="lore.html">Lore</a>
         <a href="contact.html">Contact</a>
+        <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="options-panel">Options</button>
       </nav>
+    </div>
+    <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+      <div class="options-inner">
+        <h2 class="options-title">Options</h2>
+        <div class="site-settings" role="group" aria-label="Site settings">
+          <label class="setting" for="opt-reduced-motion">
+            <input type="checkbox" id="opt-reduced-motion" />
+            <span>Reduced motion</span>
+          </label>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -53,11 +66,9 @@
   <footer class="site-footer">
     <div class="container">
       <span>Recollect</span>
-      <a href="rules.html">Rules</a>
-      <a href="lore.html">Lore</a>
-      <a href="contact.html">Contact</a>
       <span class="note">A fading Memory, told in paper &amp; ink.</span>
     </div>
   </footer>
+  <script src="options.js" defer></script>
 </body>
 </html>

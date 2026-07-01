@@ -10,7 +10,7 @@ import {
 } from "./helpers";
 
 // #100 (LAUNCH-CRITICAL) — ONLINE PvP + 2v2 now drive the FULL canvas shell, the same
-// board · HUD · hand · affordances · virtual a11y tree a local 1v1 telling draws, but
+// board · HUD · hand · affordances · virtual a11y tree a local 1v1 match draws, but
 // sourced from the server's REDACTED PlayerView / TeamView + its legal list (no local
 // engine; the server is authoritative). This suite covers what is testable HEADLESS —
 // the rendering, the a11y tree, and REDACTION — by injecting the real wire shape of a
@@ -24,7 +24,7 @@ test.describe("online 1v1 — the full canvas shell over the redacted PlayerView
     page,
   }) => {
     await startOnlineGame(page);
-    // The status line names the online telling (round · anima) — the shell is live.
+    // The status line names the online match (round · anima) — the shell is live.
     await expect(page.locator("#status")).toContainText(/online/i);
     // The portrait shell LAYOUT is applied (body.shell) — without it, the picker/actions
     // DOM chrome would not be hidden and the board would be mis-sized. (Guards the fix that
@@ -87,7 +87,7 @@ test.describe("online 1v1 — the full canvas shell over the redacted PlayerView
     await et.focus();
     await expect(et).toBeFocused();
     // Activating End Turn ships the command to the (stubbed) server; the client stays live
-    // (no crash) and the status line still reflects the online telling.
+    // (no crash) and the status line still reflects the online match.
     await page.keyboard.press("Enter");
     await expect(page.locator("#status")).toBeVisible();
   });

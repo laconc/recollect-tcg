@@ -223,7 +223,7 @@ pub(crate) struct MatchActor {
     /// finished, it forfeits ([`Self::fire_abandonment`]). `None` ⇒ that principal is present, is a
     /// bot, or the forfeit is disabled (`abandon_grace == 0`).
     vacated_deadline: [Option<tokio::time::Instant>; 4],
-    /// Set once the telling finishes, so the seed reveal is emitted exactly once
+    /// Set once the match finishes, so the seed reveal is emitted exactly once
     /// even if a late frame arrives after the terminal one.
     revealed: bool,
 }
@@ -850,8 +850,8 @@ impl MatchActor {
     /// in 2v2 until the P4 Solace pair), `reason` distinguishes a forfeit. The actor task
     /// lives until its sockets close; the map's `evict` flag lets the sweeper reclaim it.
     fn on_finish(&self, result: String, faction: &str, reason: crate::metrics::FinishReason) {
-        tracing::info!(result = %result, reason = ?reason, "telling finished");
-        // §16: correlate the contraction leader (captured as the telling ran) with
+        tracing::info!(result = %result, reason = ?reason, "match finished");
+        // §16: correlate the contraction leader (captured as the match ran) with
         // this result, so the winrate-when-leading-at-contraction panel resolves.
         crate::metrics::match_finished(&result, faction, self.session.contraction_lead(), reason);
         if let Some(j) = self.config.journal.clone() {
@@ -952,13 +952,13 @@ impl MatchActor {
     /// rolls any consecutive bot slots (B1→A2→B2…). The intermediate fan-out views are
     /// discarded — the caller re-reads the fresh `view`/`view_slot` afterwards. Stops
     /// when the active principal is human, when there are no bots, when a step fails,
-    /// or when the telling finishes. The `~256` bound guards a chooser that fails to
+    /// or when the match finishes. The `~256` bound guards a chooser that fails to
     /// advance the turn; the `std` RNG mutex never crosses the journal `.await` (it is
     /// dropped inside `step_bot` before the append).
     async fn drive_bots(&mut self) {
         for _ in 0..256 {
             match self.step_bot().await {
-                // A bot acted and the telling continues — keep driving.
+                // A bot acted and the match continues — keep driving.
                 BotStep::Acted(ok) if ok.as_ref().is_none_or(|o| o.finished.is_none()) => continue,
                 // Human turn / no bots / a failure / a finishing move — stop.
                 _ => break,
@@ -997,7 +997,7 @@ impl MatchActor {
     /// One bot turn, dispatching ONCE on mode (the H4 single-branch seam): if the
     /// engine's active principal is a bot, choose its command and apply it (durable
     /// when journaled, else in-memory). [`BotStep::Idle`] ⇒ the active principal is
-    /// human, there are no bots, or the telling is over — nothing to drive.
+    /// human, there are no bots, or the match is over — nothing to drive.
     /// [`BotStep::Failed`] ⇒ a rule rejection (chooser bug) or a journal failure; the
     /// caller stops rather than spin. [`BotStep::Acted`] carries the fresh `ApplyOkSlot`
     /// in 2v2 (for the post-command fan-out) and `None` in 1v1 (the caller re-reads its
@@ -1005,7 +1005,7 @@ impl MatchActor {
     /// crosses an await point).
     async fn step_bot(&mut self) -> BotStep {
         match &self.config.mode {
-            // 1v1: the lone Seat-B bot, while it is its turn and the telling continues.
+            // 1v1: the lone Seat-B bot, while it is its turn and the match continues.
             ActorMode::OneVsOne { bot: Some(bot), .. } => {
                 let (bot_seat, difficulty, faction) = (bot.seat, bot.difficulty, bot.faction);
                 if self.session.is_finished() || self.session.active_seat() != bot_seat {
@@ -1089,7 +1089,7 @@ impl MatchActor {
 /// The outcome of one [`MatchActor::step_bot`] turn — the uniform result the two
 /// bot-drive loops (welcome + 2v2 post-command) share across modes.
 enum BotStep {
-    /// The active principal isn't a bot (human, no bots), or the telling is over.
+    /// The active principal isn't a bot (human, no bots), or the match is over.
     Idle,
     /// A bot acted. 2v2 carries the fresh four-slot fan-out (`Some`) for the
     /// post-command push; 1v1 re-reads its own view, so it's `None`. Boxed: the

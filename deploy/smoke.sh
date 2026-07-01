@@ -15,7 +15,7 @@
 #   3. THE GAME (ws)   a REAL PvP match driven through the server by two headless
 #                      `recollect online --json` CLIENTS (host mints the match via the REST
 #                      API, two clients join by token + autoplay). Asserts: the match is
-#                      created, moves apply over the wire, the telling advances to a result
+#                      created, moves apply over the wire, the match advances to a result
 #                      (or a healthy move budget), and REDACTION holds (a client's view never
 #                      carries the opponent's hand — only a count).
 #   4. JOURNAL         a `journal_events` row exists in the on-box Postgres — the

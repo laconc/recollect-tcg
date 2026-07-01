@@ -191,7 +191,7 @@ fn play(label: &str, n: u64, mk: impl Fn(u64) -> Engine) {
             }
             assert!(
                 steps < 4000,
-                "{label} seed {seed}: the telling must end (step {steps})"
+                "{label} seed {seed}: the match must end (step {steps})"
             );
             let seat = e.state().active;
             let legal = e.legal_commands(seat);

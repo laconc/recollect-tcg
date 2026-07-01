@@ -11,7 +11,7 @@ Enter
 Wait+Screen@20s /choose a style/
 Type "1"
 Enter
-Wait+Screen@20s /Legal tellings/
+Wait+Screen@20s /Legal plays/
 Tab
 Sleep 300ms
 Type "i"

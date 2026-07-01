@@ -556,7 +556,7 @@ fn evolution_rescues_fading() {
 // issue it (`#[only_accepts(kind = "system")]`); the engine just resolves it.
 fn match_abandonment_resolves_by_journaled_system_command() {
     let mut e = new_match(7);
-    drive_first_legal(&mut e, 5); // mid-telling, possibly the other seat's turn
+    drive_first_legal(&mut e, 5); // mid-match, possibly the other seat's turn
     let abandoner = Seat::A;
     let evs = e
         .apply(abandoner, Command::MatchAbandoned { seat: abandoner })
@@ -579,7 +579,7 @@ fn match_abandonment_resolves_by_journaled_system_command() {
         "abandoner loses, present player wins: {:?}",
         e.state().phase
     );
-    // The telling is over: any further command is rejected.
+    // The match is over: any further command is rejected.
     assert!(
         e.apply(Seat::B, Command::EndTurn).is_err(),
         "no command applies after a forfeit"

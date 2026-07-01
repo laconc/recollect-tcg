@@ -1,5 +1,5 @@
 # Beat 4 — the Glimpse prompt (the burn step).
-# Pick telling 0 (Glimpse) from the always-visible list: the engine raises the
+# Pick play 0 (Glimpse) from the always-visible list: the engine raises the
 # burn choice, drawn as a centred overlay — "Glimpse — burn a card to Glimpse
 # (it leaves play):" over the brass-gold, cursor-pickable burn options. Image twin
 # of cursor-glimpse.txt. (Vocabulary: a card is BURNED to Glimpse — the cost — never
@@ -13,8 +13,8 @@ Enter
 Wait+Screen@20s /choose a style/
 Type "1"
 Enter
-Wait+Screen@20s /Legal tellings/
-# Telling 0 is Glimpse; the number opens the verb buffer pre-seeded, Enter applies it.
+Wait+Screen@20s /Legal plays/
+# Play 0 is Glimpse; the number opens the verb buffer pre-seeded, Enter applies it.
 Type "0"
 Enter
 Wait+Screen@10s /burn a card to Glimpse/

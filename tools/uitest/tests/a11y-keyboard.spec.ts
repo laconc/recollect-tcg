@@ -202,14 +202,14 @@ test.describe("deep canvas a11y — keyboard + live regions", () => {
     await expect(endTurn(page)).toBeVisible();
     await endTurn(page).focus();
     await page.keyboard.press("Enter");
-    // Control returns: either the live FAB is back (a fresh turn) or the telling ended.
+    // Control returns: either the live FAB is back (a fresh turn) or the match ended.
     // Under reduced motion this resolves well within the budget (the dwell is collapsed).
     await expect
       .poll(
         async () => {
           const fab = (await endTurn(page).count()) > 0;
           const ended =
-            (await a11yTree(page).locator("h2", { hasText: /telling has ended/i }).count()) > 0;
+            (await a11yTree(page).locator("h2", { hasText: /match has ended/i }).count()) > 0;
           return fab || ended;
         },
         { timeout: 20_000 },
@@ -221,7 +221,7 @@ test.describe("deep canvas a11y — keyboard + live regions", () => {
     desktopOnly();
     await startLocalGameOrSkip(page);
     // Two distinct actionable affordances are reachable + operable by keyboard in the
-    // same live telling: Glimpse (always legal at turn start) and the first hand card
+    // same live match: Glimpse (always legal at turn start) and the first hand card
     // (focus it — picking it up is the accessible twin of tapping it). No pointer used.
     const st = study(page);
     await st.focus();

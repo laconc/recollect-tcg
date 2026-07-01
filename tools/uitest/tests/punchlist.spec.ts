@@ -62,7 +62,7 @@ test.describe("item 5 — a blocking modal masks the board affordances", () => {
 });
 
 test.describe("item 12 — a co-occupied tile's landmark is independently inspectable", () => {
-  /** Mount an online telling whose board has a spirit standing ON a face-up Landmark
+  /** Mount an online match whose board has a spirit standing ON a face-up Landmark
    *  (tile 12), via the crafted welcome injected through the production onServerMsg path. */
   async function startWithLandmark(page: Page): Promise<void> {
     await openPicker(page);

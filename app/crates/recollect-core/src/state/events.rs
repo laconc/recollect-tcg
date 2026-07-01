@@ -122,7 +122,7 @@ pub enum Event {
         score_b: u8,
     },
     /// Absence forfeit: `seat` abandoned; the present player wins.
-    /// A DISTINCT payload from `MatchEnded` so the journal records the telling
+    /// A DISTINCT payload from `MatchEnded` so the journal records the match
     /// ended by abandonment, not by score; `score_*` are the standing tally at
     /// the moment of forfeit (informative — the win is by forfeit, not by score).
     MatchAbandoned {

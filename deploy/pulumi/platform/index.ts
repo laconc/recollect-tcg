@@ -45,6 +45,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 import * as fs from "fs";
 import * as path from "path";
+import * as zlib from "zlib";
 
 const cfg = new pulumi.Config();
 // `region` defaults to us-east-2 (the maintainer's SSO-profile region; still free-tier) — override it
@@ -447,7 +448,7 @@ const defaultVpc = aws.ec2.getVpcOutput({ default: true }, awsOpts);
 const sg = new aws.ec2.SecurityGroup(
   "recollect",
   {
-    description: "Recollect launch host — egress only; ingress via Cloudflare Tunnel (no inbound).",
+    description: "Recollect launch host - egress only; ingress via Cloudflare Tunnel (no inbound).",
     vpcId: defaultVpc.id,
     egress: [
       {
@@ -481,7 +482,7 @@ const pgPassword = new random.RandomPassword("postgres-password", {
 // Render the cloud-init script: read the committed template and substitute the @@PLACEHOLDERS@@.
 // Done with pulumi.all so the secret token/password stay tracked as secrets in state + outputs.
 const userDataTemplate = fs.readFileSync(path.join(__dirname, "user-data.sh"), "utf8");
-const userData = pulumi
+const renderedUserData = pulumi
   .all([tunnelToken, pgPassword, cfBeaconToken])
   .apply(([token, pgPass, beacon]) =>
     userDataTemplate
@@ -504,6 +505,22 @@ const userData = pulumi
       .replace(/@@OBS_GRAFANA_DOMAIN@@/g, domain),
   );
 
+// EC2 caps user_data at 16 KiB (raw, pre-base64) and the AWS provider validates it at PLAN time.
+// The rendered script is ~17.4 KiB, so we ship it gzip-COMPRESSED via userDataBase64: cloud-init on
+// Amazon Linux 2023 detects the gzip magic bytes and decompresses before running it, which drops the
+// payload to ~7 KiB (well under the cap, with room for the script to grow). We normalize the gzip
+// header — zero the MTIME and set the OS byte to 0xFF ("unknown") — so the bytes are IDENTICAL across
+// whatever machine runs `pulumi up`; otherwise userDataReplaceOnChange would spuriously replace the
+// box on a deploy from a different host. Deriving via .apply keeps it a tracked SECRET in state.
+const userDataBase64 = renderedUserData.apply((script) => {
+  const gz = zlib.gzipSync(Buffer.from(script, "utf8"), {
+    level: zlib.constants.Z_BEST_COMPRESSION,
+  });
+  gz.writeUInt32LE(0, 4); // MTIME → 0 (Node's default, made explicit)
+  gz[9] = 0xff; // OS → unknown, so the header doesn't vary by build platform
+  return gz.toString("base64");
+});
+
 const instance = new aws.ec2.Instance(
   "recollect",
   {
@@ -518,7 +535,9 @@ const instance = new aws.ec2.Instance(
     // the durable /data volume (20) = 30 GiB, the WHOLE 30 GB/12-month EBS free tier, so storage
     // is $0 during the window (the durable data lives on /data, so the small root is fine).
     rootBlockDevice: { volumeSize: rootVolumeSizeGb, volumeType: "gp3", encrypted: true },
-    userData,
+    // gzip-compressed (cloud-init decompresses on the box) to fit EC2's 16 KiB user_data cap — see
+    // the userDataBase64 derivation above.
+    userDataBase64,
     // Re-render + replace the box when the bootstrap inputs change (e.g. a new pinned gitRef).
     userDataReplaceOnChange: true,
     // IMDSv2 required (tokens), hop limit 1 — block SSRF-to-metadata.
@@ -619,9 +638,11 @@ new aws.budgets.Budget(
   awsOpts,
 );
 
-// A dedicated zero-dollar guardrail on anything that is NOT free-tier-eligible: the moment a
-// non-free-tier charge appears (e.g. the box was bumped to a paid size, or egress overran), this
-// fires. Catches "left the free tier" specifically, which the cost budget alone can blur.
+// A dedicated low-dollar guardrail: the moment ACTUAL monthly spend crosses $1 (you've left $0
+// free-tier territory — a paid instance size, an egress overrun, …), this fires. A tighter,
+// actual-cost tripwire than the FORECASTED monthly budget above. No cost filter: AWS Budgets has no
+// "RecordType" dimension, and tracking total actual cost is what we want here — credits that zero the
+// bill keep it quiet, so it fires only when you are genuinely being charged.
 new aws.budgets.Budget(
   "recollect-free-tier-guard",
   {
@@ -629,7 +650,6 @@ new aws.budgets.Budget(
     timeUnit: "MONTHLY",
     limitAmount: "1",
     limitUnit: "USD",
-    costFilters: [{ name: "RecordType", values: ["Usage"] }],
     notifications: budgetEmail
       ? [
           {
@@ -702,7 +722,7 @@ new aws.cloudwatch.MetricAlarm(
 new aws.cloudwatch.MetricAlarm(
   "recollect-status-system",
   {
-    alarmDescription: "EC2 system status check failed (underlying host unhealthy) — auto-recovers.",
+    alarmDescription: "EC2 system status check failed (underlying host unhealthy) - auto-recovers.",
     namespace: "AWS/EC2",
     metricName: "StatusCheckFailed_System",
     dimensions: dims,
@@ -724,7 +744,7 @@ new aws.cloudwatch.MetricAlarm(
 new aws.cloudwatch.MetricAlarm(
   "recollect-cpu-high",
   {
-    alarmDescription: `EC2 CPUUtilization ≥ ${cpuAlarmThresholdPct}% sustained.`,
+    alarmDescription: `EC2 CPUUtilization >= ${cpuAlarmThresholdPct}% sustained.`,
     namespace: "AWS/EC2",
     metricName: "CPUUtilization",
     dimensions: dims,
@@ -746,7 +766,7 @@ new aws.cloudwatch.MetricAlarm(
 new aws.cloudwatch.MetricAlarm(
   "recollect-mem-high",
   {
-    alarmDescription: "Host memory used ≥ 90% (custom CloudWatch-agent metric).",
+    alarmDescription: "Host memory used >= 90% (custom CloudWatch-agent metric).",
     namespace: "Recollect/Host",
     metricName: "mem_used_percent",
     dimensions: dims,
@@ -768,7 +788,7 @@ new aws.cloudwatch.MetricAlarm(
 new aws.cloudwatch.MetricAlarm(
   "recollect-swap-high",
   {
-    alarmDescription: "Host swap used ≥ 70% (custom CloudWatch-agent metric).",
+    alarmDescription: "Host swap used >= 70% (custom CloudWatch-agent metric).",
     namespace: "Recollect/Host",
     metricName: "swap_used_percent",
     dimensions: dims,
@@ -795,7 +815,7 @@ for (const [name, path] of [
   new aws.cloudwatch.MetricAlarm(
     name,
     {
-      alarmDescription: `Host disk used ≥ 85% on ${path} (custom CloudWatch-agent metric).`,
+      alarmDescription: `Host disk used >= 85% on ${path} (custom CloudWatch-agent metric).`,
       namespace: "Recollect/Host",
       metricName: "disk_used_percent",
       dimensions: instance.id.apply((id) => ({ InstanceId: id, path })),

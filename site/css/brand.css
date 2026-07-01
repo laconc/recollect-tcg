@@ -72,15 +72,54 @@ p { max-width: var(--measure); }
 .container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--space); }
 
 /* Header + nav */
-.site-header { border-bottom: 1px solid var(--rule); }
+.site-header { border-bottom: 1px solid var(--rule); position: relative; }
 .site-header .container {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1.5rem;
   padding-block: 1rem;
 }
 .brand { font-size: 1.4rem; font-weight: 700; color: var(--night); text-decoration: none; letter-spacing: 0.01em; }
 .brand:hover { color: var(--night); }
-.site-nav { margin-left: auto; display: flex; gap: 1.25rem; flex-wrap: wrap; }
+/* The nav fills the bar to the right of the brand so the Options control can sit at the FAR
+   RIGHT (margin-left:auto), opposite the page links — the same layout as the play header. */
+.site-nav { flex: 1 1 auto; display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: baseline; }
 .site-nav a[aria-current="page"] { color: var(--night); font-weight: 700; text-decoration: none; }
+
+/* The Options disclosure — ported from the play header so every page carries the SAME
+   right-aligned settings control. The button is the rightmost nav item; the panel drops
+   below it (the header is the positioning context above). */
+.nav-options {
+  font: inherit; color: var(--seat-a); background: none; border: 0; padding: 0;
+  cursor: pointer; text-underline-offset: 0.15em; margin-left: auto;
+}
+.nav-options:hover { color: var(--seat-b); }
+.nav-options[aria-expanded="true"] { color: var(--night); font-weight: 700; }
+.nav-options::after { content: " ▾"; font-size: 0.8em; opacity: 0.7; }
+.options-panel {
+  position: absolute; right: clamp(12px, 4vw, 1.75rem); margin-top: 0.4rem; z-index: 20;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(23, 23, 31, 0.18);
+}
+.options-panel[hidden] { display: none; }
+.options-inner { padding: 0.9rem 1.1rem; }
+.options-title {
+  margin: 0 0 0.6rem; font-size: 0.95rem; font-weight: 700; color: var(--night);
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.site-settings { display: flex; flex-direction: column; align-items: flex-start; gap: 0.7rem; color: var(--ink-soft); font-size: 0.95rem; }
+.site-settings .setting { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer; }
+.site-settings .setting input { width: 1rem; height: 1rem; accent-color: var(--seat-a); }
+/* Manual reduced-motion: the toggle adds .reduce-motion to <html> (persisted); the OS
+   setting is honored on its own below. */
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+  }
+}
 
 main { display: block; }
 .section { padding-block: clamp(2rem, 5vw, 4rem); }

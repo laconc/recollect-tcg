@@ -148,14 +148,14 @@ are one source:
 
 - **Match start:** who opens, and **why** if a character's initiative tipped the
   seeded toss — and we **always** announce the first player (design §5, "Who opens
-  the telling").
+  the match").
 - **Phase beats** (Flow / Main / Fade).
 - **Key events:** banish, evolve, **devolve** (*revert* / *recede*), **Call**,
   **Glimpse**, **Dusk** ("Dusk falls"), **Nightfall**, and **each opponent action**
   as it replays.
 - **The verdict.**
 
-All in the game's register — *banished*, never killed; only the Solace *Unwrites*.
+All in the game's register — *banished*, never killed; only the Solace *unwrites*.
 
 ## Mulligan
 

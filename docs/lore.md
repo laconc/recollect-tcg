@@ -64,7 +64,7 @@ only reason there is still a game to play in it.
 You never contend over a *fresh* Memory — only a fading one. You always arrive in
 its evening (see §6). To act within a Memory is to **tell** it — to *tell* a
 Memory is to insist on it, to say *this was here, this mattered, this is how it
-went.* When you place a card, you write it into the telling. The two storytellers
+went.* When you place a card, you write it into the Memory. The two storytellers
 are not fighting over territory; they are arguing, in the grammar of the place
 itself, over how the Memory goes.
 
@@ -78,7 +78,7 @@ of the same moment contend for which one survives.**
 
 This is why the rules never *kill.* Nothing here is a living thing in the combat
 sense — these are *versions of a memory*, and the loser is not destroyed but
-**banished from the telling**: forgotten, *this* way, while leaving behind the
+**banished from the match**: forgotten, *this* way, while leaving behind the
 proof that it was contested and mattered (see §5). When a keeper plays a spirit
 onto a tile, they are insisting on their version of that fragment; when it is
 overwritten, their version lost and another took its place. The war is an argument
@@ -87,7 +87,7 @@ about how the past is remembered, fought move by move.
 ### 5. The keystone — banishment, and the Impression
 
 **Recollect's rules never kill.** A spirit that loses an engagement is not
-destroyed; it is **banished from the telling** — it fades, and where it stood it
+destroyed; it is **banished from the match** — it fades, and where it stood it
 leaves an **Impression** in the color of whoever banished it.
 
 An **Impression is the mark a memory leaves by having mattered.** ("She left an
@@ -95,7 +95,7 @@ impression on me." "It made an impression.") An impression is, at once, a mark
 left by pressure, an effect on the mind, and a lasting trace of someone — and it
 is *literally* what ink pressed into paper makes, so the word is native to this
 world's ink-on-vellum medium. When a spirit is banished, it is gone from the
-telling, but the Memory keeps the trace: *that it was here, and was contested, and
+match, but the Memory keeps the trace: *that it was here, and was contested, and
 was lost.* The Impression falls in the banisher's color because it records *whose*
 loss it is.
 
@@ -217,7 +217,7 @@ one or two.
 
 Imprints do real work: they are how the **wild** decides whether to trust you (a
 Gentle Stray joins a storyteller who ends a turn beside a spirit that *shares its
-Imprint* — it recognizes something of itself in your telling), and how **Bonds**
+Imprint* — it recognizes something of itself in your story), and how **Bonds**
 form (two spirits paired by a shared texture, strengthening each other). They are
 the threads of kinship that make a roster feel like a remembered world. Some
 textures are common (Beast, Shade), some rare (Dream, Ruin) — itself a kind of
@@ -706,7 +706,6 @@ and its bottom.
 | Recollect TCG | the game; short form "Recollect" |
 | The world | a remembering, and the remembering is fading — always, but accelerating now |
 | The Memory | one fading fragment of the past, being argued over; the board. Each match is one Memory |
-| Telling | acting within a Memory — insisting on how it goes; placing a card writes into the telling |
 | Anima | the warm grey-gold substance of a half-remembered thing; the resource of remembering |
 | Spirit | the animating essence of a remembered thing (creature, person, place, moment) |
 | Resonance | a spirit's emotional key — Wonder / Fear / Sorrow / Harmony / Fury / Resolve (+ Neutral) |

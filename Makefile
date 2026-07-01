@@ -164,9 +164,19 @@ wasm-diff: ## D-26: the seeded playout hashes identically native vs wasm32 (need
 		&& wasmtime target/wasm32-wasip1/release/recollect-determinism.wasm > /tmp/det-wasm.txt \
 		&& diff /tmp/det-native.txt /tmp/det-wasm.txt && echo "wasm32 differential OK: native == wasm"
 
-up: ## start postgres + grafana (LGTM) + server (build)
+# `make up` = the FULL local experience (the production mirror): the deploy stack run locally with
+# observability ON — the real website + game at :8080 AND Grafana + the Recollect dashboards at :3000,
+# on-box Postgres. The fast inner loop (db + Grafana + the API server, NO site build) is `make dev-up`.
+up: ## FULL local mirror: website+game (:8080) + Grafana/dashboards (:3000) + on-box Postgres — the prod mirror
+	$(DEPLOY_FULL_ENV) $(DEPLOY_COMPOSE_FULL) up -d --build
+	@echo "website + game: http://localhost:8080   Grafana + dashboards: http://localhost:3000"
+
+dev-up: ## FAST dev loop: postgres + Grafana (LGTM) + the API server (build), NO site — run `make server` against it
 	$(COMPOSE) up -d --build
-	@echo "grafana:  http://localhost:3000   server: http://localhost:8080/healthz"
+	@echo "grafana:  http://localhost:3000   server (API): http://localhost:8080/healthz"
+
+dev-down: ## stop the fast dev-up stack (KEEPS volumes)
+	$(COMPOSE) down
 
 # Local/smoke layer the BUILD overlay (docker-compose.build.yml) so the server image is COMPILED
 # locally — production omits it and PULLS the server image from ECR (the FOUNDATION/PLATFORM split;
@@ -178,9 +188,19 @@ DEPLOY_COMPOSE := docker compose \
 	-f deploy/compose/docker-compose.local.yml
 DEPLOY_LOCAL_ENV := POSTGRES_PASSWORD=recollect-local-only
 
-deploy-local: ## run the FULL deploy stack locally (server serves the site at :8080; no tunnel) — play the real website end-to-end
+# `make up` (the FULL mirror) swaps the LEAN local overlay for the local-FULL one, which KEEPS the
+# observability stack (Grafana + the dashboards). OBS_DATA_DIR=obsdata sends lgtm's data to a
+# docker-managed NAMED volume (a laptop has no /data EBS mount the box uses). The deploy machinery is
+# otherwise identical to `make deploy-local` — proven by deploy-local + the smoke.
+DEPLOY_COMPOSE_FULL := docker compose \
+	-f deploy/compose/docker-compose.deploy.yml \
+	-f deploy/compose/docker-compose.build.yml \
+	-f deploy/compose/docker-compose.local-full.yml
+DEPLOY_FULL_ENV := POSTGRES_PASSWORD=recollect-local-only OBS_DATA_DIR=obsdata
+
+deploy-local: ## LEAN local site stack: website+game (:8080), NO observability (`make up` is the full mirror)
 	$(DEPLOY_LOCAL_ENV) $(DEPLOY_COMPOSE) up -d --build
-	@echo "website + game: http://localhost:8080   (server serves the static site + wasm client, on-box Postgres)"
+	@echo "website + game: http://localhost:8080   (lean — no Grafana; use 'make up' for the full mirror)"
 
 deploy-smoke: ## build the deploy image + SMOKE-TEST the running artifact from outside (site + game + journal); always tears down
 	COMPOSE_CMD="$(DEPLOY_COMPOSE)" $(DEPLOY_LOCAL_ENV) bash deploy/smoke.sh
@@ -191,44 +211,67 @@ deploy-local-down: ## stop the local deploy stack (KEEPS its volume)
 deploy-local-logs: ## tail the local deploy stack's server logs
 	$(DEPLOY_LOCAL_ENV) $(DEPLOY_COMPOSE) logs -f server
 
+# --- Pulumi state backend (run ONCE, BEFORE FOUNDATION): create + harden the S3 bucket Pulumi -----
+# --- stores state in, then `pulumi login` to it. State-backend region is independent of the deploy --
+# --- region. Script: deploy/pulumi/create-state-bucket.sh (knobs: BUCKET=, REGION=, NO_LOGIN=1). ----
+pulumi-state-bucket: ## create + harden the S3 bucket backing Pulumi state, then `pulumi login` (BUCKET=, REGION=)
+	bash deploy/pulumi/create-state-bucket.sh
+
+# --- Pulumi preflight (deploy/pulumi/preflight.sh): the foundation-*/deploy-* LIFECYCLE targets run it
+# --- FIRST so they're self-sufficient — it ensures the secret env vars (passphrase; +Cloudflare token
+# --- for PLATFORM), selects/creates the stack (STACK=, default prod), defaults region=us-east-2, and
+# --- PROMPTS for any required config that's unset (githubRepo; PLATFORM's domain/repoUrl/…), then runs
+# --- the pulumi command. Override the stack with e.g. `make foundation-up STACK=staging`. ------------
+STACK ?= prod
+PREFLIGHT := bash deploy/pulumi/preflight.sh
+# Secret env vars each project's cloud calls need (preflight prompts SILENTLY for any that's unset):
+F_CREDS := PULUMI_CONFIG_PASSPHRASE
+P_CREDS := PULUMI_CONFIG_PASSPHRASE CLOUDFLARE_API_TOKEN
+# Config with NO default in each project's Pulumi.yaml is auto-derived + prompted by the preflight, so
+# the prompt list can't drift from the schema (see deploy/README.md "The make targets' preflight").
+# Optional config the preflight sets if unset (overrides the schema's generic us-east-1 default):
+REGION_DEFAULT := region=us-east-2
+
 # --- FOUNDATION (Pulumi: run ONCE — ECR repo + GitHub OIDC + the scoped CI push role). See -----
 # --- deploy/README.md "FOUNDATION" for the SSO admin login + wiring the outputs into GitHub. ----
 FOUNDATION := cd deploy/pulumi/foundation &&
+FOUNDATION_DIR := deploy/pulumi/foundation
 foundation-install: ## install the FOUNDATION Pulumi program's deps (run once)
 	$(FOUNDATION) npm install
 foundation-typecheck: ## type-check the FOUNDATION program (no cloud calls)
 	$(FOUNDATION) npx tsc --noEmit
-foundation-preview: ## preview the FOUNDATION plan (ECR + OIDC + CI role; needs admin AWS creds)
-	$(FOUNDATION) pulumi preview
-foundation-up: ## CREATE/UPDATE FOUNDATION (run once, with short-lived admin SSO creds)
-	$(FOUNDATION) pulumi up
+foundation-preview: ## preview the FOUNDATION plan (ECR + OIDC + CI role; prompts for passphrase + githubRepo if unset)
+	@STACK=$(STACK) ENVVARS="$(F_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(FOUNDATION_DIR) pulumi preview
+foundation-up: ## CREATE/UPDATE FOUNDATION (run once; prompts for passphrase + githubRepo if unset; admin SSO creds)
+	@STACK=$(STACK) ENVVARS="$(F_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(FOUNDATION_DIR) pulumi up
 foundation-outputs: ## print FOUNDATION outputs (repoUrl, ciRoleArn — wire into GitHub vars + PLATFORM)
-	$(FOUNDATION) pulumi stack output
+	@STACK=$(STACK) ENVVARS="$(F_CREDS)" $(PREFLIGHT) $(FOUNDATION_DIR) pulumi stack output
 foundation-destroy: ## TEAR DOWN FOUNDATION (rare — retires the ECR repo + CI trust; asks first)
 	@read -p "This destroys the ECR repo + OIDC provider + CI role (CI can no longer push). Type 'unwrite' to confirm: " c && [ "$$c" = "unwrite" ]
-	$(FOUNDATION) pulumi destroy
+	@STACK=$(STACK) ENVVARS="$(F_CREDS)" $(PREFLIGHT) $(FOUNDATION_DIR) pulumi destroy
 
 # --- PLATFORM (Pulumi: run PER RELEASE — AWS EC2 + Cloudflare Tunnel; the box PULLS the server ---
-# --- image from FOUNDATION's ECR). See deploy/README.md "PLATFORM" for the full inputs/secrets --
-# --- list and the exact `pulumi config set [--secret]` for each (incl. serverImage). ------------
+# --- image from FOUNDATION's ECR). The lifecycle targets PROMPT for any unset config/creds via ---
+# --- the preflight; see deploy/README.md "PLATFORM" for what each input means. ------------------
 PULUMI := cd deploy/pulumi/platform &&
+PLATFORM_DIR := deploy/pulumi/platform
 deploy-install: ## install the PLATFORM Pulumi program's deps (run once)
 	$(PULUMI) npm install
 deploy-typecheck: ## type-check the PLATFORM program (no cloud calls)
 	$(PULUMI) npx tsc --noEmit
-deploy-preview: ## preview the live infra plan (needs AWS + Cloudflare creds + stack config)
-	$(PULUMI) pulumi preview
+deploy-preview: ## preview the live infra plan (prompts for passphrase/Cloudflare token + any unset config)
+	@STACK=$(STACK) ENVVARS="$(P_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi preview
 deploy-up: ## CREATE/UPDATE the live infra (EC2 + Cloudflare Tunnel + DNS + budgets); the box PULLS the image
-	$(PULUMI) pulumi up
+	@STACK=$(STACK) ENVVARS="$(P_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi up
 deploy-refresh: ## reconcile Pulumi state with real cloud resources
-	$(PULUMI) pulumi refresh
+	@STACK=$(STACK) ENVVARS="$(P_CREDS)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi refresh
 deploy-outputs: ## print stack outputs (site URL, instance id, SSM session command)
-	$(PULUMI) pulumi stack output
+	@STACK=$(STACK) ENVVARS="PULUMI_CONFIG_PASSPHRASE" $(PREFLIGHT) $(PLATFORM_DIR) pulumi stack output
 deploy-ssm: ## open a keyless admin shell on the box via SSM Session Manager
-	$$($(PULUMI) pulumi stack output ssmSession)
+	@STACK=$(STACK) ENVVARS="PULUMI_CONFIG_PASSPHRASE" $(PREFLIGHT) $(PLATFORM_DIR) bash -c 'eval "$$(pulumi stack output ssmSession)"'
 deploy-destroy: ## TEAR DOWN the PLATFORM infra (EC2 + Cloudflare; asks first). FOUNDATION stays up.
 	@read -p "This destroys the EC2 box + Cloudflare tunnel/DNS. Type 'unwrite' to confirm: " c && [ "$$c" = "unwrite" ]
-	$(PULUMI) pulumi destroy
+	@STACK=$(STACK) ENVVARS="$(P_CREDS)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi destroy
 
 seed: ## create two demo accounts and a match (prints tokens ONCE)
 	@curl -sf -X POST localhost:8080/accounts -H 'content-type: application/json' -d '{"handle":"demo-ari"}' || true; echo
@@ -238,20 +281,20 @@ seed: ## create two demo accounts and a match (prints tokens ONCE)
 db-test: ## run the postgres integration tests against the compose database
 	cd $(APP) && PG_URL=$(PG_URL) cargo test -p recollect-journal-postgres -p recollect-server -- --ignored
 
-db-backup: ## pg_dump the local database to backups/ (run before nuke)
+db-backup: ## pg_dump the local `make up` database to backups/ (run before nuke)
 	@mkdir -p backups
-	$(COMPOSE) exec -T postgres pg_dump -U recollect recollect > backups/recollect-$$(date +%Y%m%d-%H%M%S).sql
+	$(DEPLOY_FULL_ENV) $(DEPLOY_COMPOSE_FULL) exec -T postgres pg_dump -U recollect recollect > backups/recollect-$$(date +%Y%m%d-%H%M%S).sql
 	@ls -t backups | head -1
 
-down: ## stop containers, KEEP volumes (safe teardown)
-	$(COMPOSE) down
+down: ## stop the `make up` stack, KEEP volumes (safe teardown). Fast loop: `make dev-down`.
+	$(DEPLOY_FULL_ENV) $(DEPLOY_COMPOSE_FULL) down
 
-nuke: ## stop containers AND DELETE volumes (asks first)
+nuke: ## stop the `make up` stack AND DELETE its volumes (asks first)
 	@read -p "This deletes the local database and dashboards. Type 'unwrite' to confirm: " c && [ "$$c" = "unwrite" ]
-	$(COMPOSE) down -v
+	$(DEPLOY_FULL_ENV) $(DEPLOY_COMPOSE_FULL) down -v
 
-logs: ## tail server logs
-	$(COMPOSE) logs -f server
+logs: ## tail the `make up` server logs
+	$(DEPLOY_FULL_ENV) $(DEPLOY_COMPOSE_FULL) logs -f server
 
 helm-lint: ## lint the chart (requires helm)
 	helm lint deploy/helm/recollect
@@ -259,4 +302,4 @@ helm-lint: ## lint the chart (requires helm)
 helm-template: ## render manifests locally (requires helm)
 	helm template recollect deploy/helm/recollect
 
-.PHONY: help test test-verify test-all fuzz soak mutants audit nightly sim probes server client client-join fmt lint doc tui tui-gallery tui-shots web-gallery catalog catalog-check cards-validate site site-serve uitest uitest-update uitest-visual uitest-visual-update determinism-check up seed db-test db-backup down nuke logs helm-lint helm-template deploy-local deploy-smoke deploy-local-down deploy-local-logs foundation-install foundation-typecheck foundation-preview foundation-up foundation-outputs foundation-destroy deploy-install deploy-typecheck deploy-preview deploy-up deploy-refresh deploy-outputs deploy-ssm deploy-destroy
+.PHONY: help test test-verify test-all fuzz soak mutants audit nightly sim probes server client client-join fmt lint doc tui tui-gallery tui-shots web-gallery catalog catalog-check cards-validate site site-serve uitest uitest-update uitest-visual uitest-visual-update determinism-check up dev-up dev-down seed db-test db-backup down nuke logs helm-lint helm-template deploy-local deploy-smoke deploy-local-down deploy-local-logs pulumi-state-bucket foundation-install foundation-typecheck foundation-preview foundation-up foundation-outputs foundation-destroy deploy-install deploy-typecheck deploy-preview deploy-up deploy-refresh deploy-outputs deploy-ssm deploy-destroy

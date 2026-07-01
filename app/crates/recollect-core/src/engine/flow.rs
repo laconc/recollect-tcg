@@ -689,7 +689,7 @@ fn erasure_patience_cooled_tiles(sim: &GameState, catalog: &[CardDef]) -> Vec<u8
 /// the Held Ground law) and record the final `Phase::Finished` with scores. This is
 /// the **Nightfall step**: a spirit **banished on round 12** lingered standing-Faded
 /// through the rest of the round (§0.5 — no Main left to evolve in, but a body that
-/// stands until the telling ends) and dissolves HERE, before scoring, laying the
+/// stands until the match ends) and dissolves HERE, before scoring, laying the
 /// banisher's impression so the OPPONENT scores the tile.
 pub(crate) fn finish(sim: &mut GameState, evs: &mut Vec<Event>, catalog: &[CardDef]) {
     // Resolve every remaining fading spirit (the round-12 lingering bases among
@@ -709,7 +709,7 @@ pub(crate) fn finish(sim: &mut GameState, evs: &mut Vec<Event>, catalog: &[CardD
         })
         .collect();
     for (tile, impression) in fading {
-        // No effects at the final dissolve — the telling is over. An UNWRITTEN leaves
+        // No effects at the final dissolve — the match is over. An UNWRITTEN leaves
         // NOTHING even at Nightfall (§11: "a player who banishes an Unwritten gets
         // nothing — it dissolves leaving no mark of having been"); a bare `SpiritDissolved`
         // here would `lay_mark` the banisher's color, wrongly scoring the Unwritten's tile

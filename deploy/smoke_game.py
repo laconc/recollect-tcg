@@ -8,7 +8,7 @@ The server is a black box; the only thing this touches is the `recollect` binary
   * launches `recollect online join <id> <token> --json` for seat A and seat B,
   * reads each seat's `{"view": <PlayerView>, "legal": [...]}` frames,
   * on a seat's OWN turn echoes a legal move straight back (round-tripping
-    `legal[i].cmd`, preferring EndTurn so the telling marches to Nightfall), and
+    `legal[i].cmd`, preferring EndTurn so the match marches to Nightfall), and
   * asserts REDACTION on every frame: a seat's view shows its own hand
     (`you.hand` is a list) but NEVER the opponent's cards (`opponent` carries a
     `hand_count` only — no `hand` array).
@@ -16,7 +16,7 @@ The server is a black box; the only thing this touches is the `recollect` binary
 It plays until BOTH seats observe a `Finished` view (or the move budget), then prints
 exactly one of `GAME_SMOKE_PASS …` / `GAME_SMOKE_FAIL …` (the shell greps for the PASS
 marker) and exits 0/1 to match. It does NOT wait for the clients to exit — the
-`recollect` CLI keeps its socket open after a finished telling, so observing the
+`recollect` CLI keeps its socket open after a finished match, so observing the
 terminal view over the wire is the completion signal and the driver then stops the
 clients itself. A real handshake + several applied moves + the redaction check is
 already an acceptable smoke; both seats reaching a result is the happy path.
@@ -119,7 +119,7 @@ def main():
         while time.time() < DEADLINE:
             # Success: BOTH seats observed the terminal view over the wire. We do NOT
             # wait for the clients to EXIT — the `recollect` CLI keeps its socket open
-            # after a Finished telling (it doesn't self-close), so EOF may never come.
+            # after a Finished match (it doesn't self-close), so EOF may never come.
             # Observing the Finished view on both seats IS the proof the game completed;
             # we then stop the clients ourselves (the `finally` below).
             if finished_seats == {"A", "B"}:
@@ -131,7 +131,7 @@ def main():
                 seat, line = q.get(timeout=30)
             except queue.Empty:
                 # No frame for 30s. If a result already landed, that's fine; otherwise
-                # the handshake/telling genuinely stalled.
+                # the handshake/match genuinely stalled.
                 if finished_seats:
                     break
                 fail(f"no client output for 30s (handshake stalled?); "
@@ -140,7 +140,7 @@ def main():
                 # A client closed its socket. Fine once a result landed; premature is a fail.
                 if finished_seats:
                     continue
-                fail(f"seat {seat} client exited before the telling finished")
+                fail(f"seat {seat} client exited before the match finished")
             line = line.strip()
             if not line:
                 continue

@@ -1080,7 +1080,7 @@ pub fn lorekeeper_character_deck(index: usize, seed: u64, catalog: &[CardDef]) -
     generate_deck(ch.style, seed ^ ((index as u64 + 1) * 0xB7E1_5163), catalog)
 }
 
-/// Who opens the telling: a **seeded** coin-flip, optionally weighted by a
+/// Who opens the match: a **seeded** coin-flip, optionally weighted by a
 /// character's initiative. `bias` shifts the toss toward seat A (positive) or B (negative); 0 is a
 /// fair 50/50, and the magnitude is an edge, never a guarantee (clamped to a 5–95% window). Pure in
 /// (seed, bias) — the opener is deterministic and replay-verified like the rest of the genesis.
@@ -1095,7 +1095,7 @@ pub fn decide_opener(seed: u64, bias: i32) -> crate::types::Seat {
     }
 }
 
-/// Who opens the telling in 2v2: a **seeded** 4-way pick of which seat opens — any of A1, B1,
+/// Who opens the match in 2v2: a **seeded** 4-way pick of which seat opens — any of A1, B1,
 /// A2, B2 — each weighted by `weights` (a base, plus a bot character's initiative on its own seat).
 /// The A1→B1→A2→B2 cycle then rotates to begin at the opener. Pure in (seed, weights), deterministic
 /// and replay-verified like the rest of the genesis.

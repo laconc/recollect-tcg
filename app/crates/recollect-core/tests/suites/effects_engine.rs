@@ -298,7 +298,7 @@ fn unyielding_survives_once_and_the_banishment_is_never_journaled() {
     assert!(
         evs3.iter()
             .any(|ev| matches!(ev, Event::SpiritBecameFading { tile, .. } if *tile == ox)),
-        "the second telling holds"
+        "the second match holds"
     );
 }
 

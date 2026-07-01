@@ -68,6 +68,32 @@ open.
   **interception** (a covering enemy striking your arrival), **Promise** redirections, and
   the **"−10 (unseen)"** hidden-aura hints. Post-launch UX-depth — the information is already
   readable from the move text; this is the visual polish.
+- **Web client — play UX + bugs (the playtest review backlog).** From hands-on review; these gate a
+  good first-play and should land before/around launch. Grouped:
+  - **Feedback & notifications (the player can't tell what happened):** a toast/log when *any* card is
+    played, on an **attack** (you can't tell one happened), when the **opponent ends their turn**, and
+    at **turn start**; a persistent **whose-turn marker**. Opponent notifications must use the player's
+    **name, not just the faction**.
+  - **Inspect panel:** render it **above everything** (today some board content shows through); it must
+    **never open directly under the cursor** where you're mid-action; and it should list the **forms a
+    card can evolve / devolve to**.
+  - **Action affordances:** **Glimpse** button grays out once used; a spirit needs a **Reclaim**
+    affordance (no button today); **Bond** should play like a spirit — slide up on click, then pick
+    **two spirits** to bond; a **Ritual** should be click-twice (first lifts it like a spirit, second
+    commits + burns it) — today "What Remains" played but **stayed in hand**.
+  - **Legal-move correctness + highlighting (triage engine vs client):** an **evolution** can currently
+    be played on **any** tile — restrict to the **replaced spirit's tile**, with invalid tiles + cards
+    **darkened**; a card can be placed on **Dusk-claimed tiles** (shouldn't); you **can't place beside a
+    moved mobile spirit** even when in reach; a card with **no actions** (e.g. Ferrier's Daughter — maybe
+    all) still shows the green action-dot. Some may be the engine's `legal_commands`, not the client.
+  - **Layout & input:** the **results screen** should sit where the **hand** was (so you can still see +
+    inspect the field); the **hand should scroll as the mouse moves** left/right over it (no separate
+    wheel-scroll); **lower the render resolution** (too high today); in **deck-select**, drop the
+    **curve** chart and clarify/replace **"opens."**
+  - **Mulligan:** show the **dealt cards** + let the player **inspect** them while the prompt is up
+    (today it asks before you can see them).
+  - **[Bigger] Fully-wgpu play screen:** move **deck selection + match setup** into the canvas so the
+    whole play screen is the wgpu view.
 - **Card & character images.** The delivery pipeline is built (placeholders ship,
   WebP delivery, a `make cards-check` gate, the `tools/cardpipe` tool kept outside the
   workspace). Open is the **real art**: (1) generate masters via an image service
@@ -76,6 +102,11 @@ open.
   `recollect-web` `scene.rs`/`render.rs`, then re-measure the wasm budget; (3) the
   **character + bot-player portraits** (the 20 Lorekeeper + 20 Solace characters'
   avatars — an initial today). As-built: `docs/decisions/card_images.md`.
+- **Website SEO & discoverability.** Per-page `<title>` + `<meta name="description">` ship today, and the catalog
+  renders JS-off (already crawlable). OPEN is the discoverability pass: Open Graph + Twitter-card meta (per-page
+  title/description/image) for rich link previews; `sitemap.xml` + `robots.txt`; canonical URLs; JSON-LD structured
+  data (the game as schema.org `VideoGame`); social preview images (reuse the gallery stills/brand); and a
+  headings/alt-text/page-title audit for search. Measure with Lighthouse SEO + a crawl; revisit on each site change.
 - **Music & sound.** The audio layer for the "Living Ink" sound grammar (design §16:
   paper-and-water sound; the Solace as the absence of room tone — the Unwritten make
   no sound). The nav already carries a sound toggle; this builds the cues + score.

@@ -58,7 +58,7 @@
         </div>
       </div>
     </header>
-    <!-- #100 — the canvas owns the WHOLE game for a LOCAL 1v1 telling: tap a piece then a
+    <!-- #100 — the canvas owns the WHOLE game for a LOCAL 1v1 match: tap a piece then a
          glowing tile (or drag) to act, tap a hand card then a tile to play, hover /
          long-press to inspect; End Turn + Glimpse + evolve/reclaim are in-canvas
          affordances. It is FULL-BLEED (100% width × the viewport below the nav),
@@ -94,7 +94,7 @@
 
     <script type="module">
       // The wgpu ink renderer draws the whole game; the Rust core (LocalGame) stays
-      // authoritative. For a LOCAL 1v1 telling the client is canvas-native (#100
+      // authoritative. For a LOCAL 1v1 match the client is canvas-native (#100
       // Phase B): you act on the canvas (tap-select / drag / hover-or-long-press
       // inspect / the in-canvas FABs), and the virtual a11y tree (#shell-a11y)
       // mirrors every affordance as an actionable button firing the same engine
@@ -174,7 +174,7 @@
       //   • dusk    — { kind, title, subtitle, progress } while a Dusk/Nightfall set-piece
       //               animates over the board, or null. `timer`/`raf` drive its ramp+dwell.
       //   • result  — the parsed ResultScreen (verdict + breakdown + actions) once the
-      //               telling ends, or null; `progress` ramps its reveal; `mode` adapts it.
+      //               match ends, or null; `progress` ramps its reveal; `mode` adapts it.
       const phaseD = { dusk: null, duskTimer: null, duskRaf: null, lastDuskRound: 0,
                        result: null, resultProgress: 0, resultRaf: null, mode: "bot" };
 
@@ -185,7 +185,7 @@
       //     model automatically (no flag needed); we just read it to announce each step + map
       //     a tap to Command::Choose.
       //   • The MULLIGAN is a legal command at the opening, so the bridge owns whether the
-      //     offer SHOWS: `offer` is set when a fresh local telling mounts (and the window is
+      //     offer SHOWS: `offer` is set when a fresh local match mounts (and the window is
       //     open) and cleared on either pick (Mulligan / Keep). The engine's window still
       //     gates it (a stale flag draws nothing — can_mulligan()).
       //   • `sig` dedupes the per-step announcement (so the live region narrates each new
@@ -234,9 +234,9 @@
         if (online && online.team) return "team";
         return "none";
       }
-      // True for a NETWORKED telling (1v1 or 2v2) — the server is authoritative.
+      // True for a NETWORKED match (1v1 or 2v2) — the server is authoritative.
       function isOnline() { return !!(online && (online.view || online.team)); }
-      // True for ANY 2v2 telling drawn in the shell (online team play).
+      // True for ANY 2v2 match drawn in the shell (online team play).
       function isTeam() { return !!(online && online.team); }
       // The live redacted view JSON for the current transport (PlayerView or TeamView),
       // or null. Online holds the server's pushed view; local serializes the engine's.
@@ -255,14 +255,14 @@
         if (game && !game.is_2v2()) { try { return JSON.parse(game.legal_labeled_json()); } catch (_) { return []; } }
         return [];
       }
-      // Whether the live telling has ENDED (transport-agnostic): the local engine's
+      // Whether the live match has ENDED (transport-agnostic): the local engine's
       // `is_over`, or a `Finished` phase on the server's pushed view.
       function gameIsOver() {
         if (game) return game.is_over();
         const v = (online && (online.view || online.team));
         return !!(v && v.phase && v.phase.Finished);
       }
-      // YOUR seat in the live telling ("A"/"B") — the side whose spirits you may pick up.
+      // YOUR seat in the live match ("A"/"B") — the side whose spirits you may pick up.
       // Local 1v1 is always seat A; online reads the view's own `seat` (1v1) or `team`
       // (2v2), since you may be seat B over the wire.
       function youSeat() {
@@ -350,7 +350,7 @@
       }
 
       // #100 Toggle the portrait shell layout (a taller canvas + the transitional
-      // controls below) only for a LOCAL 1v1 telling — the mode the canvas-native
+      // controls below) only for a LOCAL 1v1 match — the mode the canvas-native
       // shell draws. The picker, online, and 2v2 keep the square board. Re-fit the
       // canvas backing buffer to the new box so the in-canvas type stays crisp.
       function setShellLayout() {
@@ -433,7 +433,7 @@
         }) || null;
       }
 
-      // Whether board interaction is live: it is YOUR turn in a telling drawn in the
+      // Whether board interaction is live: it is YOUR turn in a match drawn in the
       // canvas shell — a LOCAL 1v1 (seat A), an ONLINE 1v1 (your seat is active), or
       // ONLINE 2v2 (your slot's team is active) — AND no opponent replay is animating
       // (#100 Phase C, local only) and no Glimpse/Mulligan modal is up (that modal is the
@@ -1172,7 +1172,7 @@
 
       // ── #100 Phase D: the Dusk/Nightfall set-piece + the in-canvas result screen ────
 
-      // How the last LOCAL telling was started, so Rematch can reseed an equivalent
+      // How the last LOCAL match was started, so Rematch can reseed an equivalent
       // match (a fresh seed, the same styles + difficulty). Set by startGame / start2v2.
       let lastStart = null;
 
@@ -1215,7 +1215,7 @@
         phaseD.duskRaf = null; phaseD.duskTimer = null; phaseD.dusk = null;
       }
 
-      // The telling has ended (local 1v1): show the #100 Phase-D in-canvas result screen.
+      // The match has ended (local 1v1): show the #100 Phase-D in-canvas result screen.
       // Folds the engine-computed ResultScreen (verdict in the game's voice + the score
       // breakdown + the actions) into the shell overlay, animates its reveal, ANNOUNCES the
       // verdict in the #status live region, and builds the result's virtual a11y tree (the
@@ -1230,7 +1230,7 @@
         } catch (_) { res = null; }
         if (!res) return;
         // Clear any in-flight Nightfall set-piece so its clock/seal doesn't ghost behind
-        // the verdict (the telling can end right at the Nightfall beat).
+        // the verdict (the match can end right at the Nightfall beat).
         cancelDusk();
         phaseD.result = res;
         phaseD.resultProgress = 0;
@@ -1250,7 +1250,7 @@
         phaseD.resultRaf = requestAnimationFrame(step);
       }
 
-      // #100 online/2v2 — the telling ended over the wire: show the in-canvas result
+      // #100 online/2v2 — the match ended over the wire: show the in-canvas result
       // screen built from the server's Finished view (verdict · breakdown · actions). Idempotent
       // (only mounts once — showResultScreen is cheap to re-enter, but we guard so the reveal
       // ramp isn't restarted every frame the Finished view re-arrives).
@@ -1264,7 +1264,7 @@
       // site) as an actionable button firing the same verb the canvas button does. Rebuilt
       // only when the result changes (focus-stable across frames).
       //
-      // Focus management on this SCREEN CHANGE (the telling has ended): the board is gone,
+      // Focus management on this SCREEN CHANGE (the match has ended): the board is gone,
       // so leaving focus on a now-removed tile/FAB button would strand a keyboard / screen-
       // reader user. When the result tree is built for the first time we move focus to the
       // verdict HEADING (a `tabindex="-1"` landing) — the SR user hears the outcome and can
@@ -1307,7 +1307,7 @@
       }
 
       // Dispatch a result-screen action by its verb (the SAME path the canvas button + the
-      // a11y button fire). Rematch reseeds an equivalent local telling; New opponent returns
+      // a11y button fire). Rematch reseeds an equivalent local match; New opponent returns
       // to the picker; Back to site navigates home. PvP's "rematch" verb is an invite in a
       // networked match (host/join) — for the local shell it reseeds a fresh local game.
       function resultAction(verb) {
@@ -1322,7 +1322,7 @@
           clearResultScreen(); cancelDusk();
           if (lastStart && lastStart.kind === "quick") {
             game = LocalGame.new_quick(seed64(), lastStart.style, lastStart.opp, lastStart.diff);
-            phaseD.lastDuskRound = 0; // a fresh telling re-shows the Dusk/Nightfall set-pieces
+            phaseD.lastDuskRound = 0; // a fresh match re-shows the Dusk/Nightfall set-pieces
             choiceUi.offer = !!game.can_mulligan(); choiceUi.sig = null; // #26 — a fresh opening offers the mulligan
             $("picker").style.display = "none"; $("detail").innerHTML = "";
             refresh();
@@ -1464,7 +1464,7 @@
         const opts = diffs.map((d) => `<option value="${d.index}"${d.default ? " selected" : ""}>${d.name}</option>`).join("");
         // The difficulty select carries a real <label for> (programmatic name) — a bare
         // "Opponent:" text node isn't an accessible name (WCAG 4.1.2 select-name).
-        p.innerHTML = `<h3>Choose your telling</h3><div><label for="diff">Opponent difficulty: <select id="diff">${opts}</select></label></div>`;
+        p.innerHTML = `<h3>Choose your match</h3><div><label for="diff">Opponent difficulty: <select id="diff">${opts}</select></label></div>`;
         $("status").textContent = "preview each style's deck, then pick one";
         offers.forEach((o) => {
           const pv = JSON.parse(LocalGame.deck_preview_json(seed, o.id));
@@ -1486,7 +1486,7 @@
             .join("; ");
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "style telling";
+          btn.className = "style advance";
           btn.setAttribute("aria-label",
             `Play ${o.name}. ${o.blurb} ${o.selection.summary}. ${facetText}. ` +
             `${pv.spirit_count} spirits, ${pv.spell_count} spellbook cards. Opens with ${opens}.`);
@@ -1500,7 +1500,7 @@
         });
         const tv = document.createElement("button");
         tv.type = "button";
-        tv.className = "style telling";
+        tv.className = "style advance";
         tv.setAttribute("aria-label",
           "Watch a 2v2 — the 6 by 6 board: the Solace's pair versus two Lorekeepers, AI-driven.");
         tv.innerHTML = '<span aria-hidden="true"><b>Watch a 2v2</b> — ' +
@@ -1548,7 +1548,7 @@
         const opp = offers[(i + 1) % offers.length].id; // a seeded opponent style
         const diff = parseInt($("diff")?.value ?? "1", 10);
         game = LocalGame.new_quick(seed, style, opp, diff);
-        // #100 Phase D — remember how this telling was started so Rematch can reseed an
+        // #100 Phase D — remember how this match was started so Rematch can reseed an
         // equivalent one (a fresh seed, the same styles + difficulty); a local vs-bot match.
         lastStart = { kind: "quick", style, opp, diff };
         phaseD.mode = "bot"; phaseD.lastDuskRound = 0;
@@ -1661,7 +1661,7 @@
         const hand = $("hand");
         hand.innerHTML = "";
         if (r.over) {
-          // #100 Phase D — the telling has ended: show the in-canvas result screen (the
+          // #100 Phase D — the match has ended: show the in-canvas result screen (the
           // verdict in the game's voice + the score breakdown + the Rematch / New opponent
           // / Back to site actions), announced + mirrored in the a11y tree. The canvas
           // keeps drawing (the board shows through the scrim as the souvenir); the live
@@ -1914,8 +1914,8 @@
       }
 
       // #100 Whether the canvas is currently drawing the in-canvas shell — used to re-base
-      // board hit-testing onto the board sub-rectangle. True for a LOCAL 1v1 telling AND
-      // for an ONLINE telling (1v1 or 2v2) — all driven by the canvas-native shell now.
+      // board hit-testing onto the board sub-rectangle. True for a LOCAL 1v1 match AND
+      // for an ONLINE match (1v1 or 2v2) — all driven by the canvas-native shell now.
       // The LOCAL 2v2 WATCH (the AI drives all four slots, no single-seat vantage) keeps
       // the older board-only draw, so it stays false there. Stays true at the Phase-D
       // result screen (game over) so the canvas keeps drawing the verdict overlay; board
@@ -2032,7 +2032,7 @@
           onServerMsg(m);
         };
         // The sample redacted welcomes (the real wire shape) the suite injects to mount an
-        // online 1v1 / 2v2 telling with no live server.
+        // online 1v1 / 2v2 match with no live server.
         window.__recollectTest.sampleOnlineWelcome = (seed, seat, moves) => sample_online_welcome_json(BigInt(seed), seat, moves);
         window.__recollectTest.sampleTeamWelcome = (seed) => sample_team_welcome_json(BigInt(seed));
         // #50 item 12 — a welcome whose board has a spirit standing ON a Landmark (a co-occupied
@@ -2094,13 +2094,13 @@
         //   • TAP a hand card → it lifts + its tiles glow; TAP a tile → place (or drag it).
         //   • TAP a FAB → End Turn / Glimpse.
         // HOVER (mouse) inspects; LONG-PRESS (touch) inspects. This serves EVERY shell
-        // telling — a LOCAL 1v1 and an ONLINE one (1v1 or 2v2); the only non-shell board
+        // match — a LOCAL 1v1 and an ONLINE one (1v1 or 2v2); the only non-shell board
         // is the local 2v2 watch (a spectator view, not interactive).
         boardEl.addEventListener("pointerdown", (ev) => {
           if (!shellActive()) return; // local 2v2 watch / picker: no shell interaction
           // #100 Phase D — at the result screen the only targets are its action buttons;
           // record the press (dispatched on pointerup so a clean tap fires the verb), and
-          // skip the live board interaction (the board isn't playable once the telling ends).
+          // skip the live board interaction (the board isn't playable once the match ends).
           if (phaseD.result) {
             const p = pointerBackingXY(ev);
             board.drag = { result: true, verb: resultHit(p.x, p.y), pointerId: ev.pointerId };
@@ -2296,7 +2296,7 @@
         // New game as before, so nothing about Tab breaks). Inside the board, arrow keys
         // move a visible focus cursor, Enter/Space picks up / drops, Escape cancels a
         // pick-up. The cursor's tile is drawn as a gold ring (the canvas's :focus-visible).
-        // Live for any shell telling — a LOCAL 1v1 or an ONLINE one (1v1 or 2v2).
+        // Live for any shell match — a LOCAL 1v1 or an ONLINE one (1v1 or 2v2).
         const boardKeyboardLive = () => shellActive();
         boardEl.addEventListener("focus", () => {
           if (boardKeyboardLive() && board.focus == null) board.focus = homeTile();
@@ -2336,8 +2336,8 @@
           if (game) { team = game.is_2v2(); json = team ? game.team_view_json() : game.view_json(); }
           else if (online && online.team) { team = true; json = JSON.stringify(online.team); }
           else if (online && online.view) { team = false; json = JSON.stringify(online.view); }
-          // #100 — the canvas owns the WHOLE game for a LOCAL 1v1 telling AND for an ONLINE
-          // telling (1v1 or 2v2): it draws the in-canvas shell (HUD · opponent strip · hand
+          // #100 — the canvas owns the WHOLE game for a LOCAL 1v1 match AND for an ONLINE
+          // match (1v1 or 2v2): it draws the in-canvas shell (HUD · opponent strip · hand
           // tray · FABs · the affordances + inspect panel) around the board, AND the virtual
           // a11y tree (#shell-a11y) mirrors every affordance as an actionable ARIA button.
           // The local engine path builds the ShellModel from its engine; the online path
@@ -2368,13 +2368,13 @@
               try { renderer.draw_shell(replay.model, cv.width, cv.height); }
               catch (e) {}
             } else if (resultActive && localShell) {
-              // #100 Phase D — the local telling has ended: draw the shell with the
+              // #100 Phase D — the local match has ended: draw the shell with the
               // result-screen overlay (verdict + breakdown + actions, folded into ui_json).
               const ui = shellUiJson();
               try { renderer.draw_shell(game.shell_model_json("{}", "{}", ui), cv.width, cv.height); }
               catch (e) {}
             } else if (resultActive && onlineShellActive) {
-              // #100 Phase D (online/2v2) — the telling ended over the wire: draw the shell
+              // #100 Phase D (online/2v2) — the match ended over the wire: draw the shell
               // with the result-screen overlay built from the server's Finished view. The
               // board (the redacted souvenir) shows through the scrim behind the verdict.
               const ui = shellUiJson();

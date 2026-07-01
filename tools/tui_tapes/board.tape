@@ -1,6 +1,6 @@
 # Beat 1 — the cursor board at rest.
 # The gold cursor `[ ]` sits on the centre tile (c3); the rich Match pane (round /
-# score / projections) and the always-visible "Legal tellings" list flank it; the
+# score / projections) and the always-visible "Legal plays" list flank it; the
 # green "quiet dots" mark tiles with an available action. Image twin of cursor-board.txt.
 #
 # Driven by `recollect` on PATH (the freshly-built binary; see tools/gen_tui_shots.sh)
@@ -14,7 +14,7 @@ Enter
 Wait+Screen@20s /choose a style/
 Type "1"
 Enter
-Wait+Screen@20s /Legal tellings/
+Wait+Screen@20s /Legal plays/
 Show
 Sleep 1s
 Screenshot "docs/gallery/tui/shot-board.png"

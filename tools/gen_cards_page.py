@@ -9,6 +9,7 @@ Run via `make site` (or directly). Re-run whenever the catalog changes.
 import html
 import json
 import pathlib
+import shutil
 
 from lore_extract import load_lore
 
@@ -40,9 +41,34 @@ IMG_W, IMG_H = 1024, 1434
 # The card renders ~300–360 px wide on screen; one column on phones, up to three
 # on wide viewports. `sizes` mirrors the .cards-grid breakpoints in brand.css.
 IMG_SIZES = "(min-width: 60rem) 20rem, (min-width: 40rem) 45vw, 90vw"
+# The shared SVG placeholder (5:7, paper & ink) for cards with no master art yet — the
+# common case today. main() stages it into the served tree; card_image_html points
+# art-less cards at it. A real webp set (keyed by `key`) supersedes it per-card.
+PLACEHOLDER_SVG = ROOT / "assets/placeholder.svg"
+SITE_IMG = ROOT / "site/img/cards"
 
 COMBAT_KINDS = {"Spirit", "IllIntent"}
 KEYWORDS = ("arcane", "warded", "mobile", "steadfast", "relentless", "lurk")
+
+# ── Customer-facing display labels ───────────────────────────────────────────
+# The catalog `rarity` field is overloaded: C/U/R/L are the real card rarities;
+# "Primal"/"Fabled" are evolution TIERS, "Solace" is a faction, "Kindred" a kind.
+# So the catalog shows ONLY C/U/R/L as a rarity (spelled in full); the rest carry
+# no rarity badge — their kind + the "Evolves from" line already say what they are.
+RARITY_LABELS = {"C": "Common", "U": "Uncommon", "R": "Rare", "L": "Legendary"}
+RARITY_ORDER = ["Common", "Uncommon", "Rare", "Legendary"]
+KIND_LABELS = {"IllIntent": "Ill Intent"}   # spell the kinds that aren't player-facing words
+LORE = {}   # key → load_lore record (the full authored prose; populated in main)
+
+
+def rarity_label(c):
+    """Full-word rarity for a normal deck card (C/U/R/L); '' for cards whose catalog
+    `rarity` is really a tier/faction (Primal/Fabled/Solace/Kindred)."""
+    return RARITY_LABELS.get(c["rarity"], "")
+
+
+def kind_label(c):
+    return KIND_LABELS.get(c["kind"], c["kind"])
 
 
 def esc(s):
@@ -112,21 +138,35 @@ def image_key(c):
 
 
 def card_image_html(c):
-    """A responsive, lazy <img> for the card illustration. `alt` is the card name
-    (informative, player-facing — no agent/internal jargon); width/height reserve
-    the 5:7 box so the grid doesn't shift as art streams in."""
-    stem = image_key(c)
-    srcset = ", ".join(f"{IMG_BASE}/{stem}-{w}.webp {w}w" for w in IMG_WIDTHS)
-    src = f"{IMG_BASE}/{stem}-{IMG_WIDTHS[-1]}.webp"
+    """A responsive, lazy <img> for the card illustration. A card WITH a master gets
+    the responsive webp set; until then (no master yet — every card today) it shares
+    the SVG placeholder, which scales cleanly at the 5:7 box. `alt` is the card name;
+    width/height reserve the box so the grid doesn't shift."""
+    key = c["key"]
+    if (MASTERS_DIR / f"{key}.png").exists():
+        srcset = ", ".join(f"{IMG_BASE}/{key}-{w}.webp {w}w" for w in IMG_WIDTHS)
+        src = f"{IMG_BASE}/{key}-{IMG_WIDTHS[-1]}.webp"
+        return (
+            f'<img class="card-art" src="{src}" srcset="{srcset}" '
+            f'sizes="{IMG_SIZES}" alt="{esc(c["name"])}" '
+            f'loading="lazy" decoding="async" width="{IMG_W}" height="{IMG_H}" />'
+        )
     return (
-        f'<img class="card-art" src="{src}" srcset="{srcset}" '
-        f'sizes="{IMG_SIZES}" alt="{esc(c["name"])}" '
-        f'loading="lazy" decoding="async" width="{IMG_W}" height="{IMG_H}" />'
+        f'<img class="card-art" src="{IMG_BASE}/placeholder.svg" '
+        f'alt="{esc(c["name"])}" loading="lazy" decoding="async" '
+        f'width="{IMG_W}" height="{IMG_H}" />'
     )
+
+
+def lore_paras(text):
+    """Authored lore prose (blank-line-separated paragraphs) → <p> blocks."""
+    paras = [p.strip() for p in str(text).split("\n\n") if p.strip()]
+    return "".join(f"<p>{esc(p)}</p>" for p in paras)
 
 
 def card_html(c):
     name = esc(c["name"])
+    kl, rl = kind_label(c), rarity_label(c)
     kws = [k for k in KEYWORDS if c.get(k)]
     kw_html = (
         '<p class="keywords">'
@@ -135,28 +175,34 @@ def card_html(c):
         if kws
         else ""
     )
-    stats = [f"Cost {c['cost']}"]
+    # Colored stat chips — Atk/Def/HP take the SAME inks as the wgpu board
+    # (scene.rs ATK/DEF/HP_INK) so the catalog and the game agree at a glance.
+    stat_spans = [f'<span class="stat stat-cost">Cost {c["cost"]}</span>']
     if c["kind"] in COMBAT_KINDS or c.get("hp", 0):
-        # The Atk/Def/HP shorthand the whole app uses (web cards, inspect, the CLI render)
-        # — never A/D/H, and consistent casing across surfaces (web_client_ux.md §Hand).
-        stats += [f"Atk {c['attack']}", f"Def {c['defense']}", f"HP {c['hp']}", f"Reach {c['reach']}"]
+        stat_spans += [
+            f'<span class="stat stat-atk">Atk {c["attack"]}</span>',
+            f'<span class="stat stat-def">Def {c["defense"]}</span>',
+            f'<span class="stat stat-hp">HP {c["hp"]}</span>',
+            f'<span class="stat stat-reach">Reach {c["reach"]}</span>',
+        ]
     evo = evolution_html(c)
     evo_block = f"\n      {evo}" if evo else ""
-    # Cross-link to this card's lore entry on the Lore page (the prose lives there;
-    # the catalog is the stat-line). Only cards with AUTHORED lore get the link
-    # (LORE_KEYS, from the shared extractor) so the anchor always resolves — the
-    # procedural Solace fill + summoned tokens have no prose, so no dangling link.
+    # The full authored lore, inline behind a collapsed <details> (it used to be a
+    # link to the Lore page). Cards with no authored prose (procedural Solace fill,
+    # summoned tokens) get no lore block.
+    rec = LORE.get(c["key"])
     lore = (
-        f'\n      <p class="card-lore-link">'
-        f'<a href="lore.html#lore-{esc(c["key"])}">Read its lore →</a></p>'
-        if c["key"] in LORE_KEYS
+        f'\n      <details class="card-lore"><summary>Lore</summary>'
+        f'<div class="card-lore-prose">{lore_paras(rec["lore"])}</div></details>'
+        if rec and rec.get("lore")
         else ""
     )
-    return f"""    <article class="card" id="card-{esc(c['key'])}" data-name="{esc(c['name']).lower()}" data-kind="{esc(c['kind'])}" data-rarity="{esc(c['rarity'])}" data-resonance="{esc(c['resonance'])}" data-cost="{c['cost']}">
+    rarity_badge = f' <span class="badge rarity">{esc(rl)}</span>' if rl else ""
+    return f"""    <article class="card" id="card-{esc(c['key'])}" data-name="{esc(c['name']).lower()}" data-kind="{esc(kl)}" data-rarity="{esc(rl)}" data-resonance="{esc(c['resonance'])}" data-cost="{c['cost']}">
       {card_image_html(c)}
       <h3>{name}</h3>
-      <p class="badges"><span class="badge kind">{esc(c['kind'])}</span> <span class="badge">{esc(c['rarity'])}</span> <span class="badge res">{esc(c['resonance'])}</span></p>
-      <p class="stats">{' · '.join(stats)}</p>
+      <p class="badges"><span class="badge kind">{esc(kl)}</span>{rarity_badge} <span class="badge res">{esc(c['resonance'])}</span></p>
+      <p class="stats">{' '.join(stat_spans)}</p>
       <p class="rules">{esc(c['rules'])}</p>
 {kw_html}{evo_block}{lore}
     </article>"""
@@ -166,12 +212,16 @@ def select(label, key, values):
     opts = "".join(f'<option value="{esc(v)}">{esc(v)}</option>' for v in values)
     return (
         f'<label>{label}<select data-filter="{key}">'
-        f'<option value="">all</option>{opts}</select></label>'
+        f'<option value="">All</option>{opts}</select></label>'
     )
 
 
 def main():
     cat = json.loads(CATALOG.read_text())
+    # Stage the SVG placeholder in the served tree (make site does `cp -R site/. dist/`);
+    # art-less cards point at it (card_image_html).
+    SITE_IMG.mkdir(parents=True, exist_ok=True)
+    shutil.copy(PLACEHOLDER_SVG, SITE_IMG / "placeholder.svg")
     # Wire the evolution cross-navigation (base ↔ form anchors). `lines` is
     # form → base; invert it for base → [forms]. We only keep names that exist in
     # the catalog (every one does today — asserted below — but stay defensive so a
@@ -205,9 +255,10 @@ def main():
             )
     # The lore cross-link is gated on authored prose (shared with the lore-page
     # generator), so a tile only links to a lore anchor that exists.
-    LORE_KEYS.update(load_lore(cat).keys())
-    kinds = sorted({c["kind"] for c in cat})
-    rarities = sorted({c["rarity"] for c in cat})
+    LORE.update(load_lore(cat))
+    LORE_KEYS.update(LORE.keys())
+    kinds = sorted({kind_label(c) for c in cat})
+    rarities = RARITY_ORDER  # the four real rarities (full words), not the overloaded catalog field
     resonances = sorted({c["resonance"] for c in cat})
     costs = sorted({c["cost"] for c in cat})
     cards = "\n".join(card_html(c) for c in cat)
@@ -246,7 +297,20 @@ def main():
       padding: 0.05em 0.4em; border-radius: 999px;
       border: 1px solid var(--rule); color: var(--ink-soft);
     }}
-    .card .card-lore-link {{ margin: 0.5em 0 0; font-size: 0.85rem; max-width: none; }}
+    /* Colored stat chips — same inks as the wgpu board (Atk warm-red, Def blue, HP
+       green); cost + reach stay neutral. Matches scene.rs ATK/DEF/HP_INK. */
+    .card .stats {{ display: flex; flex-wrap: wrap; gap: 0.5em 0.75em; }}
+    .card .stat {{ font-variant-numeric: tabular-nums; }}
+    .card .stat-atk {{ color: #bd4c38; }}
+    .card .stat-def {{ color: #3d6ba8; }}
+    .card .stat-hp  {{ color: #3d804c; }}
+    /* Inline lore, collapsed by default. */
+    .card .card-lore {{ margin: 0.6em 0 0; border-top: 1px dashed var(--rule); padding-top: 0.5em; }}
+    .card .card-lore > summary {{
+      cursor: pointer; font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--ink-soft);
+    }}
+    .card .card-lore-prose p {{ margin: 0.5em 0 0; font-size: 0.9rem; color: var(--ink-soft); max-width: none; }}
   </style>
 </head>
 <body>
@@ -261,7 +325,20 @@ def main():
         <a href="rules.html">Rules</a>
         <a href="lore.html">Lore</a>
         <a href="contact.html">Contact</a>
+        <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="options-panel">Options</button>
       </nav>
+    </div>
+    <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+      <div class="options-inner">
+        <h2 class="options-title">Options</h2>
+        <div class="site-settings" role="group" aria-label="Site settings">
+          <label class="setting" for="opt-reduced-motion">
+            <input type="checkbox" id="opt-reduced-motion" />
+            <span>Reduced motion</span>
+          </label>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -285,15 +362,13 @@ def main():
   <footer class="site-footer">
     <div class="container">
       <span>Recollect</span>
-      <a href="rules.html">Rules</a>
-      <a href="lore.html">Lore</a>
-      <a href="contact.html">Contact</a>
       <span class="note">A fading Memory, told in paper &amp; ink.</span>
     </div>
   </footer>
 
   <!-- Filter logic in an EXTERNAL script (site/cards.js) so the site can ship a strict
        `script-src 'self'` CSP — no inline script. `defer` runs it after parse. -->
+  <script src="options.js" defer></script>
   <script src="cards.js" defer></script>
 </body>
 </html>

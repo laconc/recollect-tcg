@@ -398,7 +398,7 @@ fn hand_lines(engine: &Engine, seat: Seat, cur: &BoardCursor) -> Text<'static> {
     Text::from(lines)
 }
 
-/// The numbered "Legal tellings" list (the always-visible move set, mirroring the web's
+/// The numbered "Legal plays" list (the always-visible move set, mirroring the web's
 /// a11y button list) as ratatui [`Line`]s — each legal command through the canonical
 /// [`describe`] labeler. Pure.
 fn legal_lines(engine: &Engine, seat: Seat) -> Text<'static> {
@@ -409,7 +409,7 @@ fn legal_lines(engine: &Engine, seat: Seat) -> Text<'static> {
     }
     if legal.is_empty() {
         lines.push(Line::styled(
-            "(no legal tellings — the turn has passed)",
+            "(no legal plays — the turn has passed)",
             Style::default().fg(Color::DarkGray),
         ));
     }
@@ -567,7 +567,7 @@ where
                     .block(
                         Block::default()
                             .borders(Borders::ALL)
-                            .title(" Legal tellings (number / : verb / cursor) "),
+                            .title(" Legal plays (number / : verb / cursor) "),
                     ),
                 right[1],
             );
@@ -642,7 +642,7 @@ fn help_text() -> Text<'static> {
         Line::from("  Tab       toggle board ↔ hand focus"),
         Line::from("  i         inspect (full card + reach grid)"),
         Line::from("  :         open the verb mini-buffer (p/o/m/v/dv/rc/g/r/end)"),
-        Line::from("  0-9 …     pick a numbered legal telling, then Enter"),
+        Line::from("  0-9 …     pick a numbered legal play, then Enter"),
         Line::from("  ?         this help · q  quit"),
         Line::from(""),
         Line::from("Picking a piece highlights its legal targets in gold."),
@@ -728,7 +728,7 @@ fn handle_key(engine: &Engine, seat: Seat, cur: &mut BoardCursor, code: KeyCode)
                 if let Ok(n) = line.parse::<usize>() {
                     match legal.get(n) {
                         Some(c) => return Step::Apply(c.clone()),
-                        None => cur.status = format!("no telling {n}"),
+                        None => cur.status = format!("no play {n}"),
                     }
                 } else if let Some(intent) = verbs::parse(&line, w as u8) {
                     match verbs::resolve(intent, &legal) {
@@ -766,7 +766,7 @@ fn handle_key(engine: &Engine, seat: Seat, cur: &mut BoardCursor, code: KeyCode)
             }
         }
         // A digit opens the verb buffer pre-seeded — so `3` then more digits then Enter
-        // picks telling 3+ (the numbered list is always available, like the web a11y list).
+        // picks play 3+ (the numbered list is always available, like the web a11y list).
         KeyCode::Char(c @ '0'..='9') => cur.buffer = Some(c.to_string()),
         KeyCode::Left | KeyCode::Char('h') => move_cursor(cur, w, -1, 0),
         KeyCode::Right | KeyCode::Char('l') => move_cursor(cur, w, 1, 0),
@@ -827,7 +827,7 @@ fn activate(engine: &Engine, seat: Seat, cur: &mut BoardCursor) -> Step {
             if targets_for_source(engine, seat, src).is_empty() {
                 cur.status = match src {
                     Source::Board(t) => {
-                        format!("{} has no move — read the tellings", crate::render::tn(t))
+                        format!("{} has no move — read the plays", crate::render::tn(t))
                     }
                     Source::Hand(_) => "that card has no placement now".into(),
                 };

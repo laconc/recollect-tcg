@@ -4,7 +4,7 @@
 The card lore (and physical) is authored in `data/cards.toml` (THE source of card
 truth) — each `[[card]]` carries a `lore` / `physical` multi-line string and a
 `lore_source` / `physical_source` tag (`§3` for a fully-realized exemplar, `§9` for
-a "telling completed" entry; richest already chosen at migration). Cards without
+a "cards completed" entry; richest already chosen at migration). Cards without
 authored prose (the procedural Solace fill + the summoned tokens, whose character
 lives in their summoner's entry) simply omit `lore` — callers MUST treat the keyset
 as authoritative so the site never links to a lore anchor that isn't there. The lore

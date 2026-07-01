@@ -2,7 +2,7 @@ import { test, expect, Page, Locator } from "@playwright/test";
 import { startLocalGame, endTurn, handButtons, a11yTree } from "./helpers";
 
 // #100 Phase C — the paced opponent-turn replay + announcements. When you end your
-// turn in a local 1v1 telling, the bot's turn is REPLAYED action-by-action through a
+// turn in a local 1v1 match, the bot's turn is REPLAYED action-by-action through a
 // pacing queue (~1s/beat) instead of snapping the state: each discrete action animates
 // with a subtle on-canvas caption AND a line in the #status live region (the a11y
 // announcements — invariant 7), the affected tile lit, the Solace's erasure tally
@@ -94,7 +94,7 @@ test.describe("the paced opponent-turn replay (#100 Phase C)", () => {
     await startLocalGame(page);
     // The opener is the first thing the live region reads — it always names who opens
     // (design §5). Local 1v1 opens the human (Seat A), so it reads from your vantage.
-    await expect(page.locator("#status")).toContainText(/open(s)? the telling/i, {
+    await expect(page.locator("#status")).toContainText(/open(s)? the match/i, {
       timeout: 15_000,
     });
   });

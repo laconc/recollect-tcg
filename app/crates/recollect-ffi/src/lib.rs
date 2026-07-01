@@ -159,7 +159,7 @@ impl Game {
         format!("{:?}", self.inner.lock().unwrap().engine.state().active)
     }
 
-    /// True once the telling has ended.
+    /// True once the match has ended.
     pub fn is_over(&self) -> bool {
         matches!(
             self.inner.lock().unwrap().engine.state().phase,

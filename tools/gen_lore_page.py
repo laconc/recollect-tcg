@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
-"""Generate site/lore.html — the world & its lore — from the card source.
+"""Generate site/lore.html — the world & its people — from the Lore Bible.
 
-The page keeps its hand-authored *narrative* opening (the world, the two factions,
-the six resonances) verbatim, then adds a TABLE OF CONTENTS and the per-card lore
-SECTIONED BY RESONANCE (Wonder · Fear · Sorrow · Harmony · Fury · Resolve ·
-Remnants & Neutral · the Solace · the Foundlings). Each section is anchored so the
-TOC jumps to it; each card is an anchored entry (`id="lore-<key>"`) so the catalog
-page can link straight to a card's lore — and each entry links back to the card's
-catalog tile.
+This page is the WORLD, not the card list. It tells Recollect's story: what the
+world is, what a Memory is, why two storytellers contend over it, who the keepers
+and the Solace are, and what the Unwritten want. The per-card lore now lives
+inline on the cards page (each tile carries its own telling), so the lore page
+carries no per-card sections and no `#lore-<key>` anchors — the catalog no longer
+links here for a card.
 
-Lore prose comes from the SHARED extractor (`lore_extract.load_lore`) over
-`app/crates/recollect-core/data/cards.toml` — the same keyset the cards page gates
-its "Read its lore" link on, so the cross-links between the two pages always
-resolve. Cards without authored prose (the procedural Solace fill + summoned tokens)
-are simply omitted from the index, exactly as they are from the cards-page links.
+**The source is `docs/lore.md` — the Lore Bible.** That document is the law; this
+page is its web telling. The generator READS the Bible (`load_lore_bible`) to take
+its part/section skeleton straight from the `##`/`###` headers — so the page's table
+of contents and section order can never silently drift from canon — and it asserts
+the Bible still has the structure the web prose was written against (the four PARTs
+and all twenty-one §sections). The prose itself is authored here, condensed and
+rewritten for the web in the Bible's register (dry, warm, concrete, never purple),
+section by section. When the Bible gains or renames a section, this generator fails
+loudly until the web telling is brought back in step.
 
-Like the cards page, this is plain semantic HTML (a11y + SEO; no client framework)
-copied into dist/ by `make site`. Re-run whenever the card source or catalog changes.
+Like the cards page, this is plain semantic HTML (a11y + SEO; no client framework),
+copied into dist/ by `make site`. Re-run whenever `docs/lore.md` changes.
 """
 import html
-import json
 import pathlib
 import re
 
-from lore_extract import load_lore
-
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "app/crates/recollect-core/data/catalog.json"
+LORE_MD = ROOT / "docs/lore.md"
 OUT = ROOT / "site/lore.html"
 
 
@@ -34,205 +34,644 @@ def esc(s):
     return html.escape(str(s))
 
 
-# The card source writes lore in light Markdown: *emphasis* spans, and (in the §3
-# exemplars) multi-line dialogue. We escape first, then re-introduce just those two —
-# italics and line breaks — so nothing in the prose can inject markup.
-_EM = re.compile(r"\*(.+?)\*")
+# ── Reading the Lore Bible's skeleton ────────────────────────────────────────
+# We don't render the Bible's prose verbatim (it's written for the team, at length);
+# we take its STRUCTURE — the ordered list of PARTs and the §sections under each —
+# straight from the headers, then attach the web telling below. Anchoring the page
+# to the real headers means a section can't be added to canon and quietly missing
+# from the site, nor reordered out of step: the build derives both from one file.
+_PART_RE = re.compile(r"^##\s+(PART\s+[IVX]+\s+—\s+.+?)\s*$")
+_SEC_RE = re.compile(r"^###\s+(\d+)\.\s+(.+?)\s*$")
 
 
-def lore_to_html(text):
-    """Render a lore clause as inline HTML: HTML-escaped, `*word*` → <em>word</em>,
-    and dialogue newlines → <br> so a transcript keeps its shape inside one <p>."""
-    safe = esc(text)
-    safe = _EM.sub(lambda m: f"<em>{m.group(1)}</em>", safe)
-    return "<br>".join(line.strip() for line in safe.split("\n"))
+def load_lore_bible():
+    """Parse `docs/lore.md` → ordered [(part_title, [(num, section_title), …]), …].
+
+    Mirrors the document's `## PART …` / `### N. …` heading hierarchy. Stops at the
+    `## Quick reference` appendix (rendered separately). Raises if the Bible is
+    missing or has no recognizable parts, so a malformed source never yields a
+    silently-empty page.
+    """
+    text = LORE_MD.read_text()
+    parts = []
+    current = None
+    for line in text.splitlines():
+        if line.startswith("## Quick reference"):
+            break
+        m = _PART_RE.match(line)
+        if m:
+            current = (m.group(1), [])
+            parts.append(current)
+            continue
+        m = _SEC_RE.match(line)
+        if m and current is not None:
+            current[1].append((int(m.group(1)), m.group(2)))
+    if not parts:
+        raise SystemExit(f"{LORE_MD}: no `## PART …` headers found — is the Lore Bible intact?")
+    return parts
 
 
-# ── Sectioning — by resonance (the lore reading order) ───────────────────────
-# Each section is (anchor-id, heading, blurb, predicate). A card lands in the FIRST
-# section whose predicate matches, so the Solace + Foundlings are pulled out of
-# Neutral before the Remnants catch-all. Within a section, cards keep catalog order
-# (curve-ascending, the design's reading order), so evolutions sit by their kin.
-def _is_solace(c):
-    # The Unwritten and the Solace (Unwritten · IllIntent · Unwriting) — rarity "Solace".
-    return c["rarity"] == "Solace"
+# ── The web telling — authored prose, one block per Bible §section ────────────
+# `SEC[n]` is the HTML body for §n of docs/lore.md, condensed & rewritten for the
+# web. Vocabulary law is applied throughout: a match is "the Memory"/"this Memory"/
+# "the match" (never "telling" as a noun for the game); "unwrite" is lowercase; "ill
+# intent" is two words; a Stray is a wild spirit; spirits are "banished." Each value
+# is the inner HTML of the section; its heading is generated from the Bible. A
+# §number absent from SEC renders no section and is omitted from the TOC.
+SEC = {}
 
+SEC[1] = """
+      <p class="lore-lede">Two storytellers sit on either side of a fading Memory and
+        contend over what it will hold. One keeps; the other lets go. The board is the
+        Memory. The cards are the things that lived in it. The fading is real, and it is
+        happening now. You are not fighting a monster — you are refusing a mercy you
+        half-believe in.</p>"""
 
-def _is_foundling(c):
-    return c["kind"] == "Foundling"
+SEC[2] = """
+      <p>The world is a <strong>remembering</strong> — and the remembering is fading.</p>
+      <p>Everything that exists, exists because something holds it in memory. The world is
+        not a place that <em>has</em> memories; it is <em>made of</em> memory, the way a song
+        is made of sound. To be is to be remembered. And memory, by its nature, fades — so
+        the world is, always and everywhere, in the slow process of being forgotten.</p>
+      <p>This is not a catastrophe that happened on some particular day. It is the permanent
+        condition of reality, the background fact everyone lives inside. Whose remembering the
+        world is — whether one mind holds it all, or memory is simply the fundamental substance
+        with nothing behind it — is a question no one inside the world can answer, and the
+        story leaves it open.</p>
+      <p>What gives the present its urgency: the fading was always happening, but it was never
+        happening <em>like this.</em> In this age it has crossed some threshold, so whole Memories
+        now go dark where once only details slipped away. The world is at a tipping point — which
+        is why the keepers and the Solace are at their most active now, and why there is a story
+        to tell in this generation rather than any other.</p>"""
 
+SEC[3] = """
+      <p>A <strong>Memory</strong> is a single place caught in the act of being forgotten — the
+        short interval during which it can still be argued over. Each match <em>is</em> one
+        Memory, somewhere between vivid and gone: a harbor at dawn, a grandmother's kitchen, the
+        last day of a war, a face half-recalled. It has not finished fading. That is the only
+        reason there is still a game to play in it.</p>
+      <p>You never contend over a <em>fresh</em> Memory — only a fading one. You always arrive in
+        its evening. To act within a Memory is to insist on it: to say <em>this was here, this
+        mattered, this is how it went.</em> When you place a card, you write it into the Memory.
+        The two storytellers are not fighting over territory; they are arguing, in the grammar of
+        the place itself, over how the Memory goes.</p>"""
 
-def _res(name):
-    return lambda c: c["resonance"] == name and not _is_solace(c) and not _is_foundling(c)
+SEC[4] = """
+      <p>Memory is not stable. It competes. The vivid version crowds out the faint one; two people
+        remember the same day differently and one version wins; what you recall overwrites what you
+        had half-forgotten. The board is a single contested fragment of the past, and a
+        &ldquo;battle&rdquo; is what it looks like when <strong>two recollections of the same
+        moment contend for which one survives.</strong></p>
+      <p>This is why the rules never <em>kill.</em> Nothing here is a living thing in the combat
+        sense — these are <em>versions of a memory</em>, and the loser is not destroyed but
+        <strong>banished</strong>: forgotten, <em>this</em> way, while leaving behind the proof
+        that it was contested and mattered. The war is an argument about how the past is
+        remembered, fought move by move.</p>"""
 
-
-def _is_remnant(c):
-    # Whatever Neutral remains once the Solace + Foundlings are taken: the neutral
-    # spellbook, landmarks, and the neutral evolution lines — the §9.7 "Remnants & Neutral".
-    return c["resonance"] == "Neutral" and not _is_solace(c) and not _is_foundling(c)
-
-
-SECTIONS = [
-    ("wonder", "Wonder", "Storm and Wanderer — the things that look up, and ask.", _res("Wonder")),
-    ("fear", "Fear", "Shade and Trickster — the held breath, the thing at the edge of sight.", _res("Fear")),
-    ("sorrow", "Sorrow", "Tide and Shade — what is carried, and what is let go.", _res("Sorrow")),
-    ("harmony", "Harmony", "Bloom and Song — the kept bond, the green that overruns.", _res("Harmony")),
-    ("fury", "Fury", "Flame and Beast — momentum, and the price it asks.", _res("Fury")),
-    ("resolve", "Resolve", "Stone and Guardian — what will not be moved.", _res("Resolve")),
-    ("remnants", "Remnants &amp; Neutral", "The unaligned — neutral spellbook, landmarks, and the lines that belong to no one register.", _is_remnant),
-    ("solace", "The Solace", "The Unwritten, and the Solace who lift them away — one voice, recovered from the Archive.", _is_solace),
-    ("foundlings", "The Foundlings", "The Strays — the small, the lost, the not-yet-trusted, won one telling at a time.", _is_foundling),
-]
-
-
-# ── The hand-authored narrative opening (preserved verbatim; the page's voice) ──
-# Kept as a template constant so the generator only ADDS the index below it — the
-# crafted world-introduction prose is unchanged from the prior hand-authored page.
-NARRATIVE = """      <h1>The world</h1>
-      <p class="note">A first telling of the world. The factions, the Unwritten, the six
-        resonances — each runs deeper than the page has room for. Below the telling, the
-        <a href="#contents">whole roster's lore</a>, sectioned by resonance.</p>
-
-      <h2 id="a-fading-memory">A fading Memory</h2>
-      <p>Every match of Recollect is told inside a <strong>Memory</strong> — a remembered place,
-        slipping. The board is its page. As the telling runs on, the page darkens at the edges
-        (the <strong>Dusk</strong>), and the Memory contracts toward forgetting. To play is to
-        decide what is worth keeping while there is still page to keep it on.</p>
-
-      <h2 id="two-who-tell-it">Two who tell it</h2>
-      <p>The <strong class="ink-a">Lorekeepers</strong> hold the Memory whole. They
-        summon the loved and the remembered, and press their <strong>Impression</strong> into the
-        ground so the telling cannot be denied.</p>
-      <p>The <strong class="ink-b">Solace</strong> are not villains. They would let a
-        painful thing <em>rest</em>. Where others banish a spirit, the Solace
-        <strong>Unwrite</strong> it — lifted away gently, leaving no mark, as though it had never been
-        written. They mean it as a kindness. Sometimes it is one.</p>
-
-      <h2 id="what-lives-on-the-page">What lives on the page</h2>
-      <p><strong>Spirits</strong> are the remembered things — some plain and near at hand, some
-        Legends with names like sentences. They are never destroyed; defeated, they are
-        <strong>banished</strong> back to the page, and may be told again.</p>
-      <p>Not everything was meant to be written. The <strong>Unwritten</strong> are names-that-aren't —
-        fragments, negations, the almost-said. And among them moves the <strong>ill intent</strong>:
-        the menacing few that would not merely fade the Memory but <em>devour</em> it.</p>
-
-      <h2 id="resonance">Resonance</h2>
-      <p>Every spirit carries an emotional register — its <strong>resonance</strong> — and the
-        registers answer to one another:</p>
+SEC[5] = """
+      <p><strong>Recollect's rules never kill.</strong> A spirit that loses an engagement is not
+        destroyed; it is <strong>banished</strong> — it fades, and where it stood it leaves an
+        <strong>Impression</strong> in the color of whoever banished it.</p>
+      <p>An <strong>Impression is the mark a memory leaves by having mattered.</strong> A dent left
+        by pressure, an effect on the mind, a lasting trace of someone — and literally what ink
+        pressed into paper makes, so the word is native to this world of ink on vellum. When a
+        spirit is banished it is gone, but the Memory keeps the trace: <em>that it was here, and was
+        contested, and was lost.</em> The Impression falls in the banisher's color because it records
+        <em>whose</em> loss it is.</p>
+      <p>From this one object, the two ways of leaving the board come to mean opposite things, and the
+        whole conflict is contained in the difference:</p>
       <ul>
-        <li><strong>Wonder</strong> · <strong>Fear</strong> · <strong>Sorrow</strong></li>
-        <li><strong>Harmony</strong> · <strong>Fury</strong> · <strong>Resolve</strong></li>
+        <li>To be <strong>banished</strong> is to be lost <em>but remembered.</em> You leave an
+          Impression — a mark, a trace, proof that the world pressed back where you stood. Something
+          to hold onto.</li>
+        <li>To be <strong>unwritten</strong> is to be spared even that — no Impression, no trace,
+          nothing — because you <em>never were.</em> (This is the antagonist's work.)</li>
       </ul>
-      <p>What you remember, and how you remember it, decides who answers your call.</p>
+      <p>And here is what makes the war a tragedy rather than a battle: <strong>the same Impression
+        reads in opposite directions to the two sides.</strong> To a keeper it is proof that something
+        pressed on the world hard enough to leave a mark — sacred, the shape of a love. To the Solace
+        the very same mark is a dent that should have been allowed to smooth out — a wound the keeper
+        refuses to let heal. One sees love; the other sees a refusal to heal. <em>Neither is lying.</em>
+        That is the whole game.</p>
+      <p>This is why the mechanics and the lore are one thing and not two layers bolted together: a
+        banished spirit scores for its banisher <em>through its Impression</em> (each tile counts once —
+        a standing spirit, or, if empty, an Impression). To keep is to accumulate proof-of-having-mattered.
+        The antagonist's defining trait — that its creatures leave no Impression — <em>is</em> its
+        defining mercy, expressed as a rule.</p>"""
 
-      <p><a class="btn btn-primary" href="play.html">Begin a telling</a> <a class="btn" href="cards.html">Meet the spirits</a></p>"""
+SEC[6] = """
+      <p>A Memory is always encountered in its evening, and the evening runs down toward the dark. There
+        is no morning and no noon here — nothing fully remembered is ever contested, so you arrive with
+        the light already going. Two named beats mark the failing of the light:</p>
+      <ul>
+        <li><strong>The Dusk</strong> (end of round eight) — the <em>process</em> of evening: the light
+          failing from the edges inward, the way the parts of a real memory you reach for last are the
+          corners. Empty rim tiles go dark and are lost. Tiles still <strong>held</strong> by a standing
+          spirit keep a small pool of lamplight — <em>the Memory keeps what is loved, while it is loved</em>
+          — and that light goes out the instant the spirit leaves.</li>
+        <li><strong>Nightfall</strong> (the final round) — the <em>moment</em> the dark completes. The
+          light is fully gone; the Memory is night. What was held to the end was held; the rest is
+          forgotten.</li>
+      </ul>
+      <p>One thing the dark never touches: <strong>the wild keeps to the heart of the page.</strong> The
+        Memory's own spontaneous resurfacings appear only on inner tiles, never the rim, so the encroaching
+        dark never strands a wild thing. The forgetting is relentless at the edges and gentle at the center
+        — true to how memory behaves, the vivid core outlasting the details at the margin.</p>"""
+
+SEC[7] = """
+      <p>Everything inside a Memory is made of one substance: <strong>Anima</strong>, the warm grey-gold
+        stuff of a thing still partly remembered. Not magic and not light — the <em>material of recollection
+        itself</em>, what a memory is made of while you are still holding it. Anima is what spirits are drawn
+        in, what a storyteller spends to call them, and what the Memory is slowly losing as it fades.</p>
+      <p>To spend Anima is to spend <em>the effort of remembering</em> — the warmth and attention it costs to
+        hold a thing clearly. A storyteller who runs out of Anima has not run out of money; they have run out
+        of the strength to keep insisting. The two storytellers' Anima reads in their own colors, their inks
+        contesting the page, and where the washes overlap is the front line: two ways of remembering the same
+        place, neither yet winning.</p>"""
+
+SEC[8] = """
+      <p>The creatures, people, places, and moments a Memory contains are its <strong>spirits.</strong> A
+        spirit here is not a ghost or a soul; the word carries its older, primary sense — <em>animating
+        essence, the living spirit of a thing.</em> A Memory's spirits are the parts of it still vivid enough
+        to move and act: the otter that was in the river, the heron at the far blue distance, the grandmother
+        at the stove, the patient knife in the drawer. They are drawn in Anima and stand on the Memory's tiles,
+        and while a spirit stands, it holds its piece of the Memory against forgetting.</p>
+      <p>Each spirit carries a triad — <strong>Attack / Defense / HP</strong> — read as a memory's qualities,
+        not a fighter's: how forcefully it presses its version of events, how well it withstands being
+        overwritten, how much of it remains before it fades. Spirits also carry <strong>Imprints</strong>
+        (their textures and kinships) and a <strong>Resonance</strong> (their emotional key).</p>
+      <p>A <strong>named</strong> spirit — a legend with a name like a sentence — is a memory specific and
+        vivid enough to have <em>earned</em> a name: the difference between &ldquo;a dog I had once&rdquo; and
+        <em>Home, Who Was a Dog Once.</em> Names measure how fiercely a thing is remembered. (This is also why
+        the Unwritten are mostly <em>un</em>-named — they were never remembered, so they never earned names.
+        Their &ldquo;names&rdquo; are names-that-aren't: the Almost-Said, What's-Its-Name, Forgotten Name.)</p>"""
+
+SEC[9] = """
+      <p>Every spirit sounds in one of six <strong>Resonances</strong> — the emotional key a memory is
+        remembered in — with <strong>Neutral</strong> for things that sound in no single key. They form a
+        wheel; adjacent keys grant a small edge against one another in engagement. Neutral takes and gives no
+        edge. The six are the emotional palette of the whole world and the spine of the campaign — its arcs are
+        each themed to a Resonance, so the player moves through the full register of how a life is remembered.</p>
+      <ul>
+        <li><strong>Wonder</strong> — awe, curiosity, the lifted ceiling, the far blue distance.</li>
+        <li><strong>Fear</strong> — dread, the thing in the dark water, the held breath.</li>
+        <li><strong>Sorrow</strong> — grief, tenderness, the ache that means it mattered. Closest to the
+          Impression itself.</li>
+        <li><strong>Harmony</strong> — belonging, song, things that fit. The key of comfort.</li>
+        <li><strong>Fury</strong> — anger, heat, the blow struck.</li>
+        <li><strong>Resolve</strong> — steadiness, the immovable stone, the thing that will not be moved.</li>
+      </ul>"""
+
+SEC[10] = """
+      <p>Where Resonance is a spirit's emotional key, its <strong>Imprints</strong> are its <em>textures</em> —
+        the elemental and archetypal stuff it is made of, and the kinships by which spirits recognize one
+        another: Flame, Tide, Stone, Storm, Beast, Shade, Song, Bloom, Star, Dream, Trickster, Guardian, Ruin,
+        and more. A spirit carries one or two.</p>
+      <p>Imprints do real work. They are how the <strong>wild</strong> decides whether to trust you — a Gentle
+        Stray joins a storyteller who ends a turn beside a spirit that <em>shares its Imprint</em>, recognizing
+        something of itself in your story — and how <strong>Bonds</strong> form, two spirits paired by a shared
+        texture, strengthening each other. They are the threads of kinship that make a roster feel like a
+        remembered world. Some textures are common (Beast, Shade), some rare (Dream, Ruin) — itself a kind of
+        flavor: some sorts of memory are everywhere, and some are scarce.</p>"""
+
+# ── PART II — THE KEEPERS ─────────────────────────────────────────────────────
+SEC[11] = """
+      <p>The protagonists, and the faction the player belongs to. Formally they are <strong>the Enduring House
+        of Liora</strong> — named for their founder. In daily speech, and since the schism that broke their
+        house, they are the <strong class="ink-a">Lorekeepers</strong>: <em>those who remember.</em></p>
+      <p>Their conviction, in a line: <em>we are what we remember, and to remember is a duty owed to those who can
+        no longer speak for themselves.</em> A Memory's worth is in its keeping. To let a thing be forgotten
+        completely is the one loss that cannot be mourned — because mourning itself requires remembering, and a
+        thing erased takes even its own grief away. To keep is to refuse that final erasure, again and again, for
+        as long as one has the strength.</p>
+      <p>The order has <strong>ranks</strong>, and the ranks keep three good words in the world:</p>
+      <ul>
+        <li><strong>Archivist</strong> — the discipline of precision. Archivists log and catalogue; they keep the
+          record of what was contested and what was lost.</li>
+        <li><strong>Remembrancer</strong> — the weight. Remembrancers carry the older, heavier duty: not merely to
+          record but to <em>remind</em>, to hold the dead present among the living.</li>
+        <li><strong>Dreamer</strong> — those who go <em>into</em> the Memories rather than keeping them at a desk;
+          who chart what resists charting and get close to the fading. (It is no accident that Dreamers are the ones
+          most exposed to what keeping costs the kept — they are <em>in there</em> with it.)</li>
+      </ul>
+      <p><strong>The name's two ironies.</strong> &ldquo;Liora&rdquo; means <em>light is mine</em> — and the founder
+        who bore that name turned to the dark. And the house calls itself <em>Enduring</em> while bearing the name
+        of the one person who <em>did not endure</em>, who broke faith and left. The Lorekeepers are the Enduring
+        House precisely <em>because</em> their founder was not: their endurance is defined against her defection.
+        They never take her name down from the door — because to erase her would be to <em>forget</em> her, and they
+        do not forget, not even her, not even to spare themselves.</p>"""
+
+SEC[12] = """
+      <p>The keepers maintain two institutions, and the distinction matters.</p>
+      <ul>
+        <li><strong>The Archive</strong> is the record of <em>what was lost</em> — the ledger of banishments,
+          Impressions, the faded. When a spirit is banished, the keepers inscribe it: its name, its color, that it
+          was here and is now gone, so the loss itself will not be forgotten. The Archive <strong>remembers that you
+          were here; it cannot bring you back.</strong> It is a monument to loss, written <em>without comment</em> —
+          neither praise nor blame, only holding.</li>
+        <li><strong>The Library</strong> is the store of <em>what is still held</em> — the living memories the keepers
+          keep vivid, the lore still bright, the source they draw their strength from. A record of presence: here is
+          what we have not yet lost. (In play, the Library is the living roster a keeper draws from — <em>The Library
+          Remembers.</em>)</li>
+      </ul>
+      <p>A banished spirit, in a sense, passes from the Library to the Archive — from <em>held</em> to
+        <em>remembered-as-lost.</em> The Library holds the living; the Archive keeps faith with the dead.</p>
+      <p><strong>The recursion — the keepers' deepest act.</strong> If the whole world is a remembering that is
+        fading, then the Archive and the Library are the keepers doing, by hand and at small scale, exactly what the
+        world's own remembering does for everything. And because the records are themselves memories, they are not
+        exempt from the fade — they must be re-copied, re-told, re-inscribed endlessly, because nothing, not even the
+        record of what was lost, gets to be permanent. The keepers' labor is not a vault that lasts forever; it is the
+        <em>continuous act</em> of remembering, knowing it must be done again tomorrow — <em>the dignity of holding on
+        even when holding on does not, in the end, stop the dark.</em></p>"""
+
+SEC[13] = """
+      <p>The founder, and the figure the whole world turns on. Two titles let the keepers name her without speaking
+        her name: <strong>the First</strong> (warm, reverent, used by those who still love her) and <strong>the
+        Founder</strong> (neutral, institutional). Her gloss, the line that holds her whole tragedy: <strong>the
+        first to keep, and the first to let go.</strong></p>
+      <p><strong>How she founded the keepers.</strong> Liora was the first <em>scientist</em> of memory — a mind
+        brilliant enough to intuit the truth no one else could see: that the world is a remembering, and the
+        remembering is fading. The Lorekeepers were her response to a discovered emergency — reality unraveling,
+        invisibly, and someone must understand it and hold the line. The founding was rigorous, almost clinical: a
+        scientist-leader marshaling a civilization against an extinction she alone fully grasped.</p>
+      <p><strong>How she changed.</strong> Over a long life her relationship to her own discovery deepened from
+        understanding into <em>feeling.</em> The scientist who had diagnosed the fade began to <em>grieve</em> it. And
+        her evolution did not stop at grief. She had held more memory, for longer, than anyone in history — and
+        precisely because she had held so much for so long, she came to feel, from the inside, what it is to be
+        <em>kept past one's time.</em> She asked a question no junior keeper ever asks: were the things she so
+        lovingly held <em>grateful</em> to be held, or were they <em>suffering</em>, forced to linger, denied the rest
+        forgetting would have given them? She concluded that her life's work had been, however lovingly, a
+        <em>prolongation of pain.</em> The one who diagnosed the disease came to believe the <em>treatment</em> was
+        the cruelty.</p>
+      <p><strong>The schism.</strong> This was not sudden. The House watched their founder change over decades, and
+        the break was the end of a long-widening fracture. At last Liora stood before the keepers she had made and
+        did the unbearable thing: openly, with all her authority, as a final teaching, she asked them to follow her
+        into the letting-go. <em>I taught you to hold on. I was wrong about what holding on was for. The truest
+        keeping is to let rest. Come with me.</em> Most refused. Some did not — they left with her, and became the
+        Solace. The House split not over hatred but over <em>which love to keep faith with</em>: love of the teacher,
+        or love of the teaching.</p>
+      <p><strong>She does not experience this as a fall.</strong> From Liora's side she did not betray the House —
+        <em>the House refused to follow her to the truth.</em> She grieves the keepers as the tragic ones, still
+        clenched, imprisoned in a strain she would free them from. <strong>Each side sees the other as the one trapped
+        in suffering.</strong></p>
+      <p><strong>She still exists — and why.</strong> The world's iron law is that a thing persists exactly as long as
+        it is remembered, and Liora is its most extreme demonstration. She is remembered so fiercely, by so many, that
+        she simply cannot fade — and she is sustained by <em>both</em> houses at once: the Solace remembers her as
+        founder and prophet, the keepers as the First whose name they bear, a love some cannot relinquish even as they
+        oppose her. The two sides agree on nothing except that they cannot let her go.</p>
+      <p><strong>Her personal hell.</strong> Liora preaches <em>letting go</em> — the open hand, the rest that is the
+        truest love. And she, of all beings, <strong>cannot be released</strong>, because the world remembers her too
+        fiercely to let her rest. The prophet of the open hand is held in an unbreakable grip; she has not rested in
+        centuries. That endless, unwanted persistence is <em>exactly</em> the suffering she believes the keepers
+        inflict on every memory they hold — except hers can never end. When she pleads for the mercy of release, she
+        pleads, in part, for <em>herself.</em></p>
+      <p><strong>Keep her ambiguous.</strong> The game never resolves whether Liora was <em>right.</em> Did she achieve
+        a hard-won wisdom, or break under a weight too heavy and rationalize her surrender? The keepers believe she
+        broke; the Solace believes she ascended; and the player, refusing her mercy tile by tile, re-litigates her
+        choice every match without ever getting the verdict. She is the question the whole game is built around, made
+        into a person — <strong>the mother of both houses</strong>, rarely seen, felt everywhere.</p>"""
+
+SEC[14] = """
+      <p>Not everything in a Memory is told by a storyteller. Sometimes the Memory <em>stirs on its own</em> — a stray
+        recollection rising of its own accord into an empty inner tile, called by no one. These are the
+        <strong>Strays</strong>: the world's wild spirits, Resonance-less, beholden to no side, scoring for no one
+        while unclaimed. They surface rarely (about one Memory in seven), always from the heart of the page, always a
+        beat ahead — <em>the clearing where something is about to be remembered.</em></p>
+      <p>A Stray can be <strong>banished</strong> like anything else (a normal Impression — the Archive notes it,
+        without comment) or <strong>befriended</strong> — and a befriended Stray becomes a <strong>Foundling</strong>,
+        yours thereafter, added to the keepers' collection permanently. You cannot buy or craft a Foundling; you earn
+        one by meeting a wild thing in a Memory and giving it reason to trust you. Three temperaments, three
+        philosophies of trust:</p>
+      <ul>
+        <li><strong>Gentle</strong> — they <em>want</em> to be seen. End a turn beside a spirit that shares the Stray's
+          Imprint, and it joins you.</li>
+        <li><strong>Wary</strong> — they are counting. A Wary Stray surfaces <em>veiled</em>, and needs two consecutive
+          turns of your nearness before it will show itself and stay.</li>
+        <li><strong>Feral</strong> — dangerous, and not won by kindness alone; befriendable only once it has been driven
+          below half and its fear has cracked open enough to recognize you.</li>
+      </ul>
+      <p>Each Foundling carries its <strong>haunt</strong> — a chapter or Daily Memory where it reliably surfaces — so
+        collection is always a path of <em>play</em>, never of luck. A few are legends with names like sentences:
+        <em>Home, Who Was a Dog Once</em>; <em>Hundredname, Who Has Been Watching</em>; <em>Ashmane, Who Outran the Ill
+        Intent.</em> The Strays are the clearest proof that a Memory is <em>alive</em> — that it remembers things on
+        its own, things no one chose to keep — which is exactly what the Solace believes should be allowed to rest, and
+        exactly what the keepers cannot bear to let go unrecognized.</p>"""
+
+# ── PART III — THE CONFLICT ───────────────────────────────────────────────────
+SEC[15] = """
+      <p>The soul of the game is a real philosophical disagreement, not good versus evil. Both sides love the world.
+        They differ only on what love requires. The two faiths mirror each other across every axis, and the game
+        refuses to say who is right.</p>
+      <div class="lore-table-wrap">
+        <table class="lore-table">
+          <thead>
+            <tr><th scope="col"><span class="visually-hidden">The question</span></th><th scope="col" class="ink-a">The Lorekeepers</th><th scope="col" class="ink-b">The Solace</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">The dead deserve</th><td>continued remembrance (love)</td><td>rest (mercy)</td></tr>
+            <tr><th scope="row">The past is</th><td>an inheritance, carried forward</td><td>a weight, to be set down</td></tr>
+            <tr><th scope="row">Life happens</th><td>in keeping faith with what was</td><td>in the present, the only real moment</td></tr>
+            <tr><th scope="row">The fade is</th><td>the end, to be fought</td><td>a passage, to be accepted</td></tr>
+            <tr><th scope="row">Their faith</th><td>that holding on <em>matters</em>, against an unseeable dark</td><td>that letting go is <em>safe</em>, against the same dark</td></tr>
+            <tr><th scope="row">Their condition</th><td>strain — the dignity of the clenched fist</td><td>peace — the serenity of the open hand</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Every line is a real question. <em>Who is kinder to the dying — the one who keeps it, or the one who lets it
+        rest? Is the past a gift or a chain? Which faith is courage and which is fear?</em> Neither side can prove the
+        other wrong, because no one inside the world can see what is on the far side of forgetting. The player's act —
+        refusing the mercy tile by tile — is meant to feel like a <em>choice</em> made against a real and gentle
+        argument, not a foregone conclusion. If the player never once feels the pull of the Solace's case, the game has
+        failed at the thing it most wants to do.</p>"""
+
+SEC[16] = """
+      <p>When the <strong>keeper wins</strong> a Memory, that fragment is <em>held</em> — it survives the fading a while
+        longer, remembered the keeper's way. When the <strong>Solace wins</strong>, it is <em>released</em> — allowed to
+        finish fading, gently, completely. But <strong>neither outcome is permanent.</strong> A held Memory is held
+        <em>for now</em>; the fading is patient and will come again. The keepers are not winning a war — they are
+        <em>delaying an inevitability</em>, again and again, because to them every delay is worth it: every day a thing is
+        remembered is a day it mattered. The Solace, for its part, is not conquering — it is offering rest to things that
+        were going to fade anyway, and choosing to make the passage kind rather than cruel.</p>
+      <p>So no one ultimately <em>wins</em>, and that is the point. The game is about <strong>the dignity of holding on
+        even when holding on does not, in the end, stop the dark</strong> — a far more affecting premise than defeating
+        an enemy and saving the day. You can only keep, and keep again, for as long as you have the strength to.</p>"""
+
+SEC[17] = """
+      <p>The keepers have a peculiar strength: their creed has <strong>already withstood its own author's
+        renunciation.</strong> Most beliefs are vulnerable to their best counterargument — present a strong enough case
+        and the belief wavers. But the keepers have already heard the strongest possible case against remembering, in
+        full, <em>from the very person who understood remembering best</em> — the founder who built their whole practice,
+        who had every reason and every tool to make the case airtight. There will never be a stronger critic than Liora.
+        And the order heard her, and chose to remain.</p>
+      <p>This <strong>inoculates</strong> them. Every argument the Solace makes — every gentle, almost-right plea to let
+        go — is a <em>weaker</em> version of one they have already survived. This is why the keepers can be <em>gentle</em>
+        with the Solace rather than shrill or defensive: they are not threatened, having already had this fight at maximum
+        difficulty and held.</p>
+      <p>But — and this is the hard truth the line carries — <strong>being unkillable by argument is not the same as
+        being right.</strong> Liora might <em>still</em> be correct. Their inoculation protects them from being argued
+        <em>out</em> of their creed; it does not prove the creed <em>true.</em> They will keep faith <em>even if they are
+        wrong</em> — even if the Solace is right that they prolong suffering. Their strength (unshakability) is
+        indistinguishable from their possible flaw (stubbornness) — which is <em>precisely</em> the Solace's critique of
+        them. That is faith in the truest and most double-edged sense: the precise point where the keepers' heroism and
+        their possible wrongness become the same trait.</p>"""
+
+# ── PART IV — THE SOLACE, AND THE UNWRITTEN ──────────────────────────────────
+SEC[18] = """
+      <p>The antagonist faction is the <strong class="ink-b">Solace</strong> — formally <strong>the Solace of the
+        Lethe.</strong> They are a faction of <em>people</em> — not a force, not a tide, not a condition — who came to
+        believe differently than the keepers, beginning with those who left the Enduring House at Liora's side.
+        &ldquo;Solace&rdquo; is comfort in grief, so the name reframes them not as destroyers but as <em>consolation
+        itself</em>; &ldquo;the Lethe,&rdquo; the river of forgetting, is what they offer that solace <em>through.</em>
+        Their members run a human spectrum: the <strong>converts</strong>, who left the keepers knowing exactly what they
+        turned from, and the <strong>innocents</strong>, raised in the Solace, who never kept anything and do not know
+        there was another way.</p>
+      <p>Their creed is not a single argument but one act — <strong>the opening of the hand</strong> — understood
+        completely. It has four reasons:</p>
+      <ul>
+        <li><strong>Mercy</strong> <em>(the bedside truth).</em> A fading spirit <em>suffers</em> — dying in pieces,
+          drawn out in the long humiliation of being slowly and imperfectly forgotten. To force it to persist is a
+          cruelty dressed as love. <em>&ldquo;You are not keeping it alive. You are keeping it dying. Let me make it
+          stop.&rdquo;</em></li>
+        <li><strong>Freedom</strong> <em>(bondage vs. keeping).</em> To remember everything is to be enslaved by it. The
+          keepers drag the entire dead past behind them and call it love; the Solace calls it <em>carrying.</em>
+          <em>&ldquo;You call it keeping. We call it carrying.&rdquo;</em></li>
+        <li><strong>Presence</strong> <em>(the only life there is).</em> A being whose attention is full of the past is
+          not alive in the moment it is in. The keepers face backward forever, tending the dead, and never <em>live.</em>
+          <em>&ldquo;The dead have had their moment. This one is ours.&rdquo;</em></li>
+        <li><strong>Room to become.</strong> A world that remembers everything can never be anything <em>new</em> — every
+          space occupied by what was. Forgetting clears the ground. <em>&ldquo;The page must be cleared before it can be
+          written again.&rdquo;</em></li>
+      </ul>
+      <p>And two conditions make the act possible. <strong>Faith</strong> — the Solace cannot <em>prove</em> letting go
+        is safe; no one can see the far side of forgetting. Where the keepers cling, the Solace <em>trusts the fading</em>,
+        choosing to believe, against fear, that the right response to a darkness you cannot see into is to open your hands.
+        And <strong>peace</strong> — where the keepers live in permanent strain, the Solace has stopped being afraid of the
+        one thing everyone else organizes their life around resisting, and that calm is itself an argument. <em>&ldquo;You
+        are so tired. You have been holding on so long. You are allowed to rest.&rdquo;</em></p>
+      <p>The Solace does not fight directly. It <strong>calls</strong> — and what it calls to do the releasing are the
+        Unwritten. Its own scripted works, the <strong>Unwriting</strong> (erasures, releases, gentle encroachments),
+        carry its sorrowful, gentle register: <em>the soft close, a mercy for the rim, let it lie, nothing you did was
+        wrong.</em> These are comforts. And they are the attack.</p>"""
+
+SEC[19] = """
+      <p>Both houses have many members; the player meets a number of them. These three carry the antagonist's three
+        registers — the grief, the friction, and the heartbreak.</p>
+      <ul>
+        <li><strong>Liora</strong> <em>(the grief, and the question).</em> Mythic, remote, eternal, unable to rest, the
+          origin of both houses; the campaign's philosophical center, rarely seen and felt everywhere.</li>
+        <li><strong>Edmund</strong> <em>(the friction — the one you fight).</em> The Solace's operational head, who runs
+          the day-to-day and leads the antagonists the player faces. He genuinely believes the creed — he is no cynic —
+          but his temperament is not Liora's gentle vision: he is interested in <em>power and winning</em>, certain that
+          winning is how the world is improved. He is <strong>clear-eyed</strong> about exactly what he is — no mask, no
+          self-deception. He is the dark mirror of the keepers' own danger: where their flaw is stubbornness, his is
+          <em>certainty weaponized into ruthlessness.</em> The villainy is in the ambition, not the belief.</li>
+        <li><strong>Katherine</strong> (&ldquo;Kat&rdquo;) <em>(the heartbreak — the one whose opposition aches).</em> A
+          former Lorekeeper of <em>this</em> generation — a Dreamer — who left for the Solace and now serves under Edmund.
+          She is the living, present-day echo of Liora's ancient turn, and she was a friend, to both Pell and Juno. So
+          when the keepers face her, they face <strong>Kat, who left</strong> — someone they loved, who chose the other
+          side. Her temptation is the sincerest and most painful kind: she knows exactly which words land, because she
+          knows <em>them</em>, and she does not argue cynically. <em>&ldquo;I'm not your enemy. I want you to be free, the
+          way I'm free. I left because I love you, and I want this for you too.&rdquo;</em> That is almost impossible to
+          fight, because it is not malice — it is a friend who thinks she is <em>saving</em> you, and who may be right.</li>
+      </ul>
+      <p><strong>Why a Dreamer.</strong> Dreamers go <em>into</em> the Memories — the rank most exposed to what keeping
+        costs the kept, because they are <em>in there</em> with the suffering. So a Dreamer breaking is almost the
+        occupational hazard of the rank. And <strong>Juno is also a Dreamer</strong> — Juno and Katherine did the same
+        perilous work, <em>together</em>, and Juno <em>was there</em> at the event that eventually turned Katherine. They
+        felt the same thing, in the same place, at the same time — and Katherine came out converted while Juno came out
+        still keeping. That gives Juno the unanswerable wound: <em>we saw the same thing — why her and not me?</em> Her
+        opposition is not naïve certainty but the harder thing: opposing something she felt the truth of, beside the
+        friend who let it take her.</p>"""
+
+SEC[20] = """
+      <p>What the Solace calls are the <strong>Unwritten:</strong> beings <em>made of everything that was never
+        remembered.</em> This is literal — an Unwritten is not a dead thing or a destroyed thing but a thing that
+        <em>genuinely never existed</em>, never held a memory of its own, never got to matter: the almost-said that was
+        never said, the page that stayed blank, the name forgotten before it was ever spoken.</p>
+      <p>This is <em>why</em> an <strong>Unwritten leaves no Impression.</strong> An Impression is the mark a thing leaves
+        by having been here and been lost — and a thing that never was here cannot leave a mark of having been. Where a
+        keeper banishes and the Memory keeps a trace, an Unwritten erases and <em>nothing remains.</em> They are an
+        <strong>all-or-nothing army</strong> with no fallback: they win by <em>standing</em>, holding tiles with living
+        presence to the end, the way the player does — but a fallen Unwritten is a clean zero, because it was never the
+        kind of thing that leaves marks.</p>
+      <p>Their motive is <em>not</em> the Solace's. The Unwritten are moved, mostly, by <strong>envy and grief.</strong>
+        They were never remembered. An Impression — the very thing the Solace calls them to erase — is the wound they
+        themselves never got to have. They are wistful, unfinished, mournful things, and what they want is what you have:
+        to have mattered enough that your absence is felt. <em>&ldquo;The Unwritten are not all hungry. Some are only
+        unfinished, which turns out to be the same thing from the inside.&rdquo;</em> So the bond between the top two
+        layers is poignant: the merciful Solace calls the envious Unwritten to do a kindness, and the Unwritten come
+        partly because erasing what they never got to be is the closest they will ever come to touching it. Mercy and envy
+        work the same lever for entirely different reasons.</p>"""
+
+SEC[21] = """
+      <p>Among the Unwritten are some whose envy did not stay wistful. It curdled. Where an ordinary Unwritten thinks
+        <em>I wish I had been remembered</em>, these think <em>I will unmake you for having been.</em> Not grief but
+        <strong>ill intent</strong> — resentment turned to active malice. These are the <strong>Unwritten with ill
+        intent</strong> (in shorthand, <strong>the ill intent</strong>): the worst of the Unwritten, the ones the Solace's
+        mercy cannot soften and cannot govern. They keep the menacing register the player learns to fear — the censor-bar
+        with claws, the thing in the margin that eats the marks of what mattered and grows bright on the eating, the bear
+        that is <em>not empty, but full of want.</em> They are where the real teeth of the campaign live.</p>
+      <p><strong>The tragic irony — the structural heart of the antagonist.</strong> The merciful Solace does <strong>not
+        fully control what it calls.</strong> When it reaches into the unremembered to draw out the gentle Unwritten and do
+        a kindness, it cannot help but draw the ill intent too — the spiteful ones, riding in on the same call, the part of
+        the forgetting that mercy can neither reach nor command. The Solace believes it is easing pain; some of what answers
+        its summons only wants to unmake. So the antagonist is sympathetic <em>and</em> not in command of its own instrument:
+        the people at the top mean only mercy, the creatures they call mean mostly envy, and the worst of those creatures
+        mean harm — and arrive anyway, because you cannot open the door to the unremembered and admit only the kind ones.
+        The Solace's tragedy is not that it is wrong to want to end suffering; it is that the tool it chose for its mercy
+        carries a cruelty it refuses to see in itself. This is what lets the campaign be a genuine moral argument <em>and</em>
+        still have something to fear: the player debates the Solace, and fights the ill intent, and the two are the same
+        faction seen at its top and its bottom.</p>"""
 
 
-def toc_html(sections_with_counts):
-    """The table of contents — a nav list to every lore section, with its count.
-    Real anchor links (work JS-off); labelled for screen readers."""
-    items = "\n".join(
-        f'        <li><a href="#{sid}">{heading}</a> '
-        f'<span class="toc-count">{count}</span></li>'
-        for sid, heading, count in sections_with_counts
-    )
+# A short lead-in shown under each PART heading, before its §sections — orienting
+# prose so the page reads as a told story, not a flat list of anchors.
+PART_INTRO = {
+    "I": "What the world is made of, and why a remembered place can be fought over at all.",
+    "II": "Who keeps the Memory — the Lorekeepers, their Archive and Library, the founder the whole world turns on, and the wild they befriend.",
+    "III": "The disagreement at the center — a real argument, with no villain and no verdict.",
+    "IV": "The antagonist, top to bottom: the merciful Solace, the three who lead it, and the Unwritten it calls — including the few it cannot govern.",
+}
+
+
+def _part_roman(title):
+    """`PART III — …` → `III`."""
+    m = re.search(r"PART\s+([IVX]+)", title)
+    return m.group(1) if m else ""
+
+
+def _slug(num, section_title):
+    """Stable, readable anchor for a §section: `s7-anima`. Built from the section
+    number (stable across renames) plus a slug of its leading words."""
+    head = re.split(r"[—–-]", section_title)[0]  # title before any dash clause
+    words = re.findall(r"[a-z0-9]+", head.lower())[:3]
+    tail = "-".join(words)
+    return f"s{num}-{tail}" if tail else f"s{num}"
+
+
+def toc_html(parts):
+    """The table of contents — a nav list grouped by PART, one anchored link per
+    §section that has web prose. Real anchors (work JS-off), labelled for assistive
+    tech. Sections with no web block (SEC entry missing) are skipped."""
+    groups = []
+    for ptitle, secs in parts:
+        roman = _part_roman(ptitle)
+        items = "\n".join(
+            f'          <li><a href="#{_slug(num, st)}">{esc(st)}</a></li>'
+            for num, st in secs
+            if num in SEC
+        )
+        if not items:
+            continue
+        groups.append(
+            f'        <li class="toc-part">\n'
+            f'          <a class="toc-part-link" href="#part-{roman}">{esc(ptitle)}</a>\n'
+            f"          <ol>\n{items}\n          </ol>\n"
+            f"        </li>"
+        )
+    body = "\n".join(groups)
     return f"""      <nav class="lore-toc" aria-labelledby="contents">
-        <h2 id="contents">The whole telling</h2>
-        <p class="note">Every card's lore, by resonance. Jump to a section:</p>
-        <ol class="toc-list">
-{items}
+        <h2 id="contents">On this page</h2>
+        <p class="note">The world, then the people. Jump to any chapter:</p>
+        <ol class="toc-parts">
+{body}
         </ol>
       </nav>"""
 
 
-def entry_html(rec):
-    """One card's lore entry — an anchored article: the name (linking to its catalog
-    tile), the lore prose, and a small register/tier line. `id="lore-<key>"` is the
-    cross-link target the cards page uses."""
-    key = rec["key"]
-    name = esc(rec["name"])
-    body = lore_to_html(rec["lore"])
-    return f"""        <article class="lore-entry" id="lore-{esc(key)}">
-          <h3><a href="cards.html#card-{esc(key)}">{name}</a></h3>
-          <p class="lore-text">{body}</p>
-        </article>"""
+def section_html(num, section_title):
+    """One §section: an anchored, labelled <section> with the Bible's section title
+    as its heading and the authored web prose as its body."""
+    sid = _slug(num, section_title)
+    return f"""        <section class="lore-section" id="{sid}" aria-labelledby="{sid}-h">
+          <h3 id="{sid}-h">{esc(section_title)}</h3>{SEC[num]}
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>"""
 
 
-def section_html(sid, heading, blurb, records):
-    entries = "\n".join(entry_html(r) for r in records)
-    return f"""      <section class="lore-section" id="{sid}" aria-labelledby="{sid}-h">
-        <h2 id="{sid}-h">{heading} <span class="lore-section-count">{len(records)}</span></h2>
-        <p class="note">{blurb}</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-{entries}
+def part_html(ptitle, secs):
+    """One PART: a banner heading, its lead-in, then each §section that has prose."""
+    roman = _part_roman(ptitle)
+    inner = "\n".join(section_html(num, st) for num, st in secs if num in SEC)
+    intro = PART_INTRO.get(roman, "")
+    return f"""      <section class="lore-part" id="part-{roman}" aria-labelledby="part-{roman}-h">
+        <h2 id="part-{roman}-h">{esc(ptitle)}</h2>
+        <p class="note lore-part-intro">{esc(intro)}</p>
+{inner}
       </section>"""
 
 
 def main():
-    cat = json.loads(CATALOG.read_text())
-    lore = load_lore(cat)  # key → record (authored prose only)
+    parts = load_lore_bible()
 
-    # Bucket cards into their section, preserving catalog order within each.
-    buckets = {sid: [] for sid, *_ in SECTIONS}
-    for c in cat:
-        rec = lore.get(c["key"])
-        if not rec:
-            continue  # no authored lore → not indexed (matches the cards-page link gating)
-        for sid, _heading, _blurb, pred in SECTIONS:
-            if pred(c):
-                buckets[sid].append(rec)
-                break
+    # Guard: the web prose was authored against the Bible's PART/§ structure. If the
+    # Bible loses a PART or a §section we have prose for, fail loudly rather than
+    # silently dropping it from the page (keeps the site honest to canon).
+    seen = {num for _t, secs in parts for num, _st in secs}
+    missing = sorted(set(SEC) - seen)
+    if missing:
+        raise SystemExit(
+            "docs/lore.md no longer contains §sections this page renders: "
+            + ", ".join(f"§{n}" for n in missing)
+            + " — reconcile tools/gen_lore_page.py with the Lore Bible."
+        )
+    if len(parts) != 4:
+        raise SystemExit(
+            f"docs/lore.md has {len(parts)} PARTs; expected 4 — reconcile the lore page generator."
+        )
 
-    counts = [(sid, heading, len(buckets[sid])) for sid, heading, _blurb, _pred in SECTIONS]
-    toc = toc_html(counts)
-    sections = "\n\n".join(
-        section_html(sid, heading, blurb, buckets[sid])
-        for sid, heading, blurb, _pred in SECTIONS
-        if buckets[sid]
-    )
-    total = sum(len(v) for v in buckets.values())
+    toc = toc_html(parts)
+    body = "\n\n".join(part_html(ptitle, secs) for ptitle, secs in parts)
+    n_sections = sum(1 for _t, secs in parts for num, _st in secs if num in SEC)
 
     page = f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Recollect — the world &amp; its lore</title>
-  <meta name="description" content="The lore of Recollect: a fading Memory, the Lorekeepers and the Solace, the six resonances — and every card's telling, sectioned by resonance with jump-to-card links." />
+  <title>Recollect — the world &amp; its people</title>
+  <meta name="description" content="The lore of Recollect: a world made of memory and fading; the Lorekeepers who hold a Memory whole; Liora, founder of both houses; and the Solace, who would let it rest — with the Unwritten they call." />
   <link rel="stylesheet" href="css/brand.css" />
   <style>
-    /* Lore index — owned by the lore-page generator (kept out of shared brand.css).
-       The paper & ink palette only; motion is disabled under prefers-reduced-motion
-       by brand.css. The TOC and section headers are the new navigation. */
+    /* Lore page — owned by the lore-page generator (kept out of shared brand.css).
+       Paper & ink palette only; motion is disabled under prefers-reduced-motion by
+       brand.css. The TOC + PART/section headers are the navigation. */
+    .visually-hidden {{
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }}
+    .lore-lede {{ font-size: 1.2rem; color: var(--night); }}
     .lore-toc {{
       border: 1px solid var(--rule); border-radius: var(--radius);
-      background: #fbf8f0; padding: var(--space); margin: 2.5em 0 1em;
+      background: #fbf8f0; padding: var(--space); margin: 2em 0 1em;
     }}
-    .lore-toc h2 {{ margin-top: 0; }}
-    .toc-list {{
-      list-style: none; padding: 0; margin: 0; columns: 2; column-gap: var(--space);
+    .lore-toc h2 {{ margin-top: 0; font-size: 1.3rem; }}
+    .toc-parts {{ list-style: none; padding: 0; margin: 0; }}
+    .toc-parts > li.toc-part {{ margin: 0 0 1em; max-width: none; break-inside: avoid; }}
+    .toc-part-link {{ font-weight: 700; color: var(--night); text-decoration: none; }}
+    .toc-part-link:hover {{ color: var(--seat-b); text-decoration: underline; }}
+    .toc-part > ol {{
+      list-style: none; padding: 0; margin: 0.35em 0 0; columns: 2; column-gap: var(--space);
     }}
-    .toc-list li {{ break-inside: avoid; margin: 0 0 0.35em; max-width: none; }}
-    .toc-count, .lore-section-count {{
-      font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+    .toc-part > ol li {{ break-inside: avoid; margin: 0 0 0.3em; max-width: none; }}
+    .lore-part {{ margin-top: 3em; padding-top: 0.5em; border-top: 2px solid var(--rule); }}
+    .lore-part > h2 {{
+      font-variant: small-caps; letter-spacing: 0.02em; margin-bottom: 0.1em;
     }}
-    .lore-section-count {{
-      font-size: 0.85rem; font-weight: 400; vertical-align: middle;
-      padding: 0.05em 0.5em; border: 1px solid var(--rule); border-radius: 999px;
+    .lore-part-intro {{ margin-top: 0; }}
+    .lore-section {{ margin-top: 2.2em; }}
+    .lore-section > h3 {{ font-size: 1.3rem; margin: 0 0 0.4em; }}
+    .lore-top {{ font-size: 0.8rem; }}
+    /* The faith table (§15) — the two creeds, side by side. */
+    .lore-table-wrap {{ overflow-x: auto; margin: 1.2em 0; }}
+    .lore-table {{ border-collapse: collapse; width: 100%; font-size: 0.95rem; }}
+    .lore-table th, .lore-table td {{
+      border: 1px solid var(--rule); padding: 0.5em 0.7em; text-align: left; vertical-align: top;
     }}
-    .lore-section {{ margin-top: 2.5em; padding-top: 0.5em; border-top: 1px solid var(--rule); }}
-    .lore-section > .note {{ margin-top: 0; }}
-    .lore-top {{ display: inline-block; font-size: 0.8rem; margin: 0 0 0.5em; }}
-    .lore-entry {{
-      border-left: 3px solid var(--rule); padding: 0.1em 0 0.1em 1em; margin: 1.2em 0;
-    }}
-    .lore-entry h3 {{ margin: 0 0 0.2em; font-size: 1.1rem; }}
-    .lore-entry h3 a {{ color: var(--night); text-decoration: none; }}
-    .lore-entry h3 a:hover {{ color: var(--seat-b); text-decoration: underline; }}
-    .lore-text {{ margin: 0; color: var(--ink-soft); }}
-    /* The Solace section speaks in one voice — tint its left rule the Solace ink. */
-    #solace .lore-entry {{ border-left-color: var(--seat-b); }}
-    @media (max-width: 38rem) {{ .toc-list {{ columns: 1; }} }}
+    .lore-table thead th {{ background: #fbf8f0; }}
+    .lore-table tbody th[scope="row"] {{ font-weight: 600; color: var(--ink-soft); background: #fcfaf4; }}
+    .lore-close {{ margin-top: 2.5em; }}
+    @media (max-width: 38rem) {{ .toc-part > ol {{ columns: 1; }} }}
   </style>
 </head>
 <body>
@@ -247,38 +686,53 @@ def main():
         <a href="rules.html">Rules</a>
         <a href="lore.html" aria-current="page">Lore</a>
         <a href="contact.html">Contact</a>
+        <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="options-panel">Options</button>
       </nav>
+    </div>
+    <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+      <div class="options-inner">
+        <h2 class="options-title">Options</h2>
+        <div class="site-settings" role="group" aria-label="Site settings">
+          <label class="setting" for="opt-reduced-motion">
+            <input type="checkbox" id="opt-reduced-motion" />
+            <span>Reduced motion</span>
+          </label>
+        </div>
+      </div>
     </div>
   </header>
 
   <main id="main">
     <article class="prose container">
-{NARRATIVE}
+      <h1>The world &amp; its people</h1>
+      <p class="note">The story Recollect is told inside: a world made of memory, two houses
+        that love it differently, and the question between them that the game never answers.
+        For a single card's lore, see the <a href="cards.html">card catalog</a> — each tile
+        carries its own.</p>
 
 {toc}
-    </article>
 
-    <div class="prose container">
-{sections}
-    </div>
+{body}
+
+      <p class="lore-close"><a class="btn btn-primary" href="play.html">Enter a Memory</a> <a class="btn" href="cards.html">Meet the spirits</a></p>
+    </article>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <span>Recollect</span>
-      <a href="rules.html">Rules in brief</a>
-      <a href="cards.html">Card catalog</a>
       <span class="note">A fading Memory, told in paper &amp; ink.</span>
     </div>
   </footer>
+  <script src="options.js" defer></script>
 </body>
 </html>
 """
     OUT.write_text(page)
-    n_sections = sum(1 for v in buckets.values() if v)
     print(
-        f"wrote {OUT.relative_to(ROOT)} — {total} card lore entries across "
-        f"{n_sections} sections"
+        f"wrote {OUT.relative_to(ROOT)} — the world & its people, "
+        f"{len(parts)} parts / {n_sections} sections from docs/lore.md"
     )
 
 

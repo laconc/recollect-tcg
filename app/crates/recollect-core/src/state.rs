@@ -612,7 +612,7 @@ impl GameState {
             B2 => self.player_b2.as_mut().expect("B2 exists in 2v2"),
         }
     }
-    /// Is this a 2v2 telling?
+    /// Is this a 2v2 match?
     pub fn is_2v2(&self) -> bool {
         self.player_a2.is_some()
     }

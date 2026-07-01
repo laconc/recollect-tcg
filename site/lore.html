@@ -3,42 +3,49 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Recollect — the world &amp; its lore</title>
-  <meta name="description" content="The lore of Recollect: a fading Memory, the Lorekeepers and the Solace, the six resonances — and every card's telling, sectioned by resonance with jump-to-card links." />
+  <title>Recollect — the world &amp; its people</title>
+  <meta name="description" content="The lore of Recollect: a world made of memory and fading; the Lorekeepers who hold a Memory whole; Liora, founder of both houses; and the Solace, who would let it rest — with the Unwritten they call." />
   <link rel="stylesheet" href="css/brand.css" />
   <style>
-    /* Lore index — owned by the lore-page generator (kept out of shared brand.css).
-       The paper & ink palette only; motion is disabled under prefers-reduced-motion
-       by brand.css. The TOC and section headers are the new navigation. */
+    /* Lore page — owned by the lore-page generator (kept out of shared brand.css).
+       Paper & ink palette only; motion is disabled under prefers-reduced-motion by
+       brand.css. The TOC + PART/section headers are the navigation. */
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+    .lore-lede { font-size: 1.2rem; color: var(--night); }
     .lore-toc {
       border: 1px solid var(--rule); border-radius: var(--radius);
-      background: #fbf8f0; padding: var(--space); margin: 2.5em 0 1em;
+      background: #fbf8f0; padding: var(--space); margin: 2em 0 1em;
     }
-    .lore-toc h2 { margin-top: 0; }
-    .toc-list {
-      list-style: none; padding: 0; margin: 0; columns: 2; column-gap: var(--space);
+    .lore-toc h2 { margin-top: 0; font-size: 1.3rem; }
+    .toc-parts { list-style: none; padding: 0; margin: 0; }
+    .toc-parts > li.toc-part { margin: 0 0 1em; max-width: none; break-inside: avoid; }
+    .toc-part-link { font-weight: 700; color: var(--night); text-decoration: none; }
+    .toc-part-link:hover { color: var(--seat-b); text-decoration: underline; }
+    .toc-part > ol {
+      list-style: none; padding: 0; margin: 0.35em 0 0; columns: 2; column-gap: var(--space);
     }
-    .toc-list li { break-inside: avoid; margin: 0 0 0.35em; max-width: none; }
-    .toc-count, .lore-section-count {
-      font-size: 0.72rem; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+    .toc-part > ol li { break-inside: avoid; margin: 0 0 0.3em; max-width: none; }
+    .lore-part { margin-top: 3em; padding-top: 0.5em; border-top: 2px solid var(--rule); }
+    .lore-part > h2 {
+      font-variant: small-caps; letter-spacing: 0.02em; margin-bottom: 0.1em;
     }
-    .lore-section-count {
-      font-size: 0.85rem; font-weight: 400; vertical-align: middle;
-      padding: 0.05em 0.5em; border: 1px solid var(--rule); border-radius: 999px;
+    .lore-part-intro { margin-top: 0; }
+    .lore-section { margin-top: 2.2em; }
+    .lore-section > h3 { font-size: 1.3rem; margin: 0 0 0.4em; }
+    .lore-top { font-size: 0.8rem; }
+    /* The faith table (§15) — the two creeds, side by side. */
+    .lore-table-wrap { overflow-x: auto; margin: 1.2em 0; }
+    .lore-table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+    .lore-table th, .lore-table td {
+      border: 1px solid var(--rule); padding: 0.5em 0.7em; text-align: left; vertical-align: top;
     }
-    .lore-section { margin-top: 2.5em; padding-top: 0.5em; border-top: 1px solid var(--rule); }
-    .lore-section > .note { margin-top: 0; }
-    .lore-top { display: inline-block; font-size: 0.8rem; margin: 0 0 0.5em; }
-    .lore-entry {
-      border-left: 3px solid var(--rule); padding: 0.1em 0 0.1em 1em; margin: 1.2em 0;
-    }
-    .lore-entry h3 { margin: 0 0 0.2em; font-size: 1.1rem; }
-    .lore-entry h3 a { color: var(--night); text-decoration: none; }
-    .lore-entry h3 a:hover { color: var(--seat-b); text-decoration: underline; }
-    .lore-text { margin: 0; color: var(--ink-soft); }
-    /* The Solace section speaks in one voice — tint its left rule the Solace ink. */
-    #solace .lore-entry { border-left-color: var(--seat-b); }
-    @media (max-width: 38rem) { .toc-list { columns: 1; } }
+    .lore-table thead th { background: #fbf8f0; }
+    .lore-table tbody th[scope="row"] { font-weight: 600; color: var(--ink-soft); background: #fcfaf4; }
+    .lore-close { margin-top: 2.5em; }
+    @media (max-width: 38rem) { .toc-part > ol { columns: 1; } }
   </style>
 </head>
 <body>
@@ -53,1632 +60,591 @@
         <a href="rules.html">Rules</a>
         <a href="lore.html" aria-current="page">Lore</a>
         <a href="contact.html">Contact</a>
+        <button type="button" id="options-toggle" class="nav-options" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="options-panel">Options</button>
       </nav>
+    </div>
+    <div id="options-panel" class="options-panel" role="dialog" aria-label="Options" aria-modal="false" hidden>
+      <div class="options-inner">
+        <h2 class="options-title">Options</h2>
+        <div class="site-settings" role="group" aria-label="Site settings">
+          <label class="setting" for="opt-reduced-motion">
+            <input type="checkbox" id="opt-reduced-motion" />
+            <span>Reduced motion</span>
+          </label>
+        </div>
+      </div>
     </div>
   </header>
 
   <main id="main">
     <article class="prose container">
-      <h1>The world</h1>
-      <p class="note">A first telling of the world. The factions, the Unwritten, the six
-        resonances — each runs deeper than the page has room for. Below the telling, the
-        <a href="#contents">whole roster's lore</a>, sectioned by resonance.</p>
-
-      <h2 id="a-fading-memory">A fading Memory</h2>
-      <p>Every match of Recollect is told inside a <strong>Memory</strong> — a remembered place,
-        slipping. The board is its page. As the telling runs on, the page darkens at the edges
-        (the <strong>Dusk</strong>), and the Memory contracts toward forgetting. To play is to
-        decide what is worth keeping while there is still page to keep it on.</p>
-
-      <h2 id="two-who-tell-it">Two who tell it</h2>
-      <p>The <strong class="ink-a">Lorekeepers</strong> hold the Memory whole. They
-        summon the loved and the remembered, and press their <strong>Impression</strong> into the
-        ground so the telling cannot be denied.</p>
-      <p>The <strong class="ink-b">Solace</strong> are not villains. They would let a
-        painful thing <em>rest</em>. Where others banish a spirit, the Solace
-        <strong>Unwrite</strong> it — lifted away gently, leaving no mark, as though it had never been
-        written. They mean it as a kindness. Sometimes it is one.</p>
-
-      <h2 id="what-lives-on-the-page">What lives on the page</h2>
-      <p><strong>Spirits</strong> are the remembered things — some plain and near at hand, some
-        Legends with names like sentences. They are never destroyed; defeated, they are
-        <strong>banished</strong> back to the page, and may be told again.</p>
-      <p>Not everything was meant to be written. The <strong>Unwritten</strong> are names-that-aren't —
-        fragments, negations, the almost-said. And among them moves the <strong>ill intent</strong>:
-        the menacing few that would not merely fade the Memory but <em>devour</em> it.</p>
-
-      <h2 id="resonance">Resonance</h2>
-      <p>Every spirit carries an emotional register — its <strong>resonance</strong> — and the
-        registers answer to one another:</p>
-      <ul>
-        <li><strong>Wonder</strong> · <strong>Fear</strong> · <strong>Sorrow</strong></li>
-        <li><strong>Harmony</strong> · <strong>Fury</strong> · <strong>Resolve</strong></li>
-      </ul>
-      <p>What you remember, and how you remember it, decides who answers your call.</p>
-
-      <p><a class="btn btn-primary" href="play.html">Begin a telling</a> <a class="btn" href="cards.html">Meet the spirits</a></p>
+      <h1>The world &amp; its people</h1>
+      <p class="note">The story Recollect is told inside: a world made of memory, two houses
+        that love it differently, and the question between them that the game never answers.
+        For a single card's lore, see the <a href="cards.html">card catalog</a> — each tile
+        carries its own.</p>
 
       <nav class="lore-toc" aria-labelledby="contents">
-        <h2 id="contents">The whole telling</h2>
-        <p class="note">Every card's lore, by resonance. Jump to a section:</p>
-        <ol class="toc-list">
-        <li><a href="#wonder">Wonder</a> <span class="toc-count">41</span></li>
-        <li><a href="#fear">Fear</a> <span class="toc-count">42</span></li>
-        <li><a href="#sorrow">Sorrow</a> <span class="toc-count">41</span></li>
-        <li><a href="#harmony">Harmony</a> <span class="toc-count">39</span></li>
-        <li><a href="#fury">Fury</a> <span class="toc-count">42</span></li>
-        <li><a href="#resolve">Resolve</a> <span class="toc-count">41</span></li>
-        <li><a href="#remnants">Remnants &amp; Neutral</a> <span class="toc-count">48</span></li>
-        <li><a href="#solace">The Solace</a> <span class="toc-count">54</span></li>
-        <li><a href="#foundlings">The Foundlings</a> <span class="toc-count">27</span></li>
+        <h2 id="contents">On this page</h2>
+        <p class="note">The world, then the people. Jump to any chapter:</p>
+        <ol class="toc-parts">
+        <li class="toc-part">
+          <a class="toc-part-link" href="#part-I">PART I — THE WORLD</a>
+          <ol>
+          <li><a href="#s1-the-premise-in">The premise, in one breath</a></li>
+          <li><a href="#s2-what-the-world">What the world is</a></li>
+          <li><a href="#s3-what-a-memory">What a Memory is</a></li>
+          <li><a href="#s4-why-there-are">Why there are battles</a></li>
+          <li><a href="#s5-the-keystone">The keystone — banishment, and the Impression</a></li>
+          <li><a href="#s6-the-dusk-and">The Dusk and Nightfall</a></li>
+          <li><a href="#s7-anima">Anima — the substance of the half-remembered</a></li>
+          <li><a href="#s8-spirits">Spirits — the things a Memory holds</a></li>
+          <li><a href="#s9-resonances">Resonances — the six emotional keys</a></li>
+          <li><a href="#s10-imprints">Imprints — the textures and kinships of a memory</a></li>
+          </ol>
+        </li>
+        <li class="toc-part">
+          <a class="toc-part-link" href="#part-II">PART II — THE KEEPERS</a>
+          <ol>
+          <li><a href="#s11-the-enduring-house">The Enduring House of Liora — the Lorekeepers</a></li>
+          <li><a href="#s12-the-archive-and">The Archive and the Library — the two faces of keeping</a></li>
+          <li><a href="#s13-liora">Liora — the First, the Founder of both houses</a></li>
+          <li><a href="#s14-the-wild">The wild — Strays and Foundlings</a></li>
+          </ol>
+        </li>
+        <li class="toc-part">
+          <a class="toc-part-link" href="#part-III">PART III — THE CONFLICT</a>
+          <ol>
+          <li><a href="#s15-the-central-disagreement">The central disagreement — both sides reasonable</a></li>
+          <li><a href="#s16-what-it-means">What it means to win or lose a Memory</a></li>
+          <li><a href="#s17-the-creed-unkillable">The creed unkillable by argument</a></li>
+          </ol>
+        </li>
+        <li class="toc-part">
+          <a class="toc-part-link" href="#part-IV">PART IV — THE SOLACE, AND THE UNWRITTEN</a>
+          <ol>
+          <li><a href="#s18-the-solace-of">The Solace of the Lethe — the people, and their creed</a></li>
+          <li><a href="#s19-three-who-lead">Three who lead, and many who follow</a></li>
+          <li><a href="#s20-the-unwritten">The Unwritten — the creatures, and their envy</a></li>
+          <li><a href="#s21-the-unwritten-with">The Unwritten with ill intent — and the tragic irony</a></li>
+          </ol>
+        </li>
         </ol>
       </nav>
+
+      <section class="lore-part" id="part-I" aria-labelledby="part-I-h">
+        <h2 id="part-I-h">PART I — THE WORLD</h2>
+        <p class="note lore-part-intro">What the world is made of, and why a remembered place can be fought over at all.</p>
+        <section class="lore-section" id="s1-the-premise-in" aria-labelledby="s1-the-premise-in-h">
+          <h3 id="s1-the-premise-in-h">The premise, in one breath</h3>
+      <p class="lore-lede">Two storytellers sit on either side of a fading Memory and
+        contend over what it will hold. One keeps; the other lets go. The board is the
+        Memory. The cards are the things that lived in it. The fading is real, and it is
+        happening now. You are not fighting a monster — you are refusing a mercy you
+        half-believe in.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s2-what-the-world" aria-labelledby="s2-what-the-world-h">
+          <h3 id="s2-what-the-world-h">What the world is</h3>
+      <p>The world is a <strong>remembering</strong> — and the remembering is fading.</p>
+      <p>Everything that exists, exists because something holds it in memory. The world is
+        not a place that <em>has</em> memories; it is <em>made of</em> memory, the way a song
+        is made of sound. To be is to be remembered. And memory, by its nature, fades — so
+        the world is, always and everywhere, in the slow process of being forgotten.</p>
+      <p>This is not a catastrophe that happened on some particular day. It is the permanent
+        condition of reality, the background fact everyone lives inside. Whose remembering the
+        world is — whether one mind holds it all, or memory is simply the fundamental substance
+        with nothing behind it — is a question no one inside the world can answer, and the
+        story leaves it open.</p>
+      <p>What gives the present its urgency: the fading was always happening, but it was never
+        happening <em>like this.</em> In this age it has crossed some threshold, so whole Memories
+        now go dark where once only details slipped away. The world is at a tipping point — which
+        is why the keepers and the Solace are at their most active now, and why there is a story
+        to tell in this generation rather than any other.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s3-what-a-memory" aria-labelledby="s3-what-a-memory-h">
+          <h3 id="s3-what-a-memory-h">What a Memory is</h3>
+      <p>A <strong>Memory</strong> is a single place caught in the act of being forgotten — the
+        short interval during which it can still be argued over. Each match <em>is</em> one
+        Memory, somewhere between vivid and gone: a harbor at dawn, a grandmother's kitchen, the
+        last day of a war, a face half-recalled. It has not finished fading. That is the only
+        reason there is still a game to play in it.</p>
+      <p>You never contend over a <em>fresh</em> Memory — only a fading one. You always arrive in
+        its evening. To act within a Memory is to insist on it: to say <em>this was here, this
+        mattered, this is how it went.</em> When you place a card, you write it into the Memory.
+        The two storytellers are not fighting over territory; they are arguing, in the grammar of
+        the place itself, over how the Memory goes.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s4-why-there-are" aria-labelledby="s4-why-there-are-h">
+          <h3 id="s4-why-there-are-h">Why there are battles</h3>
+      <p>Memory is not stable. It competes. The vivid version crowds out the faint one; two people
+        remember the same day differently and one version wins; what you recall overwrites what you
+        had half-forgotten. The board is a single contested fragment of the past, and a
+        &ldquo;battle&rdquo; is what it looks like when <strong>two recollections of the same
+        moment contend for which one survives.</strong></p>
+      <p>This is why the rules never <em>kill.</em> Nothing here is a living thing in the combat
+        sense — these are <em>versions of a memory</em>, and the loser is not destroyed but
+        <strong>banished</strong>: forgotten, <em>this</em> way, while leaving behind the proof
+        that it was contested and mattered. The war is an argument about how the past is
+        remembered, fought move by move.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s5-the-keystone" aria-labelledby="s5-the-keystone-h">
+          <h3 id="s5-the-keystone-h">The keystone — banishment, and the Impression</h3>
+      <p><strong>Recollect's rules never kill.</strong> A spirit that loses an engagement is not
+        destroyed; it is <strong>banished</strong> — it fades, and where it stood it leaves an
+        <strong>Impression</strong> in the color of whoever banished it.</p>
+      <p>An <strong>Impression is the mark a memory leaves by having mattered.</strong> A dent left
+        by pressure, an effect on the mind, a lasting trace of someone — and literally what ink
+        pressed into paper makes, so the word is native to this world of ink on vellum. When a
+        spirit is banished it is gone, but the Memory keeps the trace: <em>that it was here, and was
+        contested, and was lost.</em> The Impression falls in the banisher's color because it records
+        <em>whose</em> loss it is.</p>
+      <p>From this one object, the two ways of leaving the board come to mean opposite things, and the
+        whole conflict is contained in the difference:</p>
+      <ul>
+        <li>To be <strong>banished</strong> is to be lost <em>but remembered.</em> You leave an
+          Impression — a mark, a trace, proof that the world pressed back where you stood. Something
+          to hold onto.</li>
+        <li>To be <strong>unwritten</strong> is to be spared even that — no Impression, no trace,
+          nothing — because you <em>never were.</em> (This is the antagonist's work.)</li>
+      </ul>
+      <p>And here is what makes the war a tragedy rather than a battle: <strong>the same Impression
+        reads in opposite directions to the two sides.</strong> To a keeper it is proof that something
+        pressed on the world hard enough to leave a mark — sacred, the shape of a love. To the Solace
+        the very same mark is a dent that should have been allowed to smooth out — a wound the keeper
+        refuses to let heal. One sees love; the other sees a refusal to heal. <em>Neither is lying.</em>
+        That is the whole game.</p>
+      <p>This is why the mechanics and the lore are one thing and not two layers bolted together: a
+        banished spirit scores for its banisher <em>through its Impression</em> (each tile counts once —
+        a standing spirit, or, if empty, an Impression). To keep is to accumulate proof-of-having-mattered.
+        The antagonist's defining trait — that its creatures leave no Impression — <em>is</em> its
+        defining mercy, expressed as a rule.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s6-the-dusk-and" aria-labelledby="s6-the-dusk-and-h">
+          <h3 id="s6-the-dusk-and-h">The Dusk and Nightfall</h3>
+      <p>A Memory is always encountered in its evening, and the evening runs down toward the dark. There
+        is no morning and no noon here — nothing fully remembered is ever contested, so you arrive with
+        the light already going. Two named beats mark the failing of the light:</p>
+      <ul>
+        <li><strong>The Dusk</strong> (end of round eight) — the <em>process</em> of evening: the light
+          failing from the edges inward, the way the parts of a real memory you reach for last are the
+          corners. Empty rim tiles go dark and are lost. Tiles still <strong>held</strong> by a standing
+          spirit keep a small pool of lamplight — <em>the Memory keeps what is loved, while it is loved</em>
+          — and that light goes out the instant the spirit leaves.</li>
+        <li><strong>Nightfall</strong> (the final round) — the <em>moment</em> the dark completes. The
+          light is fully gone; the Memory is night. What was held to the end was held; the rest is
+          forgotten.</li>
+      </ul>
+      <p>One thing the dark never touches: <strong>the wild keeps to the heart of the page.</strong> The
+        Memory's own spontaneous resurfacings appear only on inner tiles, never the rim, so the encroaching
+        dark never strands a wild thing. The forgetting is relentless at the edges and gentle at the center
+        — true to how memory behaves, the vivid core outlasting the details at the margin.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s7-anima" aria-labelledby="s7-anima-h">
+          <h3 id="s7-anima-h">Anima — the substance of the half-remembered</h3>
+      <p>Everything inside a Memory is made of one substance: <strong>Anima</strong>, the warm grey-gold
+        stuff of a thing still partly remembered. Not magic and not light — the <em>material of recollection
+        itself</em>, what a memory is made of while you are still holding it. Anima is what spirits are drawn
+        in, what a storyteller spends to call them, and what the Memory is slowly losing as it fades.</p>
+      <p>To spend Anima is to spend <em>the effort of remembering</em> — the warmth and attention it costs to
+        hold a thing clearly. A storyteller who runs out of Anima has not run out of money; they have run out
+        of the strength to keep insisting. The two storytellers' Anima reads in their own colors, their inks
+        contesting the page, and where the washes overlap is the front line: two ways of remembering the same
+        place, neither yet winning.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s8-spirits" aria-labelledby="s8-spirits-h">
+          <h3 id="s8-spirits-h">Spirits — the things a Memory holds</h3>
+      <p>The creatures, people, places, and moments a Memory contains are its <strong>spirits.</strong> A
+        spirit here is not a ghost or a soul; the word carries its older, primary sense — <em>animating
+        essence, the living spirit of a thing.</em> A Memory's spirits are the parts of it still vivid enough
+        to move and act: the otter that was in the river, the heron at the far blue distance, the grandmother
+        at the stove, the patient knife in the drawer. They are drawn in Anima and stand on the Memory's tiles,
+        and while a spirit stands, it holds its piece of the Memory against forgetting.</p>
+      <p>Each spirit carries a triad — <strong>Attack / Defense / HP</strong> — read as a memory's qualities,
+        not a fighter's: how forcefully it presses its version of events, how well it withstands being
+        overwritten, how much of it remains before it fades. Spirits also carry <strong>Imprints</strong>
+        (their textures and kinships) and a <strong>Resonance</strong> (their emotional key).</p>
+      <p>A <strong>named</strong> spirit — a legend with a name like a sentence — is a memory specific and
+        vivid enough to have <em>earned</em> a name: the difference between &ldquo;a dog I had once&rdquo; and
+        <em>Home, Who Was a Dog Once.</em> Names measure how fiercely a thing is remembered. (This is also why
+        the Unwritten are mostly <em>un</em>-named — they were never remembered, so they never earned names.
+        Their &ldquo;names&rdquo; are names-that-aren't: the Almost-Said, What's-Its-Name, Forgotten Name.)</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s9-resonances" aria-labelledby="s9-resonances-h">
+          <h3 id="s9-resonances-h">Resonances — the six emotional keys</h3>
+      <p>Every spirit sounds in one of six <strong>Resonances</strong> — the emotional key a memory is
+        remembered in — with <strong>Neutral</strong> for things that sound in no single key. They form a
+        wheel; adjacent keys grant a small edge against one another in engagement. Neutral takes and gives no
+        edge. The six are the emotional palette of the whole world and the spine of the campaign — its arcs are
+        each themed to a Resonance, so the player moves through the full register of how a life is remembered.</p>
+      <ul>
+        <li><strong>Wonder</strong> — awe, curiosity, the lifted ceiling, the far blue distance.</li>
+        <li><strong>Fear</strong> — dread, the thing in the dark water, the held breath.</li>
+        <li><strong>Sorrow</strong> — grief, tenderness, the ache that means it mattered. Closest to the
+          Impression itself.</li>
+        <li><strong>Harmony</strong> — belonging, song, things that fit. The key of comfort.</li>
+        <li><strong>Fury</strong> — anger, heat, the blow struck.</li>
+        <li><strong>Resolve</strong> — steadiness, the immovable stone, the thing that will not be moved.</li>
+      </ul>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s10-imprints" aria-labelledby="s10-imprints-h">
+          <h3 id="s10-imprints-h">Imprints — the textures and kinships of a memory</h3>
+      <p>Where Resonance is a spirit's emotional key, its <strong>Imprints</strong> are its <em>textures</em> —
+        the elemental and archetypal stuff it is made of, and the kinships by which spirits recognize one
+        another: Flame, Tide, Stone, Storm, Beast, Shade, Song, Bloom, Star, Dream, Trickster, Guardian, Ruin,
+        and more. A spirit carries one or two.</p>
+      <p>Imprints do real work. They are how the <strong>wild</strong> decides whether to trust you — a Gentle
+        Stray joins a storyteller who ends a turn beside a spirit that <em>shares its Imprint</em>, recognizing
+        something of itself in your story — and how <strong>Bonds</strong> form, two spirits paired by a shared
+        texture, strengthening each other. They are the threads of kinship that make a roster feel like a
+        remembered world. Some textures are common (Beast, Shade), some rare (Dream, Ruin) — itself a kind of
+        flavor: some sorts of memory are everywhere, and some are scarce.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+      </section>
+
+      <section class="lore-part" id="part-II" aria-labelledby="part-II-h">
+        <h2 id="part-II-h">PART II — THE KEEPERS</h2>
+        <p class="note lore-part-intro">Who keeps the Memory — the Lorekeepers, their Archive and Library, the founder the whole world turns on, and the wild they befriend.</p>
+        <section class="lore-section" id="s11-the-enduring-house" aria-labelledby="s11-the-enduring-house-h">
+          <h3 id="s11-the-enduring-house-h">The Enduring House of Liora — the Lorekeepers</h3>
+      <p>The protagonists, and the faction the player belongs to. Formally they are <strong>the Enduring House
+        of Liora</strong> — named for their founder. In daily speech, and since the schism that broke their
+        house, they are the <strong class="ink-a">Lorekeepers</strong>: <em>those who remember.</em></p>
+      <p>Their conviction, in a line: <em>we are what we remember, and to remember is a duty owed to those who can
+        no longer speak for themselves.</em> A Memory's worth is in its keeping. To let a thing be forgotten
+        completely is the one loss that cannot be mourned — because mourning itself requires remembering, and a
+        thing erased takes even its own grief away. To keep is to refuse that final erasure, again and again, for
+        as long as one has the strength.</p>
+      <p>The order has <strong>ranks</strong>, and the ranks keep three good words in the world:</p>
+      <ul>
+        <li><strong>Archivist</strong> — the discipline of precision. Archivists log and catalogue; they keep the
+          record of what was contested and what was lost.</li>
+        <li><strong>Remembrancer</strong> — the weight. Remembrancers carry the older, heavier duty: not merely to
+          record but to <em>remind</em>, to hold the dead present among the living.</li>
+        <li><strong>Dreamer</strong> — those who go <em>into</em> the Memories rather than keeping them at a desk;
+          who chart what resists charting and get close to the fading. (It is no accident that Dreamers are the ones
+          most exposed to what keeping costs the kept — they are <em>in there</em> with it.)</li>
+      </ul>
+      <p><strong>The name's two ironies.</strong> &ldquo;Liora&rdquo; means <em>light is mine</em> — and the founder
+        who bore that name turned to the dark. And the house calls itself <em>Enduring</em> while bearing the name
+        of the one person who <em>did not endure</em>, who broke faith and left. The Lorekeepers are the Enduring
+        House precisely <em>because</em> their founder was not: their endurance is defined against her defection.
+        They never take her name down from the door — because to erase her would be to <em>forget</em> her, and they
+        do not forget, not even her, not even to spare themselves.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s12-the-archive-and" aria-labelledby="s12-the-archive-and-h">
+          <h3 id="s12-the-archive-and-h">The Archive and the Library — the two faces of keeping</h3>
+      <p>The keepers maintain two institutions, and the distinction matters.</p>
+      <ul>
+        <li><strong>The Archive</strong> is the record of <em>what was lost</em> — the ledger of banishments,
+          Impressions, the faded. When a spirit is banished, the keepers inscribe it: its name, its color, that it
+          was here and is now gone, so the loss itself will not be forgotten. The Archive <strong>remembers that you
+          were here; it cannot bring you back.</strong> It is a monument to loss, written <em>without comment</em> —
+          neither praise nor blame, only holding.</li>
+        <li><strong>The Library</strong> is the store of <em>what is still held</em> — the living memories the keepers
+          keep vivid, the lore still bright, the source they draw their strength from. A record of presence: here is
+          what we have not yet lost. (In play, the Library is the living roster a keeper draws from — <em>The Library
+          Remembers.</em>)</li>
+      </ul>
+      <p>A banished spirit, in a sense, passes from the Library to the Archive — from <em>held</em> to
+        <em>remembered-as-lost.</em> The Library holds the living; the Archive keeps faith with the dead.</p>
+      <p><strong>The recursion — the keepers' deepest act.</strong> If the whole world is a remembering that is
+        fading, then the Archive and the Library are the keepers doing, by hand and at small scale, exactly what the
+        world's own remembering does for everything. And because the records are themselves memories, they are not
+        exempt from the fade — they must be re-copied, re-told, re-inscribed endlessly, because nothing, not even the
+        record of what was lost, gets to be permanent. The keepers' labor is not a vault that lasts forever; it is the
+        <em>continuous act</em> of remembering, knowing it must be done again tomorrow — <em>the dignity of holding on
+        even when holding on does not, in the end, stop the dark.</em></p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s13-liora" aria-labelledby="s13-liora-h">
+          <h3 id="s13-liora-h">Liora — the First, the Founder of both houses</h3>
+      <p>The founder, and the figure the whole world turns on. Two titles let the keepers name her without speaking
+        her name: <strong>the First</strong> (warm, reverent, used by those who still love her) and <strong>the
+        Founder</strong> (neutral, institutional). Her gloss, the line that holds her whole tragedy: <strong>the
+        first to keep, and the first to let go.</strong></p>
+      <p><strong>How she founded the keepers.</strong> Liora was the first <em>scientist</em> of memory — a mind
+        brilliant enough to intuit the truth no one else could see: that the world is a remembering, and the
+        remembering is fading. The Lorekeepers were her response to a discovered emergency — reality unraveling,
+        invisibly, and someone must understand it and hold the line. The founding was rigorous, almost clinical: a
+        scientist-leader marshaling a civilization against an extinction she alone fully grasped.</p>
+      <p><strong>How she changed.</strong> Over a long life her relationship to her own discovery deepened from
+        understanding into <em>feeling.</em> The scientist who had diagnosed the fade began to <em>grieve</em> it. And
+        her evolution did not stop at grief. She had held more memory, for longer, than anyone in history — and
+        precisely because she had held so much for so long, she came to feel, from the inside, what it is to be
+        <em>kept past one's time.</em> She asked a question no junior keeper ever asks: were the things she so
+        lovingly held <em>grateful</em> to be held, or were they <em>suffering</em>, forced to linger, denied the rest
+        forgetting would have given them? She concluded that her life's work had been, however lovingly, a
+        <em>prolongation of pain.</em> The one who diagnosed the disease came to believe the <em>treatment</em> was
+        the cruelty.</p>
+      <p><strong>The schism.</strong> This was not sudden. The House watched their founder change over decades, and
+        the break was the end of a long-widening fracture. At last Liora stood before the keepers she had made and
+        did the unbearable thing: openly, with all her authority, as a final teaching, she asked them to follow her
+        into the letting-go. <em>I taught you to hold on. I was wrong about what holding on was for. The truest
+        keeping is to let rest. Come with me.</em> Most refused. Some did not — they left with her, and became the
+        Solace. The House split not over hatred but over <em>which love to keep faith with</em>: love of the teacher,
+        or love of the teaching.</p>
+      <p><strong>She does not experience this as a fall.</strong> From Liora's side she did not betray the House —
+        <em>the House refused to follow her to the truth.</em> She grieves the keepers as the tragic ones, still
+        clenched, imprisoned in a strain she would free them from. <strong>Each side sees the other as the one trapped
+        in suffering.</strong></p>
+      <p><strong>She still exists — and why.</strong> The world's iron law is that a thing persists exactly as long as
+        it is remembered, and Liora is its most extreme demonstration. She is remembered so fiercely, by so many, that
+        she simply cannot fade — and she is sustained by <em>both</em> houses at once: the Solace remembers her as
+        founder and prophet, the keepers as the First whose name they bear, a love some cannot relinquish even as they
+        oppose her. The two sides agree on nothing except that they cannot let her go.</p>
+      <p><strong>Her personal hell.</strong> Liora preaches <em>letting go</em> — the open hand, the rest that is the
+        truest love. And she, of all beings, <strong>cannot be released</strong>, because the world remembers her too
+        fiercely to let her rest. The prophet of the open hand is held in an unbreakable grip; she has not rested in
+        centuries. That endless, unwanted persistence is <em>exactly</em> the suffering she believes the keepers
+        inflict on every memory they hold — except hers can never end. When she pleads for the mercy of release, she
+        pleads, in part, for <em>herself.</em></p>
+      <p><strong>Keep her ambiguous.</strong> The game never resolves whether Liora was <em>right.</em> Did she achieve
+        a hard-won wisdom, or break under a weight too heavy and rationalize her surrender? The keepers believe she
+        broke; the Solace believes she ascended; and the player, refusing her mercy tile by tile, re-litigates her
+        choice every match without ever getting the verdict. She is the question the whole game is built around, made
+        into a person — <strong>the mother of both houses</strong>, rarely seen, felt everywhere.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s14-the-wild" aria-labelledby="s14-the-wild-h">
+          <h3 id="s14-the-wild-h">The wild — Strays and Foundlings</h3>
+      <p>Not everything in a Memory is told by a storyteller. Sometimes the Memory <em>stirs on its own</em> — a stray
+        recollection rising of its own accord into an empty inner tile, called by no one. These are the
+        <strong>Strays</strong>: the world's wild spirits, Resonance-less, beholden to no side, scoring for no one
+        while unclaimed. They surface rarely (about one Memory in seven), always from the heart of the page, always a
+        beat ahead — <em>the clearing where something is about to be remembered.</em></p>
+      <p>A Stray can be <strong>banished</strong> like anything else (a normal Impression — the Archive notes it,
+        without comment) or <strong>befriended</strong> — and a befriended Stray becomes a <strong>Foundling</strong>,
+        yours thereafter, added to the keepers' collection permanently. You cannot buy or craft a Foundling; you earn
+        one by meeting a wild thing in a Memory and giving it reason to trust you. Three temperaments, three
+        philosophies of trust:</p>
+      <ul>
+        <li><strong>Gentle</strong> — they <em>want</em> to be seen. End a turn beside a spirit that shares the Stray's
+          Imprint, and it joins you.</li>
+        <li><strong>Wary</strong> — they are counting. A Wary Stray surfaces <em>veiled</em>, and needs two consecutive
+          turns of your nearness before it will show itself and stay.</li>
+        <li><strong>Feral</strong> — dangerous, and not won by kindness alone; befriendable only once it has been driven
+          below half and its fear has cracked open enough to recognize you.</li>
+      </ul>
+      <p>Each Foundling carries its <strong>haunt</strong> — a chapter or Daily Memory where it reliably surfaces — so
+        collection is always a path of <em>play</em>, never of luck. A few are legends with names like sentences:
+        <em>Home, Who Was a Dog Once</em>; <em>Hundredname, Who Has Been Watching</em>; <em>Ashmane, Who Outran the Ill
+        Intent.</em> The Strays are the clearest proof that a Memory is <em>alive</em> — that it remembers things on
+        its own, things no one chose to keep — which is exactly what the Solace believes should be allowed to rest, and
+        exactly what the keepers cannot bear to let go unrecognized.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+      </section>
+
+      <section class="lore-part" id="part-III" aria-labelledby="part-III-h">
+        <h2 id="part-III-h">PART III — THE CONFLICT</h2>
+        <p class="note lore-part-intro">The disagreement at the center — a real argument, with no villain and no verdict.</p>
+        <section class="lore-section" id="s15-the-central-disagreement" aria-labelledby="s15-the-central-disagreement-h">
+          <h3 id="s15-the-central-disagreement-h">The central disagreement — both sides reasonable</h3>
+      <p>The soul of the game is a real philosophical disagreement, not good versus evil. Both sides love the world.
+        They differ only on what love requires. The two faiths mirror each other across every axis, and the game
+        refuses to say who is right.</p>
+      <div class="lore-table-wrap">
+        <table class="lore-table">
+          <thead>
+            <tr><th scope="col"><span class="visually-hidden">The question</span></th><th scope="col" class="ink-a">The Lorekeepers</th><th scope="col" class="ink-b">The Solace</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">The dead deserve</th><td>continued remembrance (love)</td><td>rest (mercy)</td></tr>
+            <tr><th scope="row">The past is</th><td>an inheritance, carried forward</td><td>a weight, to be set down</td></tr>
+            <tr><th scope="row">Life happens</th><td>in keeping faith with what was</td><td>in the present, the only real moment</td></tr>
+            <tr><th scope="row">The fade is</th><td>the end, to be fought</td><td>a passage, to be accepted</td></tr>
+            <tr><th scope="row">Their faith</th><td>that holding on <em>matters</em>, against an unseeable dark</td><td>that letting go is <em>safe</em>, against the same dark</td></tr>
+            <tr><th scope="row">Their condition</th><td>strain — the dignity of the clenched fist</td><td>peace — the serenity of the open hand</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Every line is a real question. <em>Who is kinder to the dying — the one who keeps it, or the one who lets it
+        rest? Is the past a gift or a chain? Which faith is courage and which is fear?</em> Neither side can prove the
+        other wrong, because no one inside the world can see what is on the far side of forgetting. The player's act —
+        refusing the mercy tile by tile — is meant to feel like a <em>choice</em> made against a real and gentle
+        argument, not a foregone conclusion. If the player never once feels the pull of the Solace's case, the game has
+        failed at the thing it most wants to do.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s16-what-it-means" aria-labelledby="s16-what-it-means-h">
+          <h3 id="s16-what-it-means-h">What it means to win or lose a Memory</h3>
+      <p>When the <strong>keeper wins</strong> a Memory, that fragment is <em>held</em> — it survives the fading a while
+        longer, remembered the keeper's way. When the <strong>Solace wins</strong>, it is <em>released</em> — allowed to
+        finish fading, gently, completely. But <strong>neither outcome is permanent.</strong> A held Memory is held
+        <em>for now</em>; the fading is patient and will come again. The keepers are not winning a war — they are
+        <em>delaying an inevitability</em>, again and again, because to them every delay is worth it: every day a thing is
+        remembered is a day it mattered. The Solace, for its part, is not conquering — it is offering rest to things that
+        were going to fade anyway, and choosing to make the passage kind rather than cruel.</p>
+      <p>So no one ultimately <em>wins</em>, and that is the point. The game is about <strong>the dignity of holding on
+        even when holding on does not, in the end, stop the dark</strong> — a far more affecting premise than defeating
+        an enemy and saving the day. You can only keep, and keep again, for as long as you have the strength to.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s17-the-creed-unkillable" aria-labelledby="s17-the-creed-unkillable-h">
+          <h3 id="s17-the-creed-unkillable-h">The creed unkillable by argument</h3>
+      <p>The keepers have a peculiar strength: their creed has <strong>already withstood its own author's
+        renunciation.</strong> Most beliefs are vulnerable to their best counterargument — present a strong enough case
+        and the belief wavers. But the keepers have already heard the strongest possible case against remembering, in
+        full, <em>from the very person who understood remembering best</em> — the founder who built their whole practice,
+        who had every reason and every tool to make the case airtight. There will never be a stronger critic than Liora.
+        And the order heard her, and chose to remain.</p>
+      <p>This <strong>inoculates</strong> them. Every argument the Solace makes — every gentle, almost-right plea to let
+        go — is a <em>weaker</em> version of one they have already survived. This is why the keepers can be <em>gentle</em>
+        with the Solace rather than shrill or defensive: they are not threatened, having already had this fight at maximum
+        difficulty and held.</p>
+      <p>But — and this is the hard truth the line carries — <strong>being unkillable by argument is not the same as
+        being right.</strong> Liora might <em>still</em> be correct. Their inoculation protects them from being argued
+        <em>out</em> of their creed; it does not prove the creed <em>true.</em> They will keep faith <em>even if they are
+        wrong</em> — even if the Solace is right that they prolong suffering. Their strength (unshakability) is
+        indistinguishable from their possible flaw (stubbornness) — which is <em>precisely</em> the Solace's critique of
+        them. That is faith in the truest and most double-edged sense: the precise point where the keepers' heroism and
+        their possible wrongness become the same trait.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+      </section>
+
+      <section class="lore-part" id="part-IV" aria-labelledby="part-IV-h">
+        <h2 id="part-IV-h">PART IV — THE SOLACE, AND THE UNWRITTEN</h2>
+        <p class="note lore-part-intro">The antagonist, top to bottom: the merciful Solace, the three who lead it, and the Unwritten it calls — including the few it cannot govern.</p>
+        <section class="lore-section" id="s18-the-solace-of" aria-labelledby="s18-the-solace-of-h">
+          <h3 id="s18-the-solace-of-h">The Solace of the Lethe — the people, and their creed</h3>
+      <p>The antagonist faction is the <strong class="ink-b">Solace</strong> — formally <strong>the Solace of the
+        Lethe.</strong> They are a faction of <em>people</em> — not a force, not a tide, not a condition — who came to
+        believe differently than the keepers, beginning with those who left the Enduring House at Liora's side.
+        &ldquo;Solace&rdquo; is comfort in grief, so the name reframes them not as destroyers but as <em>consolation
+        itself</em>; &ldquo;the Lethe,&rdquo; the river of forgetting, is what they offer that solace <em>through.</em>
+        Their members run a human spectrum: the <strong>converts</strong>, who left the keepers knowing exactly what they
+        turned from, and the <strong>innocents</strong>, raised in the Solace, who never kept anything and do not know
+        there was another way.</p>
+      <p>Their creed is not a single argument but one act — <strong>the opening of the hand</strong> — understood
+        completely. It has four reasons:</p>
+      <ul>
+        <li><strong>Mercy</strong> <em>(the bedside truth).</em> A fading spirit <em>suffers</em> — dying in pieces,
+          drawn out in the long humiliation of being slowly and imperfectly forgotten. To force it to persist is a
+          cruelty dressed as love. <em>&ldquo;You are not keeping it alive. You are keeping it dying. Let me make it
+          stop.&rdquo;</em></li>
+        <li><strong>Freedom</strong> <em>(bondage vs. keeping).</em> To remember everything is to be enslaved by it. The
+          keepers drag the entire dead past behind them and call it love; the Solace calls it <em>carrying.</em>
+          <em>&ldquo;You call it keeping. We call it carrying.&rdquo;</em></li>
+        <li><strong>Presence</strong> <em>(the only life there is).</em> A being whose attention is full of the past is
+          not alive in the moment it is in. The keepers face backward forever, tending the dead, and never <em>live.</em>
+          <em>&ldquo;The dead have had their moment. This one is ours.&rdquo;</em></li>
+        <li><strong>Room to become.</strong> A world that remembers everything can never be anything <em>new</em> — every
+          space occupied by what was. Forgetting clears the ground. <em>&ldquo;The page must be cleared before it can be
+          written again.&rdquo;</em></li>
+      </ul>
+      <p>And two conditions make the act possible. <strong>Faith</strong> — the Solace cannot <em>prove</em> letting go
+        is safe; no one can see the far side of forgetting. Where the keepers cling, the Solace <em>trusts the fading</em>,
+        choosing to believe, against fear, that the right response to a darkness you cannot see into is to open your hands.
+        And <strong>peace</strong> — where the keepers live in permanent strain, the Solace has stopped being afraid of the
+        one thing everyone else organizes their life around resisting, and that calm is itself an argument. <em>&ldquo;You
+        are so tired. You have been holding on so long. You are allowed to rest.&rdquo;</em></p>
+      <p>The Solace does not fight directly. It <strong>calls</strong> — and what it calls to do the releasing are the
+        Unwritten. Its own scripted works, the <strong>Unwriting</strong> (erasures, releases, gentle encroachments),
+        carry its sorrowful, gentle register: <em>the soft close, a mercy for the rim, let it lie, nothing you did was
+        wrong.</em> These are comforts. And they are the attack.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s19-three-who-lead" aria-labelledby="s19-three-who-lead-h">
+          <h3 id="s19-three-who-lead-h">Three who lead, and many who follow</h3>
+      <p>Both houses have many members; the player meets a number of them. These three carry the antagonist's three
+        registers — the grief, the friction, and the heartbreak.</p>
+      <ul>
+        <li><strong>Liora</strong> <em>(the grief, and the question).</em> Mythic, remote, eternal, unable to rest, the
+          origin of both houses; the campaign's philosophical center, rarely seen and felt everywhere.</li>
+        <li><strong>Edmund</strong> <em>(the friction — the one you fight).</em> The Solace's operational head, who runs
+          the day-to-day and leads the antagonists the player faces. He genuinely believes the creed — he is no cynic —
+          but his temperament is not Liora's gentle vision: he is interested in <em>power and winning</em>, certain that
+          winning is how the world is improved. He is <strong>clear-eyed</strong> about exactly what he is — no mask, no
+          self-deception. He is the dark mirror of the keepers' own danger: where their flaw is stubbornness, his is
+          <em>certainty weaponized into ruthlessness.</em> The villainy is in the ambition, not the belief.</li>
+        <li><strong>Katherine</strong> (&ldquo;Kat&rdquo;) <em>(the heartbreak — the one whose opposition aches).</em> A
+          former Lorekeeper of <em>this</em> generation — a Dreamer — who left for the Solace and now serves under Edmund.
+          She is the living, present-day echo of Liora's ancient turn, and she was a friend, to both Pell and Juno. So
+          when the keepers face her, they face <strong>Kat, who left</strong> — someone they loved, who chose the other
+          side. Her temptation is the sincerest and most painful kind: she knows exactly which words land, because she
+          knows <em>them</em>, and she does not argue cynically. <em>&ldquo;I'm not your enemy. I want you to be free, the
+          way I'm free. I left because I love you, and I want this for you too.&rdquo;</em> That is almost impossible to
+          fight, because it is not malice — it is a friend who thinks she is <em>saving</em> you, and who may be right.</li>
+      </ul>
+      <p><strong>Why a Dreamer.</strong> Dreamers go <em>into</em> the Memories — the rank most exposed to what keeping
+        costs the kept, because they are <em>in there</em> with the suffering. So a Dreamer breaking is almost the
+        occupational hazard of the rank. And <strong>Juno is also a Dreamer</strong> — Juno and Katherine did the same
+        perilous work, <em>together</em>, and Juno <em>was there</em> at the event that eventually turned Katherine. They
+        felt the same thing, in the same place, at the same time — and Katherine came out converted while Juno came out
+        still keeping. That gives Juno the unanswerable wound: <em>we saw the same thing — why her and not me?</em> Her
+        opposition is not naïve certainty but the harder thing: opposing something she felt the truth of, beside the
+        friend who let it take her.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s20-the-unwritten" aria-labelledby="s20-the-unwritten-h">
+          <h3 id="s20-the-unwritten-h">The Unwritten — the creatures, and their envy</h3>
+      <p>What the Solace calls are the <strong>Unwritten:</strong> beings <em>made of everything that was never
+        remembered.</em> This is literal — an Unwritten is not a dead thing or a destroyed thing but a thing that
+        <em>genuinely never existed</em>, never held a memory of its own, never got to matter: the almost-said that was
+        never said, the page that stayed blank, the name forgotten before it was ever spoken.</p>
+      <p>This is <em>why</em> an <strong>Unwritten leaves no Impression.</strong> An Impression is the mark a thing leaves
+        by having been here and been lost — and a thing that never was here cannot leave a mark of having been. Where a
+        keeper banishes and the Memory keeps a trace, an Unwritten erases and <em>nothing remains.</em> They are an
+        <strong>all-or-nothing army</strong> with no fallback: they win by <em>standing</em>, holding tiles with living
+        presence to the end, the way the player does — but a fallen Unwritten is a clean zero, because it was never the
+        kind of thing that leaves marks.</p>
+      <p>Their motive is <em>not</em> the Solace's. The Unwritten are moved, mostly, by <strong>envy and grief.</strong>
+        They were never remembered. An Impression — the very thing the Solace calls them to erase — is the wound they
+        themselves never got to have. They are wistful, unfinished, mournful things, and what they want is what you have:
+        to have mattered enough that your absence is felt. <em>&ldquo;The Unwritten are not all hungry. Some are only
+        unfinished, which turns out to be the same thing from the inside.&rdquo;</em> So the bond between the top two
+        layers is poignant: the merciful Solace calls the envious Unwritten to do a kindness, and the Unwritten come
+        partly because erasing what they never got to be is the closest they will ever come to touching it. Mercy and envy
+        work the same lever for entirely different reasons.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+        <section class="lore-section" id="s21-the-unwritten-with" aria-labelledby="s21-the-unwritten-with-h">
+          <h3 id="s21-the-unwritten-with-h">The Unwritten with ill intent — and the tragic irony</h3>
+      <p>Among the Unwritten are some whose envy did not stay wistful. It curdled. Where an ordinary Unwritten thinks
+        <em>I wish I had been remembered</em>, these think <em>I will unmake you for having been.</em> Not grief but
+        <strong>ill intent</strong> — resentment turned to active malice. These are the <strong>Unwritten with ill
+        intent</strong> (in shorthand, <strong>the ill intent</strong>): the worst of the Unwritten, the ones the Solace's
+        mercy cannot soften and cannot govern. They keep the menacing register the player learns to fear — the censor-bar
+        with claws, the thing in the margin that eats the marks of what mattered and grows bright on the eating, the bear
+        that is <em>not empty, but full of want.</em> They are where the real teeth of the campaign live.</p>
+      <p><strong>The tragic irony — the structural heart of the antagonist.</strong> The merciful Solace does <strong>not
+        fully control what it calls.</strong> When it reaches into the unremembered to draw out the gentle Unwritten and do
+        a kindness, it cannot help but draw the ill intent too — the spiteful ones, riding in on the same call, the part of
+        the forgetting that mercy can neither reach nor command. The Solace believes it is easing pain; some of what answers
+        its summons only wants to unmake. So the antagonist is sympathetic <em>and</em> not in command of its own instrument:
+        the people at the top mean only mercy, the creatures they call mean mostly envy, and the worst of those creatures
+        mean harm — and arrive anyway, because you cannot open the door to the unremembered and admit only the kind ones.
+        The Solace's tragedy is not that it is wrong to want to end suffering; it is that the tool it chose for its mercy
+        carries a cruelty it refuses to see in itself. This is what lets the campaign be a genuine moral argument <em>and</em>
+        still have something to fear: the player debates the Solace, and fights the ill intent, and the two are the same
+        faction seen at its top and its bottom.</p>
+          <p><a class="lore-top" href="#contents">↑ Back to top</a></p>
+        </section>
+      </section>
+
+      <p class="lore-close"><a class="btn btn-primary" href="play.html">Enter a Memory</a> <a class="btn" href="cards.html">Meet the spirits</a></p>
     </article>
-
-    <div class="prose container">
-      <section class="lore-section" id="wonder" aria-labelledby="wonder-h">
-        <h2 id="wonder-h">Wonder <span class="lore-section-count">41</span></h2>
-        <p class="note">Storm and Wanderer — the things that look up, and ask.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-zenith-who-asks-the-sky">
-          <h3><a href="cards.html#card-zenith-who-asks-the-sky">Zenith, Who Asks the Sky</a></h3>
-          <p class="lore-text">&quot;What is the sky <em>for</em>?&quot;<br>The sky did not answer.<br>&quot;WHAT IS THE SKY FOR?&quot;<br>The sky, embarrassed, made a small wind.<br>&quot;I&#x27;ll wait,&quot; said Zenith.<br>— it has waited nine hundred years, posture perfect, patience radiant, volume rising roughly once a century. Fabrications reveal themselves in its presence. Out of respect or terror, opinions differ. (Pell: &quot;Respect.&quot; Juno: &quot;TERROR. Lovely though.&quot;)</p>
-        </article>
-        <article class="lore-entry" id="lore-vertigo-who-loves-the-long-fall">
-          <h3><a href="cards.html#card-vertigo-who-loves-the-long-fall">Vertigo, Who Loves the Long Fall</a></h3>
-          <p class="lore-text">&quot;Don&#x27;t look down.&quot;<br>&quot;Why not?&quot;<br>&quot;…That&#x27;s a fair question.&quot;<br>— last exchange recorded at the Edge of the Map. Both parties reportedly delighted. One of them is still falling, on purpose, taking notes.</p>
-        </article>
-        <article class="lore-entry" id="lore-dawnling">
-          <h3><a href="cards.html#card-dawnling">Dawnling</a></h3>
-          <p class="lore-text">&quot;Is it morning?&quot;<br>&quot;Not yet.&quot;<br>&quot;Is it morning <em>now</em>?&quot;<br>&quot;…Yes. Fine. It&#x27;s morning.&quot;<br>— the complete transcript of every conversation ever held with a Dawnling. (Archivist Pell has stopped logging them. The sun has not stopped being argued up.)</p>
-        </article>
-        <article class="lore-entry" id="lore-moth-of-small-hours">
-          <h3><a href="cards.html#card-moth-of-small-hours">Moth of Small Hours</a></h3>
-          <p class="lore-text">It only visits the lonely-awake, and it never stays. &quot;It landed on my lamp at 3:14,&quot; writes Dreamer Juno, &quot;and we agreed not to mention it. Best conversation I&#x27;ve had all year.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-wrong-way-skylark">
-          <h3><a href="cards.html#card-wrong-way-skylark">Wrong-Way Skylark</a></h3>
-          <p class="lore-text">&quot;South is <em>that</em> way.&quot;<br>&quot;Wonderful! And what&#x27;s THIS way?&quot;<br>&quot;…Nobody knows.&quot;<br>&quot;<em>Wonderful.</em>&quot;<br>— it has discovered eleven places that were not previously anywhere. The keepers have given up correcting it and started following it.</p>
-        </article>
-        <article class="lore-entry" id="lore-cloudling">
-          <h3><a href="cards.html#card-cloudling">Cloudling</a></h3>
-          <p class="lore-text">&quot;When I&#x27;m big, I&#x27;m going to rain on EVERYTHING.&quot;<br>&quot;Even me?&quot;<br>&quot;<em>Especially</em> you. Lovingly.&quot;<br>— it practices thundering at night, very quietly, so as not to wake the sky.</p>
-        </article>
-        <article class="lore-entry" id="lore-strider-of-the-far-blue">
-          <h3><a href="cards.html#card-strider-of-the-far-blue">Strider of the Far Blue</a></h3>
-          <p class="lore-text">Postcards arrive from it, unsigned, unstamped, from places with no postal service: <em>&quot;Weather here. Wish you were.&quot;</em> — <em>&quot;Found the horizon. There&#x27;s another one behind it.&quot;</em> — <em>&quot;Not lost. Thorough.&quot;</em> Pell keeps them in a drawer labeled EVIDENCE OF ELSEWHERE.</p>
-        </article>
-        <article class="lore-entry" id="lore-stargazer-heron">
-          <h3><a href="cards.html#card-stargazer-heron">Stargazer Heron</a></h3>
-          <p class="lore-text">&quot;Subject declines to fish during meteor showers,&quot; reports Pell. &quot;Subject was observed holding a fish, gently, while both watched the Perseids. Subject&#x27;s relationship to dinner remains unclear. Subject&#x27;s relationship to the sky does not.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-aurora-elk">
-          <h3><a href="cards.html#card-aurora-elk">Aurora Elk</a></h3>
-          <p class="lore-text">The children count the colors in its antlers and never agree. Four. Six. <em>Eleven.</em> The elk stands very still for the counting, because it is polite, and because once, long ago, somebody counted for it, and it has never forgotten how that felt.</p>
-        </article>
-        <article class="lore-entry" id="lore-curio-fox">
-          <h3><a href="cards.html#card-curio-fox">Curio Fox</a></h3>
-          <p class="lore-text">&quot;What&#x27;s in the box?&quot;<br>&quot;Nothing.&quot;<br>&quot;What KIND of nothing?&quot;<br>— the box, eventually, opened itself, citing exhaustion. The fox was already three secrets away.</p>
-        </article>
-        <article class="lore-entry" id="lore-star-strewn-otter">
-          <h3><a href="cards.html#card-star-strewn-otter">Star-Strewn Otter</a></h3>
-          <p class="lore-text">&quot;EXPLAIN THE LIGHTS,&quot; demanded Dreamer Juno, four hours in.<br>The otter added a sixth.<br>&quot;…Fair,&quot; said Juno.</p>
-        </article>
-        <article class="lore-entry" id="lore-vigil-owl">
-          <h3><a href="cards.html#card-vigil-owl">Vigil Owl</a></h3>
-          <p class="lore-text">It blinks once per question. The keepers brought it a list of forty-one. &quot;Proceedings lasted six hours,&quot; notes Pell. &quot;Answers received: forty-one blinks. Questions answered: arguably all of them. Arguably none. The owl seemed satisfied, which made one of us.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-pathfinder-ibex">
-          <h3><a href="cards.html#card-pathfinder-ibex">Pathfinder Ibex</a></h3>
-          <p class="lore-text">&quot;Follow,&quot; it doesn&#x27;t say, because it doesn&#x27;t talk. It just waits at the place where you&#x27;d give up, looking back, until you don&#x27;t. There are seventy-three beads. Pell asked about the cord. The ibex looked at the seventy-fourth, which is you, and started walking.</p>
-        </article>
-        <article class="lore-entry" id="lore-skywhale-calf">
-          <h3><a href="cards.html#card-skywhale-calf">Skywhale Calf</a></h3>
-          <p class="lore-text">It is too young to know the sky ended. So, for it, it hasn&#x27;t. It breaches through nothing, sounding through nowhere, singing a long note to a pod that — listen — <em>answers</em>. Somewhere. The keepers cannot find the source of the answer and have, unusually, voted not to look.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-asking-light">
-          <h3><a href="cards.html#card-the-asking-light">The Asking Light</a></h3>
-          <p class="lore-text">&quot;…and they lived happily ever after.&quot;<br>&quot;<em>And then?</em>&quot;<br>&quot;That&#x27;s the end.&quot;<br>&quot;And THEN?&quot;<br>— every bedtime in the Long Gallery runs ninety minutes over. Nobody minds. The endings keep going somewhere, and the light goes with them.</p>
-        </article>
-        <article class="lore-entry" id="lore-tempestrider-roc">
-          <h3><a href="cards.html#card-tempestrider-roc">Tempestrider Roc</a></h3>
-          <p class="lore-text">Where it banks, weather follows — eager, loyal, slightly behind, like a dog that is also a monsoon. Farmers post requests on high poles: <em>NORTH FIELD, PLEASE. GENTLE.</em> The roc reads. The roc is, mostly, gentle.</p>
-        </article>
-        <article class="lore-entry" id="lore-stormswell">
-          <h3><a href="cards.html#card-stormswell">Stormswell</a></h3>
-          <p class="lore-text">The Cloudling stopped asking what the rain was for and became the answer. Pell&#x27;s note: &quot;It remembered being small. It just doesn&#x27;t mention it.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-cirrus-first-of-rains">
-          <h3><a href="cards.html#card-cirrus-first-of-rains">Cirrus, First of Rains</a></h3>
-          <p class="lore-text">&quot;Everyone&#x27;s first rain came from somewhere,&quot; Cirrus says. &quot;You&#x27;re welcome.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-the-spilled-sky">
-          <h3><a href="cards.html#card-the-spilled-sky">The Spilled Sky</a></h3>
-          <p class="lore-text">The otter knocked over the one jar nobody should knock over. It is not sorry.</p>
-        </article>
-        <article class="lore-entry" id="lore-otterling-magus-keeper-of-five-lights">
-          <h3><a href="cards.html#card-otterling-magus-keeper-of-five-lights">Otterling Magus, Keeper of Five Lights</a></h3>
-          <p class="lore-text">Five lights, five pockets, no explanation. Juno&#x27;s margin: &quot;asked which light was spare. it juggled them. SHOWOFF.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-lumen-unbound">
-          <h3><a href="cards.html#card-lumen-unbound">Lumen Unbound</a></h3>
-          <p class="lore-text">The question got too big for the lantern. Now it asks the whole dark at once.</p>
-        </article>
-        <article class="lore-entry" id="lore-sage-of-and-then">
-          <h3><a href="cards.html#card-sage-of-and-then">Sage of And-Then</a></h3>
-          <p class="lore-text">Every story it hears, it leans in and says &quot;and then?&quot; — and the story, flattered, continues.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-front">
-          <h3><a href="cards.html#card-the-front">The Front</a></h3>
-          <p class="lore-text">Not a bird anymore. Weather with an opinion, arriving.</p>
-        </article>
-        <article class="lore-entry" id="lore-roc-paramount-sky-entire">
-          <h3><a href="cards.html#card-roc-paramount-sky-entire">Roc Paramount, Sky-Entire</a></h3>
-          <p class="lore-text">The Roc decided the sky was a kingdom and never told the sky, which suits them both.</p>
-        </article>
-        <article class="lore-entry" id="lore-glimpse-beyond">
-          <h3><a href="cards.html#card-glimpse-beyond">Glimpse Beyond</a></h3>
-          <p class="lore-text">&quot;Just a peek,&quot; says Juno, already three pages ahead.</p>
-        </article>
-        <article class="lore-entry" id="lore-sudden-clearing">
-          <h3><a href="cards.html#card-sudden-clearing">Sudden Clearing</a></h3>
-          <p class="lore-text">The fog stepped aside, embarrassed, as fog sometimes is.</p>
-        </article>
-        <article class="lore-entry" id="lore-tailwind">
-          <h3><a href="cards.html#card-tailwind">Tailwind</a></h3>
-          <p class="lore-text">A rhyme for it: <em>push at your back, luck in your pack, go.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-cartography">
-          <h3><a href="cards.html#card-cartography">Cartography</a></h3>
-          <p class="lore-text">Pell labels everything, even the parts marked &quot;probably more sky.&quot; Especially those.</p>
-        </article>
-        <article class="lore-entry" id="lore-open-sky">
-          <h3><a href="cards.html#card-open-sky">Open Sky</a></h3>
-          <p class="lore-text">Some mornings the lid comes off the world.</p>
-        </article>
-        <article class="lore-entry" id="lore-fellow-travelers">
-          <h3><a href="cards.html#card-fellow-travelers">Fellow Travelers</a></h3>
-          <p class="lore-text">Neither asked where the other was going. That was the whole agreement.</p>
-        </article>
-        <article class="lore-entry" id="lore-shared-horizon">
-          <h3><a href="cards.html#card-shared-horizon">Shared Horizon</a></h3>
-          <p class="lore-text">&quot;See that?&quot; &quot;No.&quot; &quot;Me neither. Let&#x27;s go.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-the-overlook">
-          <h3><a href="cards.html#card-the-overlook">The Overlook</a></h3>
-          <p class="lore-text">Everything looks solvable from up here, which is the trap and the gift.</p>
-        </article>
-        <article class="lore-entry" id="lore-false-dawn">
-          <h3><a href="cards.html#card-false-dawn">False Dawn</a></h3>
-          <p class="lore-text">The rooster apologized later. Nobody minded; the practice sunrise was lovely.</p>
-        </article>
-        <article class="lore-entry" id="lore-hidden-vista">
-          <h3><a href="cards.html#card-hidden-vista">Hidden Vista</a></h3>
-          <p class="lore-text">Behind the curtain: more curtain. Behind that: oh. <em>Oh.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-unasked-question">
-          <h3><a href="cards.html#card-the-unasked-question">The Unasked Question</a></h3>
-          <p class="lore-text">It waited politely your whole visit. It follows you home.</p>
-        </article>
-        <article class="lore-entry" id="lore-saffi-who-lends-the-sky">
-          <h3><a href="cards.html#card-saffi-who-lends-the-sky">Saffi, Who Lends the Sky</a></h3>
-          <p class="lore-text">She runs a lending library with a single item. &quot;Return it by morning,&quot; she says, stamping nothing onto nothing, very officially. &quot;It gets homesick.&quot; The star has been borrowed four thousand times. It has been returned four thousand times. This is, Saffi will tell you, an <em>excellent</em> record.</p>
-        </article>
-        <article class="lore-entry" id="lore-whats-that">
-          <h3><a href="cards.html#card-whats-that">What&#x27;s That?</a></h3>
-          <p class="lore-text">The oldest question in the Memory, and still undefeated.</p>
-        </article>
-        <article class="lore-entry" id="lore-stargazing-together">
-          <h3><a href="cards.html#card-stargazing-together">Stargazing Together</a></h3>
-          <p class="lore-text">The sky is 90% bigger when shared. Astronomers dispute the figure; friends don&#x27;t.</p>
-        </article>
-        <article class="lore-entry" id="lore-skylight">
-          <h3><a href="cards.html#card-skylight">Skylight</a></h3>
-          <p class="lore-text">Someone cut a window in the Memory&#x27;s ceiling. The view goes both ways; the light doesn&#x27;t mind.</p>
-        </article>
-        <article class="lore-entry" id="lore-a-distant-light">
-          <h3><a href="cards.html#card-a-distant-light">A Distant Light</a></h3>
-          <p class="lore-text">It might be home. It might be a lantern on a pole and a long laugh later. Worth walking toward either way — that&#x27;s the design flaw in hope, or the feature.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-skys-whole-weight">
-          <h3><a href="cards.html#card-the-skys-whole-weight">The Sky&#x27;s Whole Weight</a></h3>
-          <p class="lore-text"><em>When it arrives the ceiling lifts, briefly, and everything allied can reach a little further into the room it made.</em></p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="fear" aria-labelledby="fear-h">
-        <h2 id="fear-h">Fear <span class="lore-section-count">42</span></h2>
-        <p class="note">Shade and Trickster — the held breath, the thing at the edge of sight.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-hushling">
-          <h3><a href="cards.html#card-hushling">Hushling</a></h3>
-          <p class="lore-text">It puts a finger where its mouth would be. The room agrees.</p>
-        </article>
-        <article class="lore-entry" id="lore-creep-toad">
-          <h3><a href="cards.html#card-creep-toad">Creep-Toad</a></h3>
-          <p class="lore-text">&quot;Hop. Hop. …hop?&quot; — Pell&#x27;s field notes end here. They resume three pages later in different handwriting that careful analysis confirms is still Pell&#x27;s, just <em>aware</em>. The toad means no harm. The toad means, as far as anyone can tell, nothing whatsoever. That&#x27;s the unsettling part.</p>
-        </article>
-        <article class="lore-entry" id="lore-murkfin">
-          <h3><a href="cards.html#card-murkfin">Murkfin</a></h3>
-          <p class="lore-text">Something circles under the pond-skin. The pond is a puddle. It does not care.</p>
-        </article>
-        <article class="lore-entry" id="lore-wisp-of-doubt">
-          <h3><a href="cards.html#card-wisp-of-doubt">Wisp of Doubt</a></h3>
-          <p class="lore-text">&quot;Are you sure?&quot; it asks, kindly, ruinously.</p>
-        </article>
-        <article class="lore-entry" id="lore-gloom-heron">
-          <h3><a href="cards.html#card-gloom-heron">Gloom Heron</a></h3>
-          <p class="lore-text">It stands in the one shadow at noon, billing the dark like minnows. Pell: &quot;I respect a specialist.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-pale-stalker">
-          <h3><a href="cards.html#card-pale-stalker">Pale Stalker</a></h3>
-          <p class="lore-text">A children&#x27;s rhyme, skipped fast: <em>don&#x27;t look, don&#x27;t look, the long one&#x27;s lean — the quickest way past is to stay unseen.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-mire-maw">
-          <h3><a href="cards.html#card-mire-maw">Mire-Maw</a></h3>
-          <p class="lore-text">The bog keeps what it&#x27;s given and asks for more by existing.</p>
-        </article>
-        <article class="lore-entry" id="lore-nightjar-omen">
-          <h3><a href="cards.html#card-nightjar-omen">Nightjar Omen</a></h3>
-          <p class="lore-text">It lands on the fence the night before. Before what, it won&#x27;t say.</p>
-        </article>
-        <article class="lore-entry" id="lore-shade-sewn-cat">
-          <h3><a href="cards.html#card-shade-sewn-cat">Shade-Sewn Cat</a></h3>
-          <p class="lore-text">Stitched from the shadows of four different cats, all of whom want it back.</p>
-        </article>
-        <article class="lore-entry" id="lore-backwards-wolf">
-          <h3><a href="cards.html#card-backwards-wolf">Backwards Wolf</a></h3>
-          <p class="lore-text">It walks away from you the whole time it approaches. The geometry is upsetting and it knows.</p>
-        </article>
-        <article class="lore-entry" id="lore-marrow-whisperer">
-          <h3><a href="cards.html#card-marrow-whisperer">Marrow Whisperer</a></h3>
-          <p class="lore-text">It tells your bones a secret. Your bones believe it.</p>
-        </article>
-        <article class="lore-entry" id="lore-terror-of-the-reeds">
-          <h3><a href="cards.html#card-terror-of-the-reeds">Terror of the Reeds</a></h3>
-          <p class="lore-text">Nobody has seen all of it. The reeds bend in a line, then the line stops. Then it doesn&#x27;t.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-lurking-court">
-          <h3><a href="cards.html#card-the-lurking-court">The Lurking Court</a></h3>
-          <p class="lore-text">They convened in the cellar dark and made fear official. Minutes are kept. Of everything.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-empty-procession">
-          <h3><a href="cards.html#card-the-empty-procession">The Empty Procession</a></h3>
-          <p class="lore-text">It passes through town at no particular hour, carrying nothing, mourning no one, and every door locks anyway.</p>
-        </article>
-        <article class="lore-entry" id="lore-madrigal-the-held-breath">
-          <h3><a href="cards.html#card-madrigal-the-held-breath">Madrigal, the Held Breath</a></h3>
-          <p class="lore-text">The Court&#x27;s soloist. She has been about to sing for as long as anyone remembers; the entire dark leans in.</p>
-        </article>
-        <article class="lore-entry" id="lore-keyhole-spider">
-          <h3><a href="cards.html#card-keyhole-spider">Keyhole Spider</a></h3>
-          <p class="lore-text"><em>It lives in the lock and learns the house by who comes through. Reveal it and it has already read your whole hand, politely, and tells you one thing back.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-patient-knife">
-          <h3><a href="cards.html#card-the-patient-knife">The Patient Knife</a></h3>
-          <p class="lore-text"><em>It does not lunge. It waits in the fold of the page until the careless step, and then it is simply already done. Pell files its incidents under &quot;regrettably tidy.&quot;</em></p>
-        </article>
-        <article class="lore-entry" id="lore-what-waits-beneath">
-          <h3><a href="cards.html#card-what-waits-beneath">What Waits Beneath</a></h3>
-          <p class="lore-text"><em>Step over the quiet water and it remembers you were there. Reveal it and the whole near shore steps back at once, by reflex older than thought.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-doubt">
-          <h3><a href="cards.html#card-the-doubt">The Doubt</a></h3>
-          <p class="lore-text">It stopped asking if you were sure. Now nothing is.</p>
-        </article>
-        <article class="lore-entry" id="lore-whisperer-at-the-door">
-          <h3><a href="cards.html#card-whisperer-at-the-door">Whisperer at the Door</a></h3>
-          <p class="lore-text">It knocks softly so that you&#x27;ll lean closer.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-unlit">
-          <h3><a href="cards.html#card-the-unlit">The Unlit</a></h3>
-          <p class="lore-text">All four shadows came back for the cat at once.</p>
-        </article>
-        <article class="lore-entry" id="lore-felis-umbra-the-borrowed">
-          <h3><a href="cards.html#card-felis-umbra-the-borrowed">Felis Umbra, the Borrowed</a></h3>
-          <p class="lore-text">It belongs to whoever needs to not be seen tonight. Return it fed.</p>
-        </article>
-        <article class="lore-entry" id="lore-panic-unhosted">
-          <h3><a href="cards.html#card-panic-unhosted">Panic, Unhosted</a></h3>
-          <p class="lore-text">The Court adjourned. The feeling didn&#x27;t.</p>
-        </article>
-        <article class="lore-entry" id="lore-magistrate-of-masks">
-          <h3><a href="cards.html#card-magistrate-of-masks">Magistrate of Masks</a></h3>
-          <p class="lore-text">Every verdict wears a different face. All of them are very sorry.</p>
-        </article>
-        <article class="lore-entry" id="lore-nothing-approaching">
-          <h3><a href="cards.html#card-nothing-approaching">Nothing, Approaching</a></h3>
-          <p class="lore-text">The procession stopped pretending to carry anything.</p>
-        </article>
-        <article class="lore-entry" id="lore-herald-of-the-ill-intent">
-          <h3><a href="cards.html#card-herald-of-the-ill-intent">Herald of the Ill Intent</a></h3>
-          <p class="lore-text">It walks ahead of what cannot be described, ringing a bell with no clapper. The silence is the announcement.</p>
-        </article>
-        <article class="lore-entry" id="lore-cold-spot">
-          <h3><a href="cards.html#card-cold-spot">Cold Spot</a></h3>
-          <p class="lore-text">The room remembers someone standing exactly there. Move.</p>
-        </article>
-        <article class="lore-entry" id="lore-misstep">
-          <h3><a href="cards.html#card-misstep">Misstep</a></h3>
-          <p class="lore-text">The floor was there yesterday. The floor is mostly there now.</p>
-        </article>
-        <article class="lore-entry" id="lore-dont-look">
-          <h3><a href="cards.html#card-dont-look">Don&#x27;t Look</a></h3>
-          <p class="lore-text">A rhyme: <em>if you name it, it can stay — look away, look away.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-night-falls-early">
-          <h3><a href="cards.html#card-night-falls-early">Night Falls Early</a></h3>
-          <p class="lore-text">Four in the afternoon and the lamps come on apologizing.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-fog-of-elsewhere">
-          <h3><a href="cards.html#card-the-fog-of-elsewhere">The Fog of Elsewhere</a></h3>
-          <p class="lore-text">Walk in here, come out somewhere that isn&#x27;t. The somewhere keeps the difference.</p>
-        </article>
-        <article class="lore-entry" id="lore-mutual-alibi">
-          <h3><a href="cards.html#card-mutual-alibi">Mutual Alibi</a></h3>
-          <p class="lore-text">&quot;We were together.&quot; &quot;The whole time.&quot; They rehearsed not rehearsing it.</p>
-        </article>
-        <article class="lore-entry" id="lore-conspiracy">
-          <h3><a href="cards.html#card-conspiracy">Conspiracy</a></h3>
-          <p class="lore-text">The plan has one page and the page is blank and they both signed it.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-dimming">
-          <h3><a href="cards.html#card-the-dimming">The Dimming</a></h3>
-          <p class="lore-text">A place where the light is always about to come back.</p>
-        </article>
-        <article class="lore-entry" id="lore-loose-plank">
-          <h3><a href="cards.html#card-loose-plank">Loose Plank</a></h3>
-          <p class="lore-text">Every porch has one. This one has tenure.</p>
-        </article>
-        <article class="lore-entry" id="lore-bottomless-puddle">
-          <h3><a href="cards.html#card-bottomless-puddle">Bottomless Puddle</a></h3>
-          <p class="lore-text">Two inches of water, ankle-deep, knee-deep, <em>how</em> —</p>
-        </article>
-        <article class="lore-entry" id="lore-your-name-misheard">
-          <h3><a href="cards.html#card-your-name-misheard">Your Name, Misheard</a></h3>
-          <p class="lore-text">Someone across the square calls something that is almost you. You answer. That&#x27;s the trap.</p>
-        </article>
-        <article class="lore-entry" id="lore-marionettist-grey">
-          <h3><a href="cards.html#card-marionettist-grey">Marionettist Grey</a></h3>
-          <p class="lore-text">Jitters runs ahead; Grey holds the slack. &quot;I never pull,&quot; Grey says. &quot;I <em>suggest</em>.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-behind-you">
-          <h3><a href="cards.html#card-behind-you">Behind You</a></h3>
-          <p class="lore-text">Not a warning. A rearrangement.</p>
-        </article>
-        <article class="lore-entry" id="lore-co-conspirators">
-          <h3><a href="cards.html#card-co-conspirators">Co-Conspirators</a></h3>
-          <p class="lore-text">They know something. They will not say what. Adjacent parties report sudden self-doubt.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-long-shadow">
-          <h3><a href="cards.html#card-the-long-shadow">The Long Shadow</a></h3>
-          <p class="lore-text">Cast by nothing visible, kept by everyone who needs an afternoon&#x27;s privacy.</p>
-        </article>
-        <article class="lore-entry" id="lore-somethings-watching">
-          <h3><a href="cards.html#card-somethings-watching">Something&#x27;s Watching</a></h3>
-          <p class="lore-text">There&#x27;s no proof. There&#x27;s never proof. There&#x27;s just the back of your neck, voting.</p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="sorrow" aria-labelledby="sorrow-h">
-        <h2 id="sorrow-h">Sorrow <span class="lore-section-count">41</span></h2>
-        <p class="note">Tide and Shade — what is carried, and what is let go.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-saudade-who-sets-a-place-for-the-missing">
-          <h3><a href="cards.html#card-saudade-who-sets-a-place-for-the-missing">Saudade, Who Sets a Place for the Missing</a></h3>
-          <p class="lore-text">&quot;Who&#x27;s that place for?&quot;<br>&quot;Whoever you&#x27;re missing.&quot;<br>&quot;…Can I sit there?&quot;<br>&quot;Sweetheart. That&#x27;s exactly who it&#x27;s for.&quot;<br>— supper at Saudade&#x27;s runs long. Nobody leaves hungry. Nobody leaves <em>entirely</em>, ever. That&#x27;s the comfort. It&#x27;s also the ache, and she sets the chair anyway.</p>
-        </article>
-        <article class="lore-entry" id="lore-tearling">
-          <h3><a href="cards.html#card-tearling">Tearling</a></h3>
-          <p class="lore-text">It carries one tear, carefully, the way you&#x27;d carry soup. It is not its tear. It&#x27;s delivering it.</p>
-        </article>
-        <article class="lore-entry" id="lore-drizzle-sprite">
-          <h3><a href="cards.html#card-drizzle-sprite">Drizzle Sprite</a></h3>
-          <p class="lore-text">Weather too small to forecast, raining on exactly one flower at a time.</p>
-        </article>
-        <article class="lore-entry" id="lore-greyfin-seal">
-          <h3><a href="cards.html#card-greyfin-seal">Greyfin Seal</a></h3>
-          <p class="lore-text">&quot;The 4:15 has not run in sixty years,&quot; writes the Ferrier. &quot;The seal is not wrong to wait. The seal is simply early. We are all of us simply early for something.&quot; Every evening, the Ferrier shares the catch with it anyway. The seal accepts. Vigils need supper too.</p>
-        </article>
-        <article class="lore-entry" id="lore-ashen-sparrow">
-          <h3><a href="cards.html#card-ashen-sparrow">Ashen Sparrow</a></h3>
-          <p class="lore-text">It nests in chimneys gone cold and sings the warm-up notes of songs it heard there.</p>
-        </article>
-        <article class="lore-entry" id="lore-tidewashed-doe">
-          <h3><a href="cards.html#card-tidewashed-doe">Tidewashed Doe</a></h3>
-          <p class="lore-text">She walks the wrack line collecting what the sea apologizes with.</p>
-        </article>
-        <article class="lore-entry" id="lore-last-light-koi">
-          <h3><a href="cards.html#card-last-light-koi">Last-Light Koi</a></h3>
-          <p class="lore-text">It surfaces once a day, exactly at the gold minute, to be seen. Be there.</p>
-        </article>
-        <article class="lore-entry" id="lore-grey-hearted-fox">
-          <h3><a href="cards.html#card-grey-hearted-fox">Grey-Hearted Fox</a></h3>
-          <p class="lore-text">The Ferrier&#x27;s friend. It waits at the jetty for passengers&#x27; goodbyes, then carries the goodbyes home gently in its mouth.</p>
-        </article>
-        <article class="lore-entry" id="lore-keenling">
-          <h3><a href="cards.html#card-keenling">Keenling</a></h3>
-          <p class="lore-text">When someone begins to fade, it stands up very straight and sings the strong part.</p>
-        </article>
-        <article class="lore-entry" id="lore-wake-walker">
-          <h3><a href="cards.html#card-wake-walker">Wake-Walker</a></h3>
-          <p class="lore-text">It walks behind the boat on the folded water, reading the names the wake writes and unwrites.</p>
-        </article>
-        <article class="lore-entry" id="lore-driftmother-eel">
-          <h3><a href="cards.html#card-driftmother-eel">Driftmother Eel</a></h3>
-          <p class="lore-text">Lost things drift to her. She braids them into the current and sends them where lost things are needed.</p>
-        </article>
-        <article class="lore-entry" id="lore-bearer-of-small-stones">
-          <h3><a href="cards.html#card-bearer-of-small-stones">Bearer of Small Stones</a></h3>
-          <p class="lore-text">One pebble per goodbye. The pouch is heavy. The Bearer is strong in the specific way.</p>
-        </article>
-        <article class="lore-entry" id="lore-leviathan-of-the-old-coast">
-          <h3><a href="cards.html#card-leviathan-of-the-old-coast">Leviathan of the Old Coast</a></h3>
-          <p class="lore-text">The coast moved. The Leviathan stayed, holding the shape of the old shore in its back.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-vigilkeeper">
-          <h3><a href="cards.html#card-the-vigilkeeper">The Vigilkeeper</a></h3>
-          <p class="lore-text">She relights the candles of everyone who has someone to sit up for. Hers burns plainest and longest.</p>
-        </article>
-        <article class="lore-entry" id="lore-tidebound-colossus">
-          <h3><a href="cards.html#card-tidebound-colossus">Tidebound Colossus</a></h3>
-          <p class="lore-text">The sea promised to come back for it. It stands in the dry harbor, hip-deep in remembering.</p>
-        </article>
-        <article class="lore-entry" id="lore-vesper-last-singer-of-the-salt-choir">
-          <h3><a href="cards.html#card-vesper-last-singer-of-the-salt-choir">Vesper, Last Singer of the Salt Choir</a></h3>
-          <p class="lore-text">The choir is gone. She sings all twelve parts now, one per night, and on the twelfth the harbor hums along.</p>
-        </article>
-        <article class="lore-entry" id="lore-greyrain">
-          <h3><a href="cards.html#card-greyrain">Greyrain</a></h3>
-          <p class="lore-text">The cold chimney&#x27;s whole sky&#x27;s worth, all at once.</p>
-        </article>
-        <article class="lore-entry" id="lore-elegist-wren">
-          <h3><a href="cards.html#card-elegist-wren">Elegist Wren</a></h3>
-          <p class="lore-text">It learned every Parting song in the Memory and sings them <em>back</em>, so the partings remember being loved.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-undertow">
-          <h3><a href="cards.html#card-the-undertow">The Undertow</a></h3>
-          <p class="lore-text">It stopped walking the wake and took the water&#x27;s side.</p>
-        </article>
-        <article class="lore-entry" id="lore-ferrier-of-the-salt-road">
-          <h3><a href="cards.html#card-ferrier-of-the-salt-road">Ferrier of the Salt Road</a></h3>
-          <p class="lore-text">The Ferrier himself: solemn, kind, never hurried. &quot;Everyone crosses,&quot; he says. &quot;I just keep the boat steady.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-lament-unending">
-          <h3><a href="cards.html#card-lament-unending">Lament Unending</a></h3>
-          <p class="lore-text">The candle-ring with no one inside it, still burning, still kept.</p>
-        </article>
-        <article class="lore-entry" id="lore-matron-of-the-long-goodbye">
-          <h3><a href="cards.html#card-matron-of-the-long-goodbye">Matron of the Long Goodbye</a></h3>
-          <p class="lore-text">She makes the leaving last long enough to be done properly. Nobody leaves her porch unfinished.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-weeping-deep">
-          <h3><a href="cards.html#card-the-weeping-deep">The Weeping Deep</a></h3>
-          <p class="lore-text">The harbor&#x27;s patience, given up and given depth.</p>
-        </article>
-        <article class="lore-entry" id="lore-colossus-of-the-kept-promise">
-          <h3><a href="cards.html#card-colossus-of-the-kept-promise">Colossus of the Kept Promise</a></h3>
-          <p class="lore-text">The sea came back. It holds the tide in its arms every six hours, and the tide holds it.</p>
-        </article>
-        <article class="lore-entry" id="lore-hold-the-memory">
-          <h3><a href="cards.html#card-hold-the-memory">Hold the Memory</a></h3>
-          <p class="lore-text">&quot;Stay for the end of the story,&quot; Pell whispers. The story obliges.</p>
-        </article>
-        <article class="lore-entry" id="lore-salt-and-honey">
-          <h3><a href="cards.html#card-salt-and-honey">Salt and Honey</a></h3>
-          <p class="lore-text">The old kitchen cure: one for the wound, one for the spirit, no telling which is which.</p>
-        </article>
-        <article class="lore-entry" id="lore-what-remains">
-          <h3><a href="cards.html#card-what-remains">What Remains</a></h3>
-          <p class="lore-text">After the tide: shells, a key, the strength you didn&#x27;t know you&#x27;d been lent.</p>
-        </article>
-        <article class="lore-entry" id="lore-second-farewell">
-          <h3><a href="cards.html#card-second-farewell">Second Farewell</a></h3>
-          <p class="lore-text">You ran back up the path and said it again, properly this time.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-returning">
-          <h3><a href="cards.html#card-the-returning">The Returning</a></h3>
-          <p class="lore-text">Some things come back not because you called, but because you kept the porch light on.</p>
-        </article>
-        <article class="lore-entry" id="lore-shared-umbrella">
-          <h3><a href="cards.html#card-shared-umbrella">Shared Umbrella</a></h3>
-          <p class="lore-text">Both of them half-wet, neither letting go. The mathematics of it don&#x27;t work and don&#x27;t matter.</p>
-        </article>
-        <article class="lore-entry" id="lore-grief-split">
-          <h3><a href="cards.html#card-grief-split">Grief Split</a></h3>
-          <p class="lore-text">&quot;Give me half.&quot; &quot;You can&#x27;t carry half.&quot; &quot;Watch me.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-the-still-shore">
-          <h3><a href="cards.html#card-the-still-shore">The Still Shore</a></h3>
-          <p class="lore-text">Where the water finally lies flat and lets the sky finish its sentence.</p>
-        </article>
-        <article class="lore-entry" id="lore-empty-chair">
-          <h3><a href="cards.html#card-empty-chair">Empty Chair</a></h3>
-          <p class="lore-text">Set at every feast on purpose. Tonight it isn&#x27;t empty, which is the trick, and the kindness.</p>
-        </article>
-        <article class="lore-entry" id="lore-borrowed-time">
-          <h3><a href="cards.html#card-borrowed-time">Borrowed Time</a></h3>
-          <p class="lore-text">The hourglass was running the wrong way the whole visit. Somebody pays for that.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-letter-never-sent">
-          <h3><a href="cards.html#card-the-letter-never-sent">The Letter Never Sent</a></h3>
-          <p class="lore-text">Opening it costs more than postage ever would have.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-ferriers-daughter">
-          <h3><a href="cards.html#card-the-ferriers-daughter">The Ferrier&#x27;s Daughter</a></h3>
-          <p class="lore-text">She poles the small crossings her father won&#x27;t take: puddle to puddle, eye to handkerchief. Droplet rides the prow.</p>
-        </article>
-        <article class="lore-entry" id="lore-remember-them">
-          <h3><a href="cards.html#card-remember-them">Remember Them</a></h3>
-          <p class="lore-text">The Ferrier&#x27;s one rule for passengers: say the names on the crossing. The boat goes steadier for it.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-long-walk">
-          <h3><a href="cards.html#card-the-long-walk">The Long Walk</a></h3>
-          <p class="lore-text">They walked each other home for years. The night one path ended, the other learned to be twice as long.</p>
-        </article>
-        <article class="lore-entry" id="lore-rainpool">
-          <h3><a href="cards.html#card-rainpool">Rainpool</a></h3>
-          <p class="lore-text">Farewells said over this water carry twice as far. The rain collects them; the pool remembers delivery addresses.</p>
-        </article>
-        <article class="lore-entry" id="lore-message-in-a-bottle">
-          <h3><a href="cards.html#card-message-in-a-bottle">Message in a Bottle</a></h3>
-          <p class="lore-text">It&#x27;s addressed to whoever opens it, which is the most efficient postal system ever devised.</p>
-        </article>
-        <article class="lore-entry" id="lore-rillsong-tadpole">
-          <h3><a href="cards.html#card-rillsong-tadpole">Rillsong Tadpole</a></h3>
-          <p class="lore-text"><em>It hums the stream&#x27;s one note and the fading drink it like water. Half a song and entirely a comfort.</em></p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="harmony" aria-labelledby="harmony-h">
-        <h2 id="harmony-h">Harmony <span class="lore-section-count">39</span></h2>
-        <p class="note">Bloom and Song — the kept bond, the green that overruns.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-sproutling">
-          <h3><a href="cards.html#card-sproutling">Sproutling</a></h3>
-          <p class="lore-text">It planted itself. It is its own proudest work. Visiting hours: always.</p>
-        </article>
-        <article class="lore-entry" id="lore-roundest-frog">
-          <h3><a href="cards.html#card-roundest-frog">Roundest Frog</a></h3>
-          <p class="lore-text">MEASUREMENT LOG, Dreamer Juno: &quot;Attempt 1: circumference exceeds tape. Attempt 2: tape now belongs to frog. Attempt 3: sat with frog instead. Conclusion: it has achieved the shape of contentment, and possibly the contentment of shape. Further study unnecessary. Further sitting scheduled.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-meadow-hare">
-          <h3><a href="cards.html#card-meadow-hare">Meadow Hare</a></h3>
-          <p class="lore-text">It has worn one path between everyone&#x27;s houses, and that path is most of the village&#x27;s friendships.</p>
-        </article>
-        <article class="lore-entry" id="lore-duetling">
-          <h3><a href="cards.html#card-duetling">Duetling</a></h3>
-          <p class="lore-text">One creature, two voices, zero rehearsals needed. It harmonizes with itself when lonely, which fixes the lonely.</p>
-        </article>
-        <article class="lore-entry" id="lore-orchard-shepherd">
-          <h3><a href="cards.html#card-orchard-shepherd">Orchard Shepherd</a></h3>
-          <p class="lore-text">She herds trees, which mostly means standing among them long enough that they grow toward her.</p>
-        </article>
-        <article class="lore-entry" id="lore-hymnal-hart">
-          <h3><a href="cards.html#card-hymnal-hart">Hymnal Hart</a></h3>
-          <p class="lore-text">The hart with the hymn-book antlers; the wind turns its pages and the woods go quiet to listen.</p>
-        </article>
-        <article class="lore-entry" id="lore-greatbloom-tortoise">
-          <h3><a href="cards.html#card-greatbloom-tortoise">Greatbloom Tortoise</a></h3>
-          <p class="lore-text">The garden gave up waiting for spring and moved onto something reliable.</p>
-        </article>
-        <article class="lore-entry" id="lore-linnet-of-the-lea">
-          <h3><a href="cards.html#card-linnet-of-the-lea">Linnet of the Lea</a></h3>
-          <p class="lore-text">It sings introductions. &quot;And THIS is —&quot; it trills, and suddenly you&#x27;ve known each other for years.</p>
-        </article>
-        <article class="lore-entry" id="lore-chorus-vole">
-          <h3><a href="cards.html#card-chorus-vole">Chorus Vole</a></h3>
-          <p class="lore-text">Alone it&#x27;s a squeak. Beside friends it is, suddenly, the brass section.</p>
-        </article>
-        <article class="lore-entry" id="lore-ring-dancer-crane">
-          <h3><a href="cards.html#card-ring-dancer-crane">Ring-Dancer Crane</a></h3>
-          <p class="lore-text">It dances the circle that brings rain, weddings, and people who haven&#x27;t spoken in years back to the same table.</p>
-        </article>
-        <article class="lore-entry" id="lore-warden-of-the-glade">
-          <h3><a href="cards.html#card-warden-of-the-glade">Warden of the Glade</a></h3>
-          <p class="lore-text">Nothing bad has happened in the glade for three hundred years. The Warden would like to keep the streak.</p>
-        </article>
-        <article class="lore-entry" id="lore-summerheart-bear">
-          <h3><a href="cards.html#card-summerheart-bear">Summerheart Bear</a></h3>
-          <p class="lore-text">It hibernates through winter and radiates June the rest of the year. Standing near it counts as a holiday.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-gathering-green">
-          <h3><a href="cards.html#card-the-gathering-green">The Gathering Green</a></h3>
-          <p class="lore-text">It arrives the way spring does — everywhere slightly, then suddenly entirely.</p>
-        </article>
-        <article class="lore-entry" id="lore-choir-of-the-vale">
-          <h3><a href="cards.html#card-choir-of-the-vale">Choir of the Vale</a></h3>
-          <p class="lore-text">Forty voices, one creature, zero soloists by unanimous vote.</p>
-        </article>
-        <article class="lore-entry" id="lore-rondel-the-joining">
-          <h3><a href="cards.html#card-rondel-the-joining">Rondel, the Joining</a></h3>
-          <p class="lore-text">Rondel has married people, rivers, arguments, and once two thunderstorms that are very happy now.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-open-chord">
-          <h3><a href="cards.html#card-the-open-chord">The Open Chord</a></h3>
-          <p class="lore-text">Both voices at once, unresolved, enormous, waiting for the room to finish it.</p>
-        </article>
-        <article class="lore-entry" id="lore-duet-ascendant-both-halves">
-          <h3><a href="cards.html#card-duet-ascendant-both-halves">Duet Ascendant, Both Halves</a></h3>
-          <p class="lore-text">They finally met themselves, and the introduction lasted four seasons.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-swelling-song">
-          <h3><a href="cards.html#card-the-swelling-song">The Swelling Song</a></h3>
-          <p class="lore-text">The brass section, unsupervised.</p>
-        </article>
-        <article class="lore-entry" id="lore-maestra-vole-conductor-of-small-things">
-          <h3><a href="cards.html#card-maestra-vole-conductor-of-small-things">Maestra Vole, Conductor of Small Things</a></h3>
-          <p class="lore-text">She conducts dew, gossip, heartbeats, queues. Everything keeps better time near her, including you.</p>
-        </article>
-        <article class="lore-entry" id="lore-verdure-overrunning">
-          <h3><a href="cards.html#card-verdure-overrunning">Verdure, Overrunning</a></h3>
-          <p class="lore-text">Spring stopped asking permission.</p>
-        </article>
-        <article class="lore-entry" id="lore-queen-of-the-quiet-garden">
-          <h3><a href="cards.html#card-queen-of-the-quiet-garden">Queen of the Quiet Garden</a></h3>
-          <p class="lore-text">Her garden has no walls. It simply becomes garden wherever she is believed.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-crescendo">
-          <h3><a href="cards.html#card-the-crescendo">The Crescendo</a></h3>
-          <p class="lore-text">The part of the song where the valley stands up.</p>
-        </article>
-        <article class="lore-entry" id="lore-vale-eternal-the-standing-ovation">
-          <h3><a href="cards.html#card-vale-eternal-the-standing-ovation">Vale Eternal, the Standing Ovation</a></h3>
-          <p class="lore-text">The song ended an age ago. The vale is still applauding, politely, forever, and the flowers take bows in shifts.</p>
-        </article>
-        <article class="lore-entry" id="lore-mend">
-          <h3><a href="cards.html#card-mend">Mend</a></h3>
-          <p class="lore-text">Needle, thread, the good knot your grandmother knew. Works on sleeves, wings, afternoons.</p>
-        </article>
-        <article class="lore-entry" id="lore-round">
-          <h3><a href="cards.html#card-round">Round</a></h3>
-          <p class="lore-text">A rhyme to start it: <em>you begin, I&#x27;ll come in, no one&#x27;s out when all are in.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-gather-in">
-          <h3><a href="cards.html#card-gather-in">Gather In</a></h3>
-          <p class="lore-text">Someone rang the supper bell and meant everyone.</p>
-        </article>
-        <article class="lore-entry" id="lore-harvest-together">
-          <h3><a href="cards.html#card-harvest-together">Harvest Together</a></h3>
-          <p class="lore-text">Many hands, one orchard, and the ladder holds because three friends hold the ladder.</p>
-        </article>
-        <article class="lore-entry" id="lore-symphony">
-          <h3><a href="cards.html#card-symphony">Symphony</a></h3>
-          <p class="lore-text">Every part at once, and somehow also yours.</p>
-        </article>
-        <article class="lore-entry" id="lore-held-hands">
-          <h3><a href="cards.html#card-held-hands">Held Hands</a></h3>
-          <p class="lore-text">The oldest spell. Casts instantly. Lasts variably. Renewable.</p>
-        </article>
-        <article class="lore-entry" id="lore-promise">
-          <h3><a href="cards.html#card-promise">Promise</a></h3>
-          <p class="lore-text">&quot;I&#x27;ll take it,&quot; she said, before knowing what it was. That&#x27;s what the word means.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-trellis">
-          <h3><a href="cards.html#card-the-trellis">The Trellis</a></h3>
-          <p class="lore-text">Things grow taller honestly when there&#x27;s something patient to lean on.</p>
-        </article>
-        <article class="lore-entry" id="lore-surprise-party">
-          <h3><a href="cards.html#card-surprise-party">Surprise Party</a></h3>
-          <p class="lore-text">They hid badly and on purpose. The surprise is that you&#x27;re loved; it works every time.</p>
-        </article>
-        <article class="lore-entry" id="lore-welcome-mat">
-          <h3><a href="cards.html#card-welcome-mat">Welcome Mat</a></h3>
-          <p class="lore-text">It says it and means it. People who came to do harm wipe their feet, lose the thread, and end up staying for tea.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-long-table">
-          <h3><a href="cards.html#card-the-long-table">The Long Table</a></h3>
-          <p class="lore-text">It unfolds itself when the count of friends exceeds the chairs. There were always going to be more friends.</p>
-        </article>
-        <article class="lore-entry" id="lore-choirmother-lark">
-          <h3><a href="cards.html#card-choirmother-lark">Choirmother Lark</a></h3>
-          <p class="lore-text">She raised Hum from a hum. &quot;Everyone arrives mid-song,&quot; she says. &quot;Find your entrance.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-hold-the-note">
-          <h3><a href="cards.html#card-hold-the-note">Hold the Note</a></h3>
-          <p class="lore-text">The duet holds the chord until the hurt finishes leaving. Breathing is permitted; stopping is not.</p>
-        </article>
-        <article class="lore-entry" id="lore-call-and-answer">
-          <h3><a href="cards.html#card-call-and-answer">Call and Answer</a></h3>
-          <p class="lore-text">One voice rises; the other was already inhaling. That&#x27;s how you know it&#x27;s old.</p>
-        </article>
-        <article class="lore-entry" id="lore-common-ground">
-          <h3><a href="cards.html#card-common-ground">Common Ground</a></h3>
-          <p class="lore-text">Boundary-stones from forty old quarrels, laid flat to make one floor. Dancing occurs.</p>
-        </article>
-        <article class="lore-entry" id="lore-picnic-blanket">
-          <h3><a href="cards.html#card-picnic-blanket">Picnic Blanket</a></h3>
-          <p class="lore-text">Checkered, weighted at the corners with good stones, and absolutely a trap in the sense that you will stay an hour longer than planned.</p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="fury" aria-labelledby="fury-h">
-        <h2 id="fury-h">Fury <span class="lore-section-count">42</span></h2>
-        <p class="note">Flame and Beast — momentum, and the price it asks.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-crucible-who-holds-the-fire-still">
-          <h3><a href="cards.html#card-crucible-who-holds-the-fire-still">Crucible, Who Holds the Fire Still</a></h3>
-          <p class="lore-text">The fire asked to be let out.<br>&quot;Not yet,&quot; said Crucible.<br>The fire raged, as fire does. Crucible held, as Crucible does. And the fire — for the first time in its bright, brief, furious life — felt not caged, but <em>held</em>. There is a difference. Crucible is the difference.</p>
-        </article>
-        <article class="lore-entry" id="lore-cinderling">
-          <h3><a href="cards.html#card-cinderling">Cinderling</a></h3>
-          <p class="lore-text">&quot;You&#x27;re quite small,&quot; observed the candle.<br>&quot;I am EARLY,&quot; said the Cinderling, &quot;in my CAREER.&quot;<br>— the candle has since been promoted to bonfire by association. The Cinderling takes full credit. The Cinderling takes full credit for most things. The Cinderling is, infuriatingly, sometimes right.</p>
-        </article>
-        <article class="lore-entry" id="lore-spark-shrew">
-          <h3><a href="cards.html#card-spark-shrew">Spark Shrew</a></h3>
-          <p class="lore-text">Fastest temper in the Memory; over before the leaf it kicked stops spinning.</p>
-        </article>
-        <article class="lore-entry" id="lore-bristleboar">
-          <h3><a href="cards.html#card-bristleboar">Bristleboar</a></h3>
-          <p class="lore-text">It charges first and remembers what at <em>during</em>. Wins arguments by arriving.</p>
-        </article>
-        <article class="lore-entry" id="lore-ashcub">
-          <h3><a href="cards.html#card-ashcub">Ashcub</a></h3>
-          <p class="lore-text">Every scrap leaves it warmer. Its mother says it has &quot;a healthy appetite for consequences.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-charging-auroch">
-          <h3><a href="cards.html#card-charging-auroch">Charging Auroch</a></h3>
-          <p class="lore-text">The fence-makers&#x27; guild has a fund named after it.</p>
-        </article>
-        <article class="lore-entry" id="lore-flarewing-drake">
-          <h3><a href="cards.html#card-flarewing-drake">Flarewing Drake</a></h3>
-          <p class="lore-text">It writes its signature across the sky and dares the sky to mind.</p>
-        </article>
-        <article class="lore-entry" id="lore-ironback-sow">
-          <h3><a href="cards.html#card-ironback-sow">Ironback Sow</a></h3>
-          <p class="lore-text">She raised four litters in a lightning-field. She is done being surprised by anything, including you.</p>
-        </article>
-        <article class="lore-entry" id="lore-frenzy-kit">
-          <h3><a href="cards.html#card-frenzy-kit">Frenzy Kit</a></h3>
-          <p class="lore-text">Pain makes it <em>louder</em>. Its littermates learned to apologize mid-pounce.</p>
-        </article>
-        <article class="lore-entry" id="lore-brand-bearer-macaque">
-          <h3><a href="cards.html#card-brand-bearer-macaque">Brand-Bearer Macaque</a></h3>
-          <p class="lore-text">It stole a burning brand from the first fire and has been winning arguments with it ever since. Sparkfather pretends to want it back; grandfathers spoil.</p>
-        </article>
-        <article class="lore-entry" id="lore-flanking-jackal">
-          <h3><a href="cards.html#card-flanking-jackal">Flanking Jackal</a></h3>
-          <p class="lore-text">It has never once been where you were looking. It considers this basic courtesy of the hunt.</p>
-        </article>
-        <article class="lore-entry" id="lore-ragewoken-bison">
-          <h3><a href="cards.html#card-ragewoken-bison">Ragewoken Bison</a></h3>
-          <p class="lore-text">Do not wake it. It agrees, too late, every time.</p>
-        </article>
-        <article class="lore-entry" id="lore-kilnhorn-rhino">
-          <h3><a href="cards.html#card-kilnhorn-rhino">Kilnhorn Rhino</a></h3>
-          <p class="lore-text">Its horn was fired in a kiln by a potter with grievances. Both are satisfied with the result.</p>
-        </article>
-        <article class="lore-entry" id="lore-sparkfather-vermilion">
-          <h3><a href="cards.html#card-sparkfather-vermilion">Sparkfather Vermilion</a></h3>
-          <p class="lore-text">Old fox of the first fire. Every torch in the Memory is, technically, his grandchild, and he attends the lightings.</p>
-        </article>
-        <article class="lore-entry" id="lore-bullroarer-immense">
-          <h3><a href="cards.html#card-bullroarer-immense">Bullroarer Immense</a></h3>
-          <p class="lore-text">You hear it through your feet first. Negotiations start and end there.</p>
-        </article>
-        <article class="lore-entry" id="lore-ignis-brightmaw-the-unfinished-argument">
-          <h3><a href="cards.html#card-ignis-brightmaw-the-unfinished-argument">Ignis Brightmaw, the Unfinished Argument</a></h3>
-          <p class="lore-text">&quot;You&#x27;re wrong,&quot; said the mountain.<br>&quot;PROVE IT,&quot; said Ignis.<br>&quot;No,&quot; said the mountain.<br>— Ignis circled the mountain for a year, presenting evidence. The mountain remains unmoved. Ignis remains unfinished. Privately — and this is the only private thing about Ignis — it respects the mountain enormously. What&#x27;s the point of a fire nothing can hold? (See: Crucible. Ignis refuses to.)</p>
-        </article>
-        <article class="lore-entry" id="lore-wildfire-loosed">
-          <h3><a href="cards.html#card-wildfire-loosed">Wildfire, Loosed</a></h3>
-          <p class="lore-text">The cub&#x27;s appetite, off the leash of the cub.</p>
-        </article>
-        <article class="lore-entry" id="lore-embermane-first-of-the-pride">
-          <h3><a href="cards.html#card-embermane-first-of-the-pride">Embermane, First of the Pride</a></h3>
-          <p class="lore-text">The cub grew into the story its mother told about it, which was the plan all along.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-stampede">
-          <h3><a href="cards.html#card-the-stampede">The Stampede</a></h3>
-          <p class="lore-text">One became the argument; the argument became everyone.</p>
-        </article>
-        <article class="lore-entry" id="lore-pyrrhic-the-laughing-brand">
-          <h3><a href="cards.html#card-pyrrhic-the-laughing-brand">Pyrrhic, the Laughing Brand</a></h3>
-          <p class="lore-text">He wins. He always wins. Ask him what it cost and he laughs and shows you the bill, proudly, like a trophy.</p>
-        </article>
-        <article class="lore-entry" id="lore-conflagration">
-          <h3><a href="cards.html#card-conflagration">Conflagration</a></h3>
-          <p class="lore-text">The family reunion, all torches attending at once.</p>
-        </article>
-        <article class="lore-entry" id="lore-standard-bearer-of-the-burn">
-          <h3><a href="cards.html#card-standard-bearer-of-the-burn">Standard-Bearer of the Burn</a></h3>
-          <p class="lore-text">She carries the first flame forward so the young fires don&#x27;t get lost.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-red-field-itself">
-          <h3><a href="cards.html#card-the-red-field-itself">The Red Field Itself</a></h3>
-          <p class="lore-text">The battlefield got tired of hosting and joined in.</p>
-        </article>
-        <article class="lore-entry" id="lore-warden-breaker-crowned-in-smoke">
-          <h3><a href="cards.html#card-warden-breaker-crowned-in-smoke">Warden-Breaker, Crowned in Smoke</a></h3>
-          <p class="lore-text">Walls describe him to each other in hushed mortar. He bows to the ones that held longest.</p>
-        </article>
-        <article class="lore-entry" id="lore-kindle">
-          <h3><a href="cards.html#card-kindle">Kindle</a></h3>
-          <p class="lore-text">A rhyme for cold mornings: <em>little spark, do your work — one warm word and the whole day&#x27;s lit.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-reckless-charge">
-          <h3><a href="cards.html#card-reckless-charge">Reckless Charge</a></h3>
-          <p class="lore-text">The plan is GO. The contingency is ALSO GO.</p>
-        </article>
-        <article class="lore-entry" id="lore-stoke">
-          <h3><a href="cards.html#card-stoke">Stoke</a></h3>
-          <p class="lore-text">Feed the fire something that matters and it pays you back in heat.</p>
-        </article>
-        <article class="lore-entry" id="lore-war-roar">
-          <h3><a href="cards.html#card-war-roar">War Roar</a></h3>
-          <p class="lore-text">Less a sound than a unanimous decision.</p>
-        </article>
-        <article class="lore-entry" id="lore-eruption">
-          <h3><a href="cards.html#card-eruption">Eruption</a></h3>
-          <p class="lore-text">The mountain had been polite for centuries. Had.</p>
-        </article>
-        <article class="lore-entry" id="lore-rivals-pact">
-          <h3><a href="cards.html#card-rivals-pact">Rivals&#x27; Pact</a></h3>
-          <p class="lore-text">&quot;After we win, I&#x27;m beating you specifically.&quot; &quot;Counting on it.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-pack-tactics">
-          <h3><a href="cards.html#card-pack-tactics">Pack Tactics</a></h3>
-          <p class="lore-text">One in front of you. One already behind you. That&#x27;s the whole textbook.</p>
-        </article>
-        <article class="lore-entry" id="lore-ashfield">
-          <h3><a href="cards.html#card-ashfield">Ashfield</a></h3>
-          <p class="lore-text">Ground that remembers every charge made across it and slopes downhill in your favor, always, somehow.</p>
-        </article>
-        <article class="lore-entry" id="lore-smoke">
-          <h3><a href="cards.html#card-smoke">Smoke</a></h3>
-          <p class="lore-text">Where there&#x27;s smoke there&#x27;s fire, they say. Sometimes there&#x27;s just smoke, and a creature betting you won&#x27;t risk being wrong. You go and look. You always go and look.</p>
-        </article>
-        <article class="lore-entry" id="lore-buried-ember">
-          <h3><a href="cards.html#card-buried-ember">Buried Ember</a></h3>
-          <p class="lore-text">The campfire was out. The campfire was <em>declared</em> out. The campfire had a dissenting opinion.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-provocation">
-          <h3><a href="cards.html#card-the-provocation">The Provocation</a></h3>
-          <p class="lore-text">A note, nailed up, containing your name and three accurate criticisms.</p>
-        </article>
-        <article class="lore-entry" id="lore-embermother-ash">
-          <h3><a href="cards.html#card-embermother-ash">Embermother Ash</a></h3>
-          <p class="lore-text">She carries Cinder-Pup in a forge-leather sling and three opinions in reserve. &quot;He&#x27;s not <em>trouble</em>,&quot; she says. &quot;He&#x27;s <em>kindling</em>.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-again">
-          <h3><a href="cards.html#card-again">Again!</a></h3>
-          <p class="lore-text">The battle-cry of toddlers and conquerors. Identical inflection.</p>
-        </article>
-        <article class="lore-entry" id="lore-race-you">
-          <h3><a href="cards.html#card-race-you">Race You</a></h3>
-          <p class="lore-text">Nobody has ever finished one of these races. The finish line keeps moving out of respect.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-bellows">
-          <h3><a href="cards.html#card-the-bellows">The Bellows</a></h3>
-          <p class="lore-text">The valley breathes here. Stand in the exhale if you&#x27;re cold; the inhale if you&#x27;re brave.</p>
-        </article>
-        <article class="lore-entry" id="lore-short-fuse">
-          <h3><a href="cards.html#card-short-fuse">Short Fuse</a></h3>
-          <p class="lore-text">Length is honesty. This one&#x27;s honest about exactly one second.</p>
-        </article>
-        <article class="lore-entry" id="lore-emberkit">
-          <h3><a href="cards.html#card-emberkit">Emberkit</a></h3>
-          <p class="lore-text"><em>A coal that decided to be a kitten and never quite finished the paperwork. It glows brighter the longer you look, embarrassed and pleased.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-long-coronation">
-          <h3><a href="cards.html#card-the-long-coronation">The Long Coronation</a></h3>
-          <p class="lore-text"><em>Every blow it lands is another jewel set in a crown nobody agreed to give it. It is crowning itself, slowly, out of your defeats.</em></p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="resolve" aria-labelledby="resolve-h">
-        <h2 id="resolve-h">Resolve <span class="lore-section-count">41</span></h2>
-        <p class="note">Stone and Guardian — what will not be moved.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-pebbling">
-          <h3><a href="cards.html#card-pebbling">Pebbling</a></h3>
-          <p class="lore-text">It cannot be moved. It can be <em>carried</em>, but it will be back, and it will not discuss it.</p>
-        </article>
-        <article class="lore-entry" id="lore-watchful-marmot">
-          <h3><a href="cards.html#card-watchful-marmot">Watchful Marmot</a></h3>
-          <p class="lore-text">INCIDENT REPORT, filed in triplicate, author: self. &quot;Incidents: zero. Suspicious clouds: four (dispersed). Perimeter: held. Commendation: requested.&quot; — it has filed nine hundred of these. The keepers approve every one. Somewhere along the line, it stopped being a joke. Nothing has ever snuck past. Nothing has tried. <em>Vigilance.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-cragstep-goat">
-          <h3><a href="cards.html#card-cragstep-goat">Cragstep Goat</a></h3>
-          <p class="lore-text">There is no ledge. It is standing on the <em>concept</em> of a ledge, chewing.</p>
-        </article>
-        <article class="lore-entry" id="lore-oathling">
-          <h3><a href="cards.html#card-oathling">Oathling</a></h3>
-          <p class="lore-text">It made one promise, very young, and grew around the promise like a tree around a fencepost.</p>
-        </article>
-        <article class="lore-entry" id="lore-shieldback-pangolin">
-          <h3><a href="cards.html#card-shieldback-pangolin">Shieldback Pangolin</a></h3>
-          <p class="lore-text">Each scale was a worry once. Look how useful they turned out.</p>
-        </article>
-        <article class="lore-entry" id="lore-warded-ram">
-          <h3><a href="cards.html#card-warded-ram">Warded Ram</a></h3>
-          <p class="lore-text">Curses slide off its wool. So do compliments. It maintains the equilibrium proudly.</p>
-        </article>
-        <article class="lore-entry" id="lore-rampart-elephant">
-          <h3><a href="cards.html#card-rampart-elephant">Rampart Elephant</a></h3>
-          <p class="lore-text">Towns negotiate for it to nap against their weak wall.</p>
-        </article>
-        <article class="lore-entry" id="lore-cairnling-sentinel">
-          <h3><a href="cards.html#card-cairnling-sentinel">Cairnling Sentinel</a></h3>
-          <p class="lore-text">Stack three stones and one will volunteer to keep watch. This is the one. Every cairn has one.</p>
-        </article>
-        <article class="lore-entry" id="lore-bulwark-badger">
-          <h3><a href="cards.html#card-bulwark-badger">Bulwark Badger</a></h3>
-          <p class="lore-text">It dug the line. It holds the line. The line is, technically, its living room.</p>
-        </article>
-        <article class="lore-entry" id="lore-spirewatch-ibis">
-          <h3><a href="cards.html#card-spirewatch-ibis">Spirewatch Ibis</a></h3>
-          <p class="lore-text">From the spire it sees both ends of every promise being kept, and files them.</p>
-        </article>
-        <article class="lore-entry" id="lore-anchorite-ox">
-          <h3><a href="cards.html#card-anchorite-ox">Anchorite Ox</a></h3>
-          <p class="lore-text">It walled itself into the pass on purpose. Hermits pray <em>to be left alone</em>; the Ox prays <em>that nothing gets through</em>. So far, both granted.</p>
-        </article>
-        <article class="lore-entry" id="lore-citadel-mammoth">
-          <h3><a href="cards.html#card-citadel-mammoth">Citadel Mammoth</a></h3>
-          <p class="lore-text">Generations are born, argue, and reconcile on its back. It walks four steps a year and they hold festivals for each one.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-patient-arbiter">
-          <h3><a href="cards.html#card-the-patient-arbiter">The Patient Arbiter</a></h3>
-          <p class="lore-text">It hears both sides. It hears them again. Aggressors leave smaller, somehow, each time.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-graven-elder">
-          <h3><a href="cards.html#card-the-graven-elder">The Graven Elder</a></h3>
-          <p class="lore-text">The mountain&#x27;s grandfather. Weather asks it for permission, usually granted, occasionally not — remember the calm year?</p>
-        </article>
-        <article class="lore-entry" id="lore-adamant-the-kept-word">
-          <h3><a href="cards.html#card-adamant-the-kept-word">Adamant, the Kept Word</a></h3>
-          <p class="lore-text">Someone once asked Adamant what the word <em>was</em>. Adamant said: &quot;Kept.&quot; That&#x27;s all anyone gets, and it is enough, and it is everything.</p>
-        </article>
-        <article class="lore-entry" id="lore-bedrock-risen">
-          <h3><a href="cards.html#card-bedrock-risen">Bedrock, Risen</a></h3>
-          <p class="lore-text">The promise, with the planet behind it.</p>
-        </article>
-        <article class="lore-entry" id="lore-oathkeeper-adamant">
-          <h3><a href="cards.html#card-oathkeeper-adamant">Oathkeeper Adamant</a></h3>
-          <p class="lore-text">The Oathling grew up. The fencepost it grew around is in there somewhere, honored.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-unmoved">
-          <h3><a href="cards.html#card-the-unmoved">The Unmoved</a></h3>
-          <p class="lore-text">The trench became a philosophy.</p>
-        </article>
-        <article class="lore-entry" id="lore-badgermarshal-of-the-last-line">
-          <h3><a href="cards.html#card-badgermarshal-of-the-last-line">Badgermarshal of the Last Line</a></h3>
-          <p class="lore-text">&quot;Fall back to me,&quot; the Badgermarshal says, &quot;and then stop falling.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-verdict-absolute">
-          <h3><a href="cards.html#card-verdict-absolute">Verdict, Absolute</a></h3>
-          <p class="lore-text">Deliberation ended.</p>
-        </article>
-        <article class="lore-entry" id="lore-arbiter-imperishable">
-          <h3><a href="cards.html#card-arbiter-imperishable">Arbiter Imperishable</a></h3>
-          <p class="lore-text">It has outlasted every argument brought before it, including erosion&#x27;s.</p>
-        </article>
-        <article class="lore-entry" id="lore-orogeny">
-          <h3><a href="cards.html#card-orogeny">Orogeny</a></h3>
-          <p class="lore-text">The grandfather stood up. Geography rescheduled.</p>
-        </article>
-        <article class="lore-entry" id="lore-elder-of-the-unbroken-watch">
-          <h3><a href="cards.html#card-elder-of-the-unbroken-watch">Elder of the Unbroken Watch</a></h3>
-          <p class="lore-text">It has never once slept on duty. It has never once been off duty. It does not understand the question.</p>
-        </article>
-        <article class="lore-entry" id="lore-hold-fast">
-          <h3><a href="cards.html#card-hold-fast">Hold Fast</a></h3>
-          <p class="lore-text">The word the rope-makers braid into the good rope.</p>
-        </article>
-        <article class="lore-entry" id="lore-close-ranks">
-          <h3><a href="cards.html#card-close-ranks">Close Ranks</a></h3>
-          <p class="lore-text">Shoulder finds shoulder. The gap files a complaint; the complaint is denied.</p>
-        </article>
-        <article class="lore-entry" id="lore-patience">
-          <h3><a href="cards.html#card-patience">Patience</a></h3>
-          <p class="lore-text">A rhyme the masons hum: <em>stone today, stone tomorrow — walls are made of patience, borrowed.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-stand-ground">
-          <h3><a href="cards.html#card-stand-ground">Stand Ground</a></h3>
-          <p class="lore-text">The ground, consulted, agrees to do most of the standing.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-long-watch">
-          <h3><a href="cards.html#card-the-long-watch">The Long Watch</a></h3>
-          <p class="lore-text">Take the cloak. Take the horn. Wake me never.</p>
-        </article>
-        <article class="lore-entry" id="lore-shoulder-to-shoulder">
-          <h3><a href="cards.html#card-shoulder-to-shoulder">Shoulder to Shoulder</a></h3>
-          <p class="lore-text">The wall is us, the us is wall — the old chant, two voices minimum.</p>
-        </article>
-        <article class="lore-entry" id="lore-sworn-shields">
-          <h3><a href="cards.html#card-sworn-shields">Sworn Shields</a></h3>
-          <p class="lore-text">Your dent is my dent. Heraldry to follow.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-old-wall">
-          <h3><a href="cards.html#card-the-old-wall">The Old Wall</a></h3>
-          <p class="lore-text">Nobody remembers what it kept out. It worked, is what they remember.</p>
-        </article>
-        <article class="lore-entry" id="lore-decoy-cairn">
-          <h3><a href="cards.html#card-decoy-cairn">Decoy Cairn</a></h3>
-          <p class="lore-text">Three stones pretending to be a guardian. The pretense is load-bearing.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-toll">
-          <h3><a href="cards.html#card-the-toll">The Toll</a></h3>
-          <p class="lore-text">The bridge troll retired and left a jar and an honor system with teeth.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-door-that-holds">
-          <h3><a href="cards.html#card-the-door-that-holds">The Door That Holds</a></h3>
-          <p class="lore-text">It isn&#x27;t locked. It has simply decided.</p>
-        </article>
-        <article class="lore-entry" id="lore-cairnwright-odo">
-          <h3><a href="cards.html#card-cairnwright-odo">Cairnwright Odo</a></h3>
-          <p class="lore-text">He builds the small watchers and gives them their one job each. Chip got &quot;stay.&quot; Chip is the best at it.</p>
-        </article>
-        <article class="lore-entry" id="lore-dig-in">
-          <h3><a href="cards.html#card-dig-in">Dig In</a></h3>
-          <p class="lore-text">Supper or siege, the verb is the same and the commitment identical.</p>
-        </article>
-        <article class="lore-entry" id="lore-oathbound">
-          <h3><a href="cards.html#card-oathbound">Oathbound</a></h3>
-          <p class="lore-text">The vow has paperwork. The paperwork has a seal. The seal glows when tested.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-threshold">
-          <h3><a href="cards.html#card-the-threshold">The Threshold</a></h3>
-          <p class="lore-text">Cross it and you&#x27;re <em>in</em>, and being in means something here. Door sold separately; never needed.</p>
-        </article>
-        <article class="lore-entry" id="lore-standing-stones">
-          <h3><a href="cards.html#card-standing-stones">Standing Stones</a></h3>
-          <p class="lore-text">They were here before the path and they&#x27;ll out-stand your hurry. Go around. Everyone goes around.</p>
-        </article>
-        <article class="lore-entry" id="lore-pebble-underfoot">
-          <h3><a href="cards.html#card-pebble-underfoot">Pebble-Underfoot</a></h3>
-          <p class="lore-text"><em>The smallest immovable thing in the Memory. Armies have rerouted. It did not notice the armies. It is thinking about being a pebble.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-mountain-remembers">
-          <h3><a href="cards.html#card-the-mountain-remembers">The Mountain Remembers</a></h3>
-          <p class="lore-text"><em>It holds what was set on it for as long as stone holds anything, which is longer than the setting-down. It will not be moved, and it remembers why.</em></p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="remnants" aria-labelledby="remnants-h">
-        <h2 id="remnants-h">Remnants &amp; Neutral <span class="lore-section-count">48</span></h2>
-        <p class="note">The unaligned — neutral spellbook, landmarks, and the lines that belong to no one register.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-latchling">
-          <h3><a href="cards.html#card-latchling">Latchling</a></h3>
-          <p class="lore-text">It belongs to whoever stands still long enough. Currently: you. Congratulations and condolences.</p>
-        </article>
-        <article class="lore-entry" id="lore-static-hare">
-          <h3><a href="cards.html#card-static-hare">Static Hare</a></h3>
-          <p class="lore-text">It exists between stations. Tune carefully and it&#x27;s a hare; tune badly and it&#x27;s a weather report from somewhere unlicensed.</p>
-        </article>
-        <article class="lore-entry" id="lore-patchwork-egret">
-          <h3><a href="cards.html#card-patchwork-egret">Patchwork Egret</a></h3>
-          <p class="lore-text">Assembled from donated feathers after the flood. Flies fine. Sings in six borrowed voices, all grateful.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-unfiled">
-          <h3><a href="cards.html#card-the-unfiled">The Unfiled</a></h3>
-          <p class="lore-text">The Archive has a drawer for everything. This came out of the gap behind the drawers. Pell filed a report; the report is now also missing.</p>
-        </article>
-        <article class="lore-entry" id="lore-errata">
-          <h3><a href="cards.html#card-errata">Errata</a></h3>
-          <p class="lore-text">A correction that achieved independence. It goes around fixing things that weren&#x27;t wrong, beautifully.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-first-forgotten">
-          <h3><a href="cards.html#card-the-first-forgotten">The First Forgotten</a></h3>
-          <p class="lore-text">Before the Solace, before the Archive, something was forgotten the ordinary way — and forgave everyone, and stayed. It remembers being remembered. It can wait.</p>
-        </article>
-        <article class="lore-entry" id="lore-deep-breath">
-          <h3><a href="cards.html#card-deep-breath">Deep Breath</a></h3>
-          <p class="lore-text">In through the nose, out through the everything.</p>
-        </article>
-        <article class="lore-entry" id="lore-quiet-step">
-          <h3><a href="cards.html#card-quiet-step">Quiet Step</a></h3>
-          <p class="lore-text">The floorboard saw you and said nothing. Tip it later.</p>
-        </article>
-        <article class="lore-entry" id="lore-recollection">
-          <h3><a href="cards.html#card-recollection">Recollection</a></h3>
-          <p class="lore-text">It&#x27;s all still there. The shelf was just taller than you were, then.</p>
-        </article>
-        <article class="lore-entry" id="lore-scrub-the-margin">
-          <h3><a href="cards.html#card-scrub-the-margin">Scrub the Margin</a></h3>
-          <p class="lore-text">Some notes shouldn&#x27;t survive the final draft. The Archive issues the good erasers sparingly.</p>
-        </article>
-        <article class="lore-entry" id="lore-trade-winds">
-          <h3><a href="cards.html#card-trade-winds">Trade Winds</a></h3>
-          <p class="lore-text">The wind carries yours away and someone else&#x27;s in, and somehow everyone&#x27;s better read by evening.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-library-remembers">
-          <h3><a href="cards.html#card-the-library-remembers">The Library Remembers</a></h3>
-          <p class="lore-text">The request slip came back stamped <em>*FOUND</em><em>, in ink still warm. Attached, a note in a librarian&#x27;s hand no one alive has met: </em>&quot;Nothing is ever lost. Misfiled, often. Loved things double-shelve themselves. Try under your name.&quot;* Pell read it four times, then went and stood in the stacks for a while, for no reason he wrote down.</p>
-        </article>
-        <article class="lore-entry" id="lore-strangers-no-more">
-          <h3><a href="cards.html#card-strangers-no-more">Strangers No More</a></h3>
-          <p class="lore-text">There&#x27;s a word for people who shared one umbrella, one delay, one impossible afternoon. Several words, actually. They&#x27;re trying them out.</p>
-        </article>
-        <article class="lore-entry" id="lore-common-cause">
-          <h3><a href="cards.html#card-common-cause">Common Cause</a></h3>
-          <p class="lore-text">They disagree on everything except the thing in front of them, which is enough, which is plenty.</p>
-        </article>
-        <article class="lore-entry" id="lore-twin-telling">
-          <h3><a href="cards.html#card-twin-telling">Twin Telling</a></h3>
-          <p class="lore-text">Two narrators, one story, told simultaneously without rehearsal and without error. The Archive has questions. The twins have a look they share instead of answers.</p>
-        </article>
-        <article class="lore-entry" id="lore-unbreakable">
-          <h3><a href="cards.html#card-unbreakable">Unbreakable</a></h3>
-          <p class="lore-text">Tested by distance, weather, committee, and one extremely determined goat. Intact.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-old-friendship">
-          <h3><a href="cards.html#card-the-old-friendship">The Old Friendship</a></h3>
-          <p class="lore-text">&quot;Remember when—&quot;<br>&quot;Yes.&quot;<br>&quot;I hadn&#x27;t finished.&quot;<br>&quot;Still yes.&quot;<br>— some bonds outlive their reasons, their owners, and on the evidence of this card, their endings. The Archive lists no origin for it. The Archive lists no origin for most true things.</p>
-        </article>
-        <article class="lore-entry" id="lore-borrowed-courage">
-          <h3><a href="cards.html#card-borrowed-courage">Borrowed Courage</a></h3>
-          <p class="lore-text">&quot;Take mine,&quot; she said. &quot;I&#x27;m not using it till Thursday.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-wellspring">
-          <h3><a href="cards.html#card-wellspring">Wellspring</a></h3>
-          <p class="lore-text">The Memory keeps a faucet of itself here, for travelers and other emergencies.</p>
-        </article>
-        <article class="lore-entry" id="lore-high-ground">
-          <h3><a href="cards.html#card-high-ground">High Ground</a></h3>
-          <p class="lore-text">Whoever holds it speaks last in the argument, which is the same as winning.</p>
-        </article>
-        <article class="lore-entry" id="lore-mire">
-          <h3><a href="cards.html#card-mire">Mire</a></h3>
-          <p class="lore-text">The ground here votes against momentum. All momentum. It&#x27;s not personal; it&#x27;s policy.</p>
-        </article>
-        <article class="lore-entry" id="lore-old-tree">
-          <h3><a href="cards.html#card-old-tree">Old Tree</a></h3>
-          <p class="lore-text">It has stood through four tellings of this Memory and intends to be in the fifth. Lean here.</p>
-        </article>
-        <article class="lore-entry" id="lore-hearth">
-          <h3><a href="cards.html#card-hearth">Hearth</a></h3>
-          <p class="lore-text">The fire&#x27;s lit before you arrive. That&#x27;s the whole magic, and it&#x27;s the biggest one.</p>
-        </article>
-        <article class="lore-entry" id="lore-waystone">
-          <h3><a href="cards.html#card-waystone">Waystone</a></h3>
-          <p class="lore-text">Touch it and the road remembers you the rest of the way.</p>
-        </article>
-        <article class="lore-entry" id="lore-mirror-pool">
-          <h3><a href="cards.html#card-mirror-pool">Mirror Pool</a></h3>
-          <p class="lore-text">It shows the attacker the attack. Most apologize to themselves and leave.</p>
-        </article>
-        <article class="lore-entry" id="lore-beacon">
-          <h3><a href="cards.html#card-beacon">Beacon</a></h3>
-          <p class="lore-text">Lies need shadows. The Beacon is a strong opinion about shadows.</p>
-        </article>
-        <article class="lore-entry" id="lore-crossroads">
-          <h3><a href="cards.html#card-crossroads">Crossroads</a></h3>
-          <p class="lore-text">Stand here and every direction starts negotiating for you.</p>
-        </article>
-        <article class="lore-entry" id="lore-shrine-of-the-nameless">
-          <h3><a href="cards.html#card-shrine-of-the-nameless">Shrine of the Nameless</a></h3>
-          <p class="lore-text">For everyone who faded before the Archive learned their names. Leave a stone; take a strength.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-confluence">
-          <h3><a href="cards.html#card-the-confluence">The Confluence</a></h3>
-          <p class="lore-text">Where tellings meet, neither yields and neither breaks. The water has worked out what the Narrators are still fighting about: you can share a bed without sharing a color. Spirits who stand here come away larger, and slightly more reasonable.</p>
-        </article>
-        <article class="lore-entry" id="lore-faultline">
-          <h3><a href="cards.html#card-faultline">Faultline</a></h3>
-          <p class="lore-text">The Memory healed wrong here, once. Step lightly; it remembers impact.</p>
-        </article>
-        <article class="lore-entry" id="lore-nothing-really">
-          <h3><a href="cards.html#card-nothing-really">Nothing, Really</a></h3>
-          <p class="lore-text">Asked what it was hiding, it said the truth: nothing. The pause before believing it costs you the round.</p>
-        </article>
-        <article class="lore-entry" id="lore-loose-thread">
-          <h3><a href="cards.html#card-loose-thread">Loose Thread</a></h3>
-          <p class="lore-text">Pull it. PULL it. You won&#x27;t. Someone will.</p>
-        </article>
-        <article class="lore-entry" id="lore-paper-sentinel">
-          <h3><a href="cards.html#card-paper-sentinel">Paper Sentinel</a></h3>
-          <p class="lore-text">A guard drawn well enough to be saluted twice daily. Its shift never ends because its artist loved it.</p>
-        </article>
-        <article class="lore-entry" id="lore-spare-memory">
-          <h3><a href="cards.html#card-spare-memory">Spare Memory</a></h3>
-          <p class="lore-text">The Archive keeps a few blanks for emergencies. Finding one is like finding money in winter&#x27;s coat.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-perfect-lie">
-          <h3><a href="cards.html#card-the-perfect-lie">The Perfect Lie</a></h3>
-          <p class="lore-text">So well told that the spirit who walks into it decides it was always true, and stays, content. The keepers debate the ethics quietly. The lie doesn&#x27;t.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-blank-page">
-          <h3><a href="cards.html#card-the-blank-page">The Blank Page</a></h3>
-          <p class="lore-text">&quot;It&#x27;s not empty,&quot; said Dreamer Juno, packing to leave the exhibit early. &quot;It&#x27;s <em>hungry.</em>&quot; Juno declined to elaborate. Juno, who annotates everything, left the margin blank. The margin has stayed blank. Margins around it tend to.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-kindest-erasure">
-          <h3><a href="cards.html#card-the-kindest-erasure">The Kindest Erasure</a></h3>
-          <p class="lore-text"><em>The smaller mercy reaches one dissolving thing; this one opens both hands and the whole near edge of the page accepts at once. It does not gather the fading toward it — it simply makes the going easy for all of them in the same breath, and the going is grateful, and that is the unbearable part. Pell wrote that to watch it work was to understand, finally, that kindness can be a kind of width.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-unkindest-erasure">
-          <h3><a href="cards.html#card-the-unkindest-erasure">The Unkindest Erasure</a></h3>
-          <p class="lore-text"><em>[IllIntent] The same raised hand, the same clean air at the fingertips — but it has stopped waiting for things to be dying first. It reaches into the living telling and rubs, and what was whole goes thin where it touched, and it wears the old apologetic posture like a coat over the new appetite. Juno underlined the cruelty of it: that it kept the gentle shape so you would not flinch until it had already begun.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-last-lullaby">
-          <h3><a href="cards.html#card-the-last-lullaby">The Last Lullaby</a></h3>
-          <p class="lore-text"><em>The first verse tells the room there is nothing worth shouting about; this is the verse after it, the one with no waking line. Whatever stands near it forgets it had a quarrel, then forgets it had a voice to raise one with, and is not troubled by the forgetting. Juno noted the survivors seemed not grieved but only very rested, and that this was somehow the part that kept her up.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-surer-tide">
-          <h3><a href="cards.html#card-the-surer-tide">The Surer Tide</a></h3>
-          <p class="lore-text"><em>It has stopped only rising and started giving. Stand near its slow water and the small hurts close over and go quiet, an ally at a time, on the turn of its own patient flow; it is in no more of a hurry to heal you than it was to reach you, and the calm spreads outward the way water finds every low place there is. Pell wrote that it asks nothing and mends anyway, and that he could not decide whether that was the kindest line in the notes or the most frightening.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-drowning-tide">
-          <h3><a href="cards.html#card-the-drowning-tide">The Drowning Tide</a></h3>
-          <p class="lore-text"><em>[IllIntent] The same patient water, the same hand&#x27;s-width nearer each time you look away — but it has chosen a mouth, and it closes over that one without rising to meet anything else. It does not surge. It does not need to. It was always going to be there, and now it simply arrives, level and quiet, above where you were breathing. Juno wrote one line: the calm was never on your side.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-widening-absence">
-          <h3><a href="cards.html#card-the-widening-absence">The Widening Absence</a></h3>
-          <p class="lore-text"><em>The hole has learned it can be larger. The page does not merely give way around it now — it goes on giving, further out than its edges, so that whatever stands near is thinner than it meant to be, less able to keep the shape of itself. There is no malice in this and no mercy either; it is only that absence, once it knows the trick, sees no reason to stop at its own outline. Pell measured the dent twice and got two answers and stopped measuring.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-long-erasure">
-          <h3><a href="cards.html#card-the-long-erasure">The Long Erasure</a></h3>
-          <p class="lore-text"><em>[IllIntent] It no longer waits to be grazed against; it reaches the length of the telling for the one mark you most wanted kept, and takes it, and is heavier and surer for the taking. Pell tried to write down what was lost and found the pen would not shape the word — only a long pale furrow where the word had been. The hunger learned reach, and reach is the worse of its teeth.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-grudge-entire">
-          <h3><a href="cards.html#card-the-grudge-entire">The Grudge Entire</a></h3>
-          <p class="lore-text"><em>[IllIntent] It kept the count; now the count keeps it. Every wound it never got is no longer just a notch on its flank but a tooth in its mouth, and what is struck against it is struck twice as hard back, because a grudge this complete has stopped distinguishing between the loss and the weapon. There is no notch left unfilled and no slight left unpaid. Pell wrote that it had finally collected the whole debt and become, in the collecting, nothing but the debt.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-grudge-forgiven">
-          <h3><a href="cards.html#card-the-grudge-forgiven">The Grudge Forgiven</a></h3>
-          <p class="lore-text"><em>It kept the count for so long, and then one turn it set the ledger down. The tally is still scored into its flank — these things do not unhappen — but it has stopped adding, stopped sharpening, stopped reading the board for fresh wounds; and so when something near it is already fading, it only opens the way and lets that thing go, asking nothing back. You cannot strike it down in fury, for the same reason you never could the Forgiven Debt: it holds none. It is at peace, which is the unbearable part.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-gnawing-unending">
-          <h3><a href="cards.html#card-the-gnawing-unending">The Gnawing Unending</a></h3>
-          <p class="lore-text"><em>[IllIntent] Stopping was never one of its verbs; now neither is choosing. It no longer leans toward the next thing — it bites the whole near edge at once and keeps biting, the hunger spread wide and the wide hunger never once filled. It does not pause to swallow. It does not pause to see whether anything is left. Pell stopped writing verbs here too, the way the old notes did, and left only: and again. And again. And again.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-gnawing-stilled">
-          <h3><a href="cards.html#card-the-gnawing-stilled">The Gnawing Stilled</a></h3>
-          <p class="lore-text"><em>The thing that could not stop, stopped. The hunger that was never once filled simply set itself down, and now what stands beside it is not bitten but quieted — too soothed to rage, too eased to lift a voice, leaned gently away from the fight it came to have. It is the strangest entry in Pell&#x27;s hand: he wrote that the teeth were still there, still sharp, and that the creature was plainly choosing, every moment, not to use them, and that this was somehow harder to look at than the gnawing ever was.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-spite-made-whole">
-          <h3><a href="cards.html#card-spite-made-whole">Spite, Made Whole</a></h3>
-          <p class="lore-text"><em>[IllIntent] The small one left a single barb in whatever felled it; this one has stopped leaving things behind and started arriving complete. It still cannot win — it has not changed its mind about that — but it no longer settles for the parting shot. It crosses the distance and spends itself on the chosen mark, all of itself, the grudge that was once a splinter now grown the full size of the creature carrying it. Juno wrote that it was the only thing in the Archive that seemed, finally, satisfied, and that she wished it weren&#x27;t.</em></p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="solace" aria-labelledby="solace-h">
-        <h2 id="solace-h">The Solace <span class="lore-section-count">54</span></h2>
-        <p class="note">The Unwritten, and the Solace who lift them away — one voice, recovered from the Archive.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-unwritten-wolf">
-          <h3><a href="cards.html#card-unwritten-wolf">Unwritten Wolf</a></h3>
-          <p class="lore-text">&quot;Do not describe it in your notes,&quot; writes Pell, describing it. &quot;Description feeds it nothing. But the silence after — the silence is louder. Cross out this entry. I can&#x27;t. Crossing out is how it got here.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-the-smudge">
-          <h3><a href="cards.html#card-the-smudge">The Smudge</a></h3>
-          <p class="lore-text"><em>Where it passes, the labels run. Pell relabeled the same jar four times, then labeled it &quot;jar?&quot;, then sat down for a while.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-margin-stalker">
-          <h3><a href="cards.html#card-margin-stalker">Margin Stalker</a></h3>
-          <p class="lore-text"><em>It does not enter the story. It patrols the edge where the story stops being told.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-sentence-fragment">
-          <h3><a href="cards.html#card-sentence-fragment">Sentence Fragment</a></h3>
-          <p class="lore-text">&quot;The dog ran—&quot;<br>&quot;The dog ran—&quot;<br>&quot;<em>Please,</em>&quot; it says, in stolen type, &quot;how does it end?&quot;<br>— the Unwritten are not all hungry. Some are only unfinished, which turns out to be the same thing from the inside; the hungry ones we call the ill intent.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-almost">
-          <h3><a href="cards.html#card-the-almost">The Almost</a></h3>
-          <p class="lore-text"><em>Survivors agree on nothing except the feeling: it nearly had a face you knew.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-null-choir">
-          <h3><a href="cards.html#card-null-choir">Null Choir</a></h3>
-          <p class="lore-text"><em>They stand in rows and do not sing, in perfect harmony.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-whats-its-name">
-          <h3><a href="cards.html#card-whats-its-name">What&#x27;s-Its-Name</a></h3>
-          <p class="lore-text"><em>Three keepers have named it. The names are gone. The keepers are fine, except when asked what they named it.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-misremembered">
-          <h3><a href="cards.html#card-the-misremembered">The Misremembered</a></h3>
-          <p class="lore-text"><em>It was definitely bigger. Or smaller. It was definitely.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-page-eater">
-          <h3><a href="cards.html#card-page-eater">Page-Eater</a></h3>
-          <p class="lore-text"><em>Where it grazed, the Memory simply skips. Witnesses describe the sound of paper, then describe nothing.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-lacuna">
-          <h3><a href="cards.html#card-lacuna">Lacuna</a></h3>
-          <p class="lore-text"><em>It is the gap. The gap has learned to stand where new ink wants to go.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-trailing-off">
-          <h3><a href="cards.html#card-the-trailing-off">The Trailing Off…</a></h3>
-          <p class="lore-text"><em>It was last seen heading</em></p>
-        </article>
-        <article class="lore-entry" id="lore-redacted-bear">
-          <h3><a href="cards.html#card-redacted-bear">Redacted Bear</a></h3>
-          <p class="lore-text"><em>The incident report survives. The noun does not. ████ was a good bear, the margin says, in Juno&#x27;s hand.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-static">
-          <h3><a href="cards.html#card-static">Static</a></h3>
-          <p class="lore-text"><em>Not silence — the sound of something being overwritten.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-forgotten-name">
-          <h3><a href="cards.html#card-forgotten-name">Forgotten Name</a></h3>
-          <p class="lore-text"><em>You cannot curse what you cannot call. You cannot call it. It counts on this.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-dust-where-a-door-was">
-          <h3><a href="cards.html#card-dust-where-a-door-was">Dust Where a Door Was</a></h3>
-          <p class="lore-text"><em>The house remembers having a way in. The ill intent disagrees, and the Solace is currently winning.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-lullaby">
-          <h3><a href="cards.html#card-the-lullaby">The Lullaby</a></h3>
-          <p class="lore-text"><em>It does not silence the room. It tells the room there is nothing left worth shouting about, and the room believes it, and rests.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-kind-erasure">
-          <h3><a href="cards.html#card-the-kind-erasure">The Kind Erasure</a></h3>
-          <p class="lore-text"><em>To a thing already dissolving it offers the only mercy it has: a faster, gentler nothing. Most accept. It does not blame the ones who don&#x27;t.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-what-you-set-down">
-          <h3><a href="cards.html#card-what-you-set-down">What You Set Down</a></h3>
-          <p class="lore-text"><em>It does not defeat you. It lifts the weight you were carrying and sets it back in your hand, and waits to see if you understand the gift. You rarely do.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-long-rest">
-          <h3><a href="cards.html#card-the-long-rest">The Long Rest</a></h3>
-          <p class="lore-text"><em>Whatever falls beside it falls easy. No impression, no mark, no long unwriting — only a made bed and the lamp turned down.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-quiet-tide">
-          <h3><a href="cards.html#card-quiet-tide">Quiet Tide</a></h3>
-          <p class="lore-text"><em>Leave it be and it only grows surer. It is not in a hurry. It has noticed you are.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-almost-said">
-          <h3><a href="cards.html#card-the-almost-said">The Almost-Said</a></h3>
-          <p class="lore-text"><em>It wears the shape of whatever last spoke to it, badly, the way you&#x27;d quote someone you almost heard.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-forgiven-debt">
-          <h3><a href="cards.html#card-the-forgiven-debt">The Forgiven Debt</a></h3>
-          <p class="lore-text"><em>You cannot strike it down in fury, because it holds no fury back. It cancelled the account. It is at peace, which is the unbearable part.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-hush">
-          <h3><a href="cards.html#card-hush">Hush</a></h3>
-          <p class="lore-text"><em>Where it passes, the dying do not get their last word. It means this kindly. The dying disagree.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-half-remembered">
-          <h3><a href="cards.html#card-the-half-remembered">The Half-Remembered</a></h3>
-          <p class="lore-text"><em>It waits face-down as the thing you almost played, then stands up as the thing you did. Meeting yourself this way is nobody&#x27;s favourite.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-erasures-patience">
-          <h3><a href="cards.html#card-erasures-patience">Erasure&#x27;s Patience</a></h3>
-          <p class="lore-text"><em>It will not be moved, and it is in no rush, and the impressions near it cool one by one while it waits. It has all the time there never was.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-vanishing-point">
-          <h3><a href="cards.html#card-the-vanishing-point">The Vanishing Point</a></h3>
-          <p class="lore-text"><em>It arrives, and the thing it met is suddenly one tile further away, and a little less sure it was ever where it stood.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-footnote">
-          <h3><a href="cards.html#card-footnote">Footnote</a></h3>
-          <p class="lore-text"><em>It takes a little off the top — a word, a page, the next thing you were going to draw. You don&#x27;t miss it. That&#x27;s the trouble.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-negative-space">
-          <h3><a href="cards.html#card-negative-space">Negative Space</a></h3>
-          <p class="lore-text"><em>Stand next to it and you become easier to get through. The page gives way around it, politely, and so do you.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-last-warm-page">
-          <h3><a href="cards.html#card-the-last-warm-page">The Last Warm Page</a></h3>
-          <p class="lore-text"><em>It does not burn the record. It lets it cool — an impression at a time, from the edges in, the way a hand goes from a held hand.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-gnawing">
-          <h3><a href="cards.html#card-the-gnawing">The Gnawing</a></h3>
-          <p class="lore-text"><em>[IllIntent] It does not stop when the thing is down. It does not stop when the thing is gone. Stopping was never one of its verbs.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-tooth-in-the-margin">
-          <h3><a href="cards.html#card-tooth-in-the-margin">Tooth in the Margin</a></h3>
-          <p class="lore-text"><em>[IllIntent] It waits at the page&#x27;s edge where you forget to look, and its first bite is the worst one it has. It has been saving it.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-unsaid-cruelty">
-          <h3><a href="cards.html#card-the-unsaid-cruelty">The Unsaid Cruelty</a></h3>
-          <p class="lore-text"><em>[IllIntent] When it ends one of you, the one beside it flinches and bleeds, though nothing touched it. The cruelty travels. It always knew it would.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-smear">
-          <h3><a href="cards.html#card-smear">Smear</a></h3>
-          <p class="lore-text"><em>A touch, and one of the things that made you</em> you <em>comes off on its hand. You&#x27;ll have it back next round. You spend the round being almost yourself.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-closing-book">
-          <h3><a href="cards.html#card-the-closing-book">The Closing Book</a></h3>
-          <p class="lore-text"><em>Step toward it and the page simply shuts over it before you arrive. No zone bites it. No interception finds it. It was never quite open to you.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-mercy-itself">
-          <h3><a href="cards.html#card-the-mercy-itself">The Mercy Itself</a></h3>
-          <p class="lore-text"><em>It arrives where the dying are thickest and offers all of them the same release at once. The kindest thing in the set, and the one the Lorekeepers fear most.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-spite">
-          <h3><a href="cards.html#card-spite">Spite</a></h3>
-          <p class="lore-text"><em>[IllIntent] It cannot win. It has made its peace with that. It cannot let</em> you <em>win clean, either, and it has made its peace with that too.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-devouring-margin">
-          <h3><a href="cards.html#card-the-devouring-margin">The Devouring Margin</a></h3>
-          <p class="lore-text"><em>[IllIntent] It eats the marks of what mattered and grows fat and bright on the eating. It was hungry first. It learned cruelty after.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-grudge-kept">
-          <h3><a href="cards.html#card-grudge-kept">Grudge-Kept</a></h3>
-          <p class="lore-text"><em>[IllIntent] Every impression on the board is a wound it never got. It counts them. It sharpens on the count.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-worst-version">
-          <h3><a href="cards.html#card-the-worst-version">The Worst Version</a></h3>
-          <p class="lore-text"><em>[IllIntent] It looks at the strongest thing you have and decides to be that, but meaner. It is not flattery. It is theft with an opinion.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-teethmarks">
-          <h3><a href="cards.html#card-teethmarks">Teethmarks</a></h3>
-          <p class="lore-text"><em>[IllIntent] It comes in from the margin where no zone watches, and the first you know of it is the after. It prefers the after.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-unforgiving">
-          <h3><a href="cards.html#card-the-unforgiving">The Unforgiving</a></h3>
-          <p class="lore-text"><em>[IllIntent] Wards do not stop it. Names do not slow it. It has decided about you, and it does not revisit decisions.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-what-wants-you-gone">
-          <h3><a href="cards.html#card-what-wants-you-gone">What Wants You Gone</a></h3>
-          <p class="lore-text"><em>[IllIntent] It does not want the tile. It does not want the win. It wants the space where you are to be space where you aren&#x27;t.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-white-out">
-          <h3><a href="cards.html#card-white-out">White-Out</a></h3>
-          <p class="lore-text">FORECAST, posted in the Long Gallery in a hand nobody recognizes: <em>&quot;Nothing, drifting in from the margins. Visibility: total. Accumulation: everything.&quot;</em> The keepers have filed it under WEATHER because the alternative is filing it under TRUE.</p>
-        </article>
-        <article class="lore-entry" id="lore-the-page-turns">
-          <h3><a href="cards.html#card-the-page-turns">The Page Turns</a></h3>
-          <p class="lore-text"><em>The whole Memory shudders one line down. Things keep their places. Places do not keep their things.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-silence-spreads">
-          <h3><a href="cards.html#card-silence-spreads">Silence Spreads</a></h3>
-          <p class="lore-text"><em>First the Landmark stops meaning. Then it stops insisting. The stones remain, embarrassed.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-ink-runs-dry">
-          <h3><a href="cards.html#card-ink-runs-dry">Ink Runs Dry</a></h3>
-          <p class="lore-text"><em>Both Narrators reach for the next word and find the well briefly honest about how this all ends.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-lost-paragraph">
-          <h3><a href="cards.html#card-lost-paragraph">Lost Paragraph</a></h3>
-          <p class="lore-text"><em>Something that was cut from the telling finds its way back in, wrong, at the edge.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-ill-intent-hungers">
-          <h3><a href="cards.html#card-the-ill-intent-hungers">The Ill Intent Hungers</a></h3>
-          <p class="lore-text"><em>The field notes stop using verbs here. Just: more. Closer. More.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-soft-close">
-          <h3><a href="cards.html#card-the-soft-close">The Soft Close</a></h3>
-          <p class="lore-text">(Event) <em>It lays every dying thing on the board to rest at once — no impressions, no lingering, no long goodbye. Pell calls it the cruelest kindness in the Archive and then is quiet for a while. Juno wrote one word in the margin — &quot;oh&quot; — and, uncharacteristically, nothing after it.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-a-mercy-for-the-rim">
-          <h3><a href="cards.html#card-a-mercy-for-the-rim">A Mercy for the Rim</a></h3>
-          <p class="lore-text">(Event) <em>The held spirits, the ones standing lamplit out at the dark edge — it relieves them of the standing. They were so tired. It noticed.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-let-it-lie">
-          <h3><a href="cards.html#card-let-it-lie">Let It Lie</a></h3>
-          <p class="lore-text">(Event) <em>Set the grief down. Just for a turn. It will still be there when you pick it up — but oh, the quiet while it&#x27;s down.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-the-quiet-spreads">
-          <h3><a href="cards.html#card-the-quiet-spreads">The Quiet Spreads</a></h3>
-          <p class="lore-text">(Event) <em>It is telegraphed a round ahead, because the Solace believes you deserve to see the calm coming and choose. Two tiles go still. Nothing may be written there. Nothing needs to be.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-nothing-you-did-was-wrong">
-          <h3><a href="cards.html#card-nothing-you-did-was-wrong">Nothing You Did Was Wrong</a></h3>
-          <p class="lore-text">(Event) <em>It clears every doubt and heals every spirit on the board — yours too. The Lorekeepers brace for an attack that never comes. The comfort is the attack.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-and-so-it-ends">
-          <h3><a href="cards.html#card-and-so-it-ends">And So It Ends</a></h3>
-          <p class="lore-text">(Event) <em>It finds the oldest impression — the loss you&#x27;ve carried longest — and unwrites it, and seals the ground so nothing new can be set there. The Solace thinks it has freed you. The Lorekeepers know what it took.</em></p>
-        </article>
-      </section>
-
-      <section class="lore-section" id="foundlings" aria-labelledby="foundlings-h">
-        <h2 id="foundlings-h">The Foundlings <span class="lore-section-count">27</span></h2>
-        <p class="note">The Strays — the small, the lost, the not-yet-trusted, won one telling at a time.</p>
-        <a class="lore-top" href="#contents">↑ Back to contents</a>
-        <article class="lore-entry" id="lore-dog-who-knows-the-way-home">
-          <h3><a href="cards.html#card-dog-who-knows-the-way-home">Dog Who Knows the Way Home</a></h3>
-          <p class="lore-text">It is not lost. Let&#x27;s be clear about that. It knows exactly where home is — it checks on you, glances back, trots three steps, checks again. The keepers followed it once, to see. It led them, by an unhurried route, to each of their own front doors. Then it left. It has somewhere to be: <em>behind whoever&#x27;s furthest from home.</em></p>
-        </article>
-        <article class="lore-entry" id="lore-cat-from-three-houses-down">
-          <h3><a href="cards.html#card-cat-from-three-houses-down">Cat From Three Houses Down</a></h3>
-          <p class="lore-text">She has four names, three households, and a feeding schedule that would shame a railway. &quot;OUR cat,&quot; say the children at the blue door. &quot;Our cat,&quot; agree the newlyweds at the green one. The keepers attempted a census and were each, separately, convinced she lived with them. Befriending her does not mean she&#x27;s yours. It means you made the rotation.</p>
-        </article>
-        <article class="lore-entry" id="lore-pigeon-carrying-a-message-never-delivered">
-          <h3><a href="cards.html#card-pigeon-carrying-a-message-never-delivered">Pigeon Carrying a Message Never Delivered</a></h3>
-          <p class="lore-text">The address washed off in &#x27;— well, in some rain or other. It still flies the route daily. Befriend it and the message, it turns out, is for you, and always was.</p>
-        </article>
-        <article class="lore-entry" id="lore-duckling-following-anyone">
-          <h3><a href="cards.html#card-duckling-following-anyone">Duckling Following Anyone</a></h3>
-          <p class="lore-text">It imprinted on the first thing it saw, which was, regrettably, <em>everything</em>. It has followed a cart, a cloud, a Kilnhorn Rhino (the rhino slowed down), and once, for an entire afternoon, its own previous footprints. The Dreamers call it the easiest catch in the Memory. The Dreamers are correct and have all, every one of them, kept it.</p>
-        </article>
-        <article class="lore-entry" id="lore-tortoise-outliving-the-garden">
-          <h3><a href="cards.html#card-tortoise-outliving-the-garden">Tortoise Outliving the Garden</a></h3>
-          <p class="lore-text">The garden went to seed, to meadow, to memory. The tortoise is still doing its rounds, watering things that aren&#x27;t there, which — look closely — are there again where it waters.</p>
-        </article>
-        <article class="lore-entry" id="lore-goat-on-the-roof">
-          <h3><a href="cards.html#card-goat-on-the-roof">Goat on the Roof</a></h3>
-          <p class="lore-text">No one knows how it gets up there. The goat does not know how it gets up there. This is not the goat&#x27;s problem.</p>
-        </article>
-        <article class="lore-entry" id="lore-bee-far-from-the-hive">
-          <h3><a href="cards.html#card-bee-far-from-the-hive">Bee Far From the Hive</a></h3>
-          <p class="lore-text">It dances directions to a home it can&#x27;t find. Stand still and it will dance YOU somewhere good instead; bees keep their promises laterally.</p>
-        </article>
-        <article class="lore-entry" id="lore-foal-born-during-the-storm">
-          <h3><a href="cards.html#card-foal-born-during-the-storm">Foal Born During the Storm</a></h3>
-          <p class="lore-text">Thunder was its first lullaby, so it finds loud nights cozy and quiet ones suspicious. It grows visibly while you know it, which is the fastest way to a Narrator&#x27;s heart.</p>
-        </article>
-        <article class="lore-entry" id="lore-home-who-was-a-dog-once">
-          <h3><a href="cards.html#card-home-who-was-a-dog-once">Home, Who Was a Dog Once</a></h3>
-          <p class="lore-text">It was a dog so good at coming home that, somewhere along the years, the two ideas wore into one. Now it <em>is</em> the home, and it does what home does: it finds the one who&#x27;s losing. You don&#x27;t earn it. You can&#x27;t. You just have a bad enough day, in front of everyone, and then there is a warmth against your leg with a heartbeat in it. — <em>&quot;Subject located me,&quot; writes Pell, &quot;on the afternoon of the flood, the funeral, and the failed exam. Subject&#x27;s accuracy is frankly upsetting. Subject may stay.&quot;</em></p>
-        </article>
-        <article class="lore-entry" id="lore-crow-counting-strangers">
-          <h3><a href="cards.html#card-crow-counting-strangers">Crow Counting Strangers</a></h3>
-          <p class="lore-text">One for sorrow, two for mirth — it knows the rhyme; it IS the census. Be counted kindly twice and it starts counting <em>for</em> you.</p>
-        </article>
-        <article class="lore-entry" id="lore-hare-at-the-edge-of-the-field">
-          <h3><a href="cards.html#card-hare-at-the-edge-of-the-field">Hare at the Edge of the Field</a></h3>
-          <p class="lore-text">It has one ear for you and one for the distance, always. Win the near ear first.</p>
-        </article>
-        <article class="lore-entry" id="lore-heron-who-hates-being-looked-at">
-          <h3><a href="cards.html#card-heron-who-hates-being-looked-at">Heron Who Hates Being Looked At</a></h3>
-          <p class="lore-text">It fishes best unobserved and knows when it isn&#x27;t, through walls, through fog, through your closed eyes probably. Surfaces veiled (§6, Design): approach softly and it decides being seen by <em>you</em> is survivable.</p>
-        </article>
-        <article class="lore-entry" id="lore-mule-whos-been-promised-things-before">
-          <h3><a href="cards.html#card-mule-whos-been-promised-things-before">Mule Who&#x27;s Been Promised Things Before</a></h3>
-          <p class="lore-text">&quot;Good grass over here,&quot; they said. (It was adequate.) &quot;Light work,&quot; they said. (It was a mountain.) &quot;Last time,&quot; they said. (It was not.) The mule now operates on a strict evidence-only policy: show up twice, <em>then</em> we&#x27;ll talk. The Ferrier respects this animal more than most people. &quot;Trust with a ledger,&quot; he says, &quot;is still trust.&quot;</p>
-        </article>
-        <article class="lore-entry" id="lore-moth-around-someone-elses-lamp">
-          <h3><a href="cards.html#card-moth-around-someone-elses-lamp">Moth Around Someone Else&#x27;s Lamp</a></h3>
-          <p class="lore-text">It chose a lamp. It&#x27;s just — yours is also nice. It&#x27;s not <em>looking</em> at yours. It mentions only that yours is steadier.</p>
-        </article>
-        <article class="lore-entry" id="lore-vixen-reading-your-tracks">
-          <h3><a href="cards.html#card-vixen-reading-your-tracks">Vixen Reading Your Tracks</a></h3>
-          <p class="lore-text">She knows where you&#x27;ve been, what you carried, and that you paused at the stile — why? Court her and she&#x27;ll read the <em>enemy&#x27;s</em> tracks aloud instead, with commentary.</p>
-        </article>
-        <article class="lore-entry" id="lore-badger-mid-eviction">
-          <h3><a href="cards.html#card-badger-mid-eviction">Badger Mid-Eviction</a></h3>
-          <p class="lore-text">Somebody&#x27;s moving it out of somewhere unjustly, mid-encounter, permanently. It carries the door of its old sett on its back. Offer it ground and it offers you the rest of its considerable opinion of landlords.</p>
-        </article>
-        <article class="lore-entry" id="lore-stag-who-survived-the-painting-of-him">
-          <h3><a href="cards.html#card-stag-who-survived-the-painting-of-him">Stag Who Survived the Painting of Him</a></h3>
-          <p class="lore-text">A Narrator painted him once: heroic, antlered, wrong. He outran the painting. He checks each new teller&#x27;s hands for brushes before standing close.</p>
-        </article>
-        <article class="lore-entry" id="lore-hundredname-who-has-been-watching">
-          <h3><a href="cards.html#card-hundredname-who-has-been-watching">Hundredname, Who Has Been Watching</a></h3>
-          <p class="lore-text">Every Narrator who ever fed it gave it a name. It kept them all and answered to none. It has watched you, specifically, for some time — it knows which corner you favor, which bluffs you repeat, what you do when you&#x27;re losing. The hundredth name, the one it will finally answer to, is the one <em>you&#x27;ll</em> give it — and it is in no hurry whatsoever. Three visits. Maybe four. It has ninety-nine reasons to be sure.</p>
-        </article>
-        <article class="lore-entry" id="lore-burr">
-          <h3><a href="cards.html#card-burr">Burr</a></h3>
-          <p class="lore-text">A hedgehog-shaped objection to everything, attached to nothing, attaching to YOU at speed if you brush past. Echo cracks its certainty; kindness does the rest.</p>
-        </article>
-        <article class="lore-entry" id="lore-stray-spark">
-          <h3><a href="cards.html#card-stray-spark">Stray Spark</a></h3>
-          <p class="lore-text">A campfire&#x27;s escaped ember, gone feral on a diet of dry leaves and freedom. It remembers being part of a warm circle. At Echo, it remembers <em>hard</em>.</p>
-        </article>
-        <article class="lore-entry" id="lore-gull-who-owns-the-pier">
-          <h3><a href="cards.html#card-gull-who-owns-the-pier">Gull Who Owns the Pier</a></h3>
-          <p class="lore-text">It will fight you for chips. It will win. The pier&#x27;s previous owners (gulls, all) ceded by treaty. Befriend it and it extends the treaty to your whole board, loudly.</p>
-        </article>
-        <article class="lore-entry" id="lore-dog-who-was-left">
-          <h3><a href="cards.html#card-dog-who-was-left">Dog Who Was Left</a></h3>
-          <p class="lore-text">It waited. That part it did perfectly. The keepers will tell you the two dogs are not the same dog, and the keepers are almost certainly right, and nobody has ever once believed them. It bites first now. It bites <em>first</em> now. But below half — when its fear cracks open and the old waiting shows through — it has been known to let a hand come all the way down to its head. Archivist Pell has befriended it forty times across forty matches. He says it gets easier. He is lying, and does it anyway.</p>
-        </article>
-        <article class="lore-entry" id="lore-weasel-in-the-walls">
-          <h3><a href="cards.html#card-weasel-in-the-walls">Weasel in the Walls</a></h3>
-          <p class="lore-text">You hear it between tiles. Landlords have written ballads. At Echo, it surfaces somewhere impossible, tired of running the gaps alone.</p>
-        </article>
-        <article class="lore-entry" id="lore-boar-of-the-burnt-orchard">
-          <h3><a href="cards.html#card-boar-of-the-burnt-orchard">Boar of the Burnt Orchard</a></h3>
-          <p class="lore-text">The orchard burned; the boar stayed, guarding stumps out of furious loyalty. Bring it to ground that blooms and watch the fury find a better job.</p>
-        </article>
-        <article class="lore-entry" id="lore-owl-that-answers-no-one">
-          <h3><a href="cards.html#card-owl-that-answers-no-one">Owl That Answers No One</a></h3>
-          <p class="lore-text">Every question gets silence; every silence gets watched. The keepers list it as the Memory&#x27;s worst conversationalist and best judge of character. At Echo, it asks YOU something — answer honestly.</p>
-        </article>
-        <article class="lore-entry" id="lore-wolverine-wearing-a-trap">
-          <h3><a href="cards.html#card-wolverine-wearing-a-trap">Wolverine Wearing a Trap</a></h3>
-          <p class="lore-text">The trap caught it years ago. The trap lost. It has carried the thing since — proof, warning, dare. It intercepts everything that comes close, because everything that ever came close had hands. Befriending it is not gentle work: you wear it down, you stand inside its reach while it&#x27;s shaking, and then — if it lets you — you take the trap off. Pell has done it once. He says the sound the chain made hitting the ground is the best thing he&#x27;s heard in the Archive, and Pell works in a building full of music.</p>
-        </article>
-        <article class="lore-entry" id="lore-ashmane-who-outran-the-ill-intent">
-          <h3><a href="cards.html#card-ashmane-who-outran-the-ill-intent">Ashmane, Who Outran the Ill Intent</a></h3>
-          <p class="lore-text">It is the only thing on record that the ill intent chased and lost. What it learned in that chase is carved into every line of it: <em>being held and being erased feel identical from inside.</em> So it will not be held. It strikes whatever arrives. It survives what should have ended it, because it has practice. And yet — wounded, cracked open, Echo ringing through it — it has, three times in the Archive&#x27;s history, let someone stay inside its reach. All three describe the same moment: the running stops. The paper-bare flank rises and falls. And the wild thing decides, against all its evidence, to find out what holding is for. — <em>&quot;You don&#x27;t tame Ashmane,&quot; says the Ferrier. &quot;You testify.&quot;</em><br><br>---</p>
-        </article>
-      </section>
-    </div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <span>Recollect</span>
-      <a href="rules.html">Rules in brief</a>
-      <a href="cards.html">Card catalog</a>
       <span class="note">A fading Memory, told in paper &amp; ink.</span>
     </div>
   </footer>
+  <script src="options.js" defer></script>
 </body>
 </html>

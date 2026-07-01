@@ -4,11 +4,11 @@
 //! suite on every state. Any violation is a true engine bug, not a model artifact.
 //!
 //! ONE definition checks THREE shapes, selected by [`Mode`]:
-//! - **1v1 duel** — a Lorekeeper-vs-Lorekeeper telling.
+//! - **1v1 duel** — a Lorekeeper-vs-Lorekeeper match.
 //! - **Solace PvE** — 1v1 where seat B plays Unwritten/IllIntent through the same path
 //!   as any seat. (The Solace is just another faction; no director to special-case.)
 //!   These two differ only by **seat B's faction** (its deck).
-//! - **2v2 team** — the four-slot 6×6 telling: init via `Engine::new_2v2_with_opener`,
+//! - **2v2 team** — the four-slot 6×6 match: init via `Engine::new_2v2_with_opener`,
 //!   actions from the active SLOT's team (`legal_commands(active_slot.team())`), redaction
 //!   checked from all four slots via `view_for_slot`. The 6×6 board × four hands branches
 //!   hard, so it runs a TIGHT bound (small decks, low `max_round`) — a shallow frontier on
@@ -26,7 +26,7 @@
 //! that would turn it red:
 //! - **state validity** (`invariants::check`) — overheal / phantom score / runaway
 //!   round all go red.
-//! - **liveness** (no stuck telling) — a phase with no legal command goes red.
+//! - **liveness** (no stuck match) — a phase with no legal command goes red.
 //! - **determinism** (`decide` re-run on independent clones is byte-identical) — a
 //!   clock/HashMap/non-counter-RNG read in `decide` would diverge the two clones.
 //! - **no seed leak** (the seed string is in no state, no event, no per-seat view) —
@@ -46,7 +46,7 @@ use stateright::{Checker, Model, Property};
 
 pub type SnapJson = String;
 
-/// Which telling shape the bridge explores. 1v1 (the Solace/Lorekeeper duel —
+/// Which match shape the bridge explores. 1v1 (the Solace/Lorekeeper duel —
 /// `deck_a` vs `deck_b`, opener seat A) or 2v2 (four slots A1→B1→A2→B2 on the
 /// 6×6 board, both A-slots fielding `deck_a`, both B-slots `deck_b`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,10 +62,10 @@ pub struct EngineModel {
     pub seed: u64,
     /// Stop exploring past this round so the frontier stays finite and small.
     pub max_round: u8,
-    /// 1v1 (the default) or the 2v2 four-slot telling.
+    /// 1v1 (the default) or the 2v2 four-slot match.
     pub mode: Mode,
     /// An optional pre-seeded **initial snapshot** to BFS from instead of genesis.
-    /// Used to make a mid-telling configuration reachable that pure genesis-BFS would
+    /// Used to make a mid-match configuration reachable that pure genesis-BFS would
     /// take too long to reach — notably a **standing-Faded form + its base in hand**, so
     /// the **Devolve** action (the §5 rescue) is immediately legal and EVERY property
     /// (validity, liveness, determinism, no-seed-leak, redaction) is asserted across the
@@ -146,7 +146,7 @@ impl Model for EngineModel {
     type Action = Command;
 
     fn init_states(&self) -> Vec<Self::State> {
-        // A pre-seeded mid-telling snapshot (e.g. a standing-Faded form + its base in
+        // A pre-seeded mid-match snapshot (e.g. a standing-Faded form + its base in
         // hand, so Devolve is immediately reachable) overrides genesis when present.
         if let Some(snap) = &self.init_override {
             return vec![snap.clone()];
@@ -211,7 +211,7 @@ impl Model for EngineModel {
             // Liveness (reachability — needs the engine, not just the state): every
             // non-finished, in-bound state offers at least one legal command (to the
             // active seat in 1v1, the active slot's team in 2v2).
-            Property::<Self>::always("no stuck telling (liveness)", |m, s| {
+            Property::<Self>::always("no stuck match (liveness)", |m, s| {
                 let e = m.engine_from(s);
                 if matches!(e.state().phase, Phase::Finished { .. })
                     || e.state().round > m.max_round

@@ -36,7 +36,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-/// One hosted telling, as the matches map and transport see it. The
+/// One hosted match, as the matches map and transport see it. The
 /// authoritative state does not live here — a per-match **actor task** owns the
 /// [`Session`] by value (no `Mutex<Session>`) and fans per-seat frames out over
 /// per-seat mpsc senders (no lossy `broadcast`). This struct keeps only what the
@@ -1070,7 +1070,7 @@ mod tests {
             );
         }
 
-        // Commit–reveal: when the telling ends the server pushes the seed reveal
+        // Commit–reveal: when the match ends the server pushes the seed reveal
         // to BOTH seats. Read it off each socket and verify it reproduces the
         // commitment published in the creation response — a provably-fair shuffle.
         for sock in [&mut a, &mut b] {

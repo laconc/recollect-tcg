@@ -6,7 +6,7 @@
 2 [   ::   ][   ::   ][   ::   ][   ::   ][   ::   ]
 1 [   ::   ][   ::   ][   ::   ][   ::   ][   ::   ]
    a         b         c         d         e      (:: yours · .. theirs · ~ fading · ^ can evolve · ! Echo · ° held/lamplit · ⌂ landmark · ▒ fabrication · ░ dusk)
-(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)
+(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered plays below)
 Score if Nightfall struck now: A 0 — B 0
 You: 2 anima (your play budget — no fixed action count; End Turn when ready) · deck 14 · hand:
    0. Arbiter Imperishable   3c 30/25/60 Cross Resolve

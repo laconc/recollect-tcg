@@ -3,7 +3,7 @@ import { Page, Locator, expect, test } from "@playwright/test";
 // Shared helpers for the Recollect UI suite. These drive the BUILT play client
 // (`/client/`) as a player would.
 //
-// #100 Phase B: the LOCAL 1v1 telling is now canvas-native — the in-canvas
+// #100 Phase B: the LOCAL 1v1 match is now canvas-native — the in-canvas
 // affordances drive every action and the **virtual a11y tree** (#shell-a11y)
 // mirrors them as actionable ARIA buttons (the accessible path, invariant 7). The
 // transitional HTML move buttons (#moves) are retired for that mode (they remain
@@ -11,30 +11,30 @@ import { Page, Locator, expect, test } from "@playwright/test";
 // drive the a11y tree's buttons (which fire the SAME engine commands the canvas
 // affordances do); the picker/responsive helpers are unchanged.
 
-/** Open the play client and wait for the "Choose your telling" picker to render
+/** Open the play client and wait for the "Choose your match" picker to render
  *  (which only happens once the wgpu renderer has mounted and `main()` ran). */
 export async function openPicker(page: Page): Promise<void> {
   await page.goto("/client/");
-  await expect(page.getByRole("heading", { name: "Choose your telling" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Choose your match" })).toBeVisible({
     timeout: 30_000,
   });
 }
 
-/** Start a LOCAL (vs-AI) game by picking the first offered telling, and wait for
+/** Start a LOCAL (vs-AI) game by picking the first offered deck, and wait for
  *  the in-game shell to come live. Returns when the board is playable (the canvas
  *  shell is drawn and the a11y tree's End Turn button exists). */
 export async function startLocalGame(page: Page): Promise<void> {
   await openPicker(page);
-  // The three tellings come first; "Watch a 2v2" / "Play online" follow. Pick the
-  // first telling (a normal 1v1-vs-AI local game).
+  // The three decks come first; "Watch a 2v2" / "Play online" follow. Pick the
+  // first deck (a normal 1v1-vs-AI local game).
   await page.locator("#picker .style").first().click();
   // The status line proves the engine is live: the canvas-native gameplay prompt
   // ("tap a piece or card to act, or End Turn."), OR — at the very start — the
-  // match-start opener announcement ("… opens the telling …"), or the
-  // opening Mulligan modal's prompt ("… mulligan your hand?"). Any means the telling
+  // match-start opener announcement ("… opens the match …"), or the
+  // opening Mulligan modal's prompt ("… mulligan your hand?"). Any means the match
   // is live.
   await expect(page.locator("#status")).toContainText(
-    /tap a piece or card to act|End Turn|opens? the telling|mulligan your hand/i,
+    /tap a piece or card to act|End Turn|opens? the match|mulligan your hand/i,
     { timeout: 15_000 },
   );
   // The opening Mulligan modal opens automatically at the very start. To reach the
@@ -72,7 +72,7 @@ export function a11yTree(page: Page): Locator {
   return page.locator("#shell-a11y");
 }
 
-/** Start a local telling, but SKIP (don't fail) the test if the wgpu canvas shell
+/** Start a local match, but SKIP (don't fail) the test if the wgpu canvas shell
  *  never mounts — i.e. there is no real GL surface (a headless/no-GPU sandbox: the
  *  bundled headless-shell's software-WebGL is rejected by wgpu, so the canvas never
  *  comes live and `startLocalGame` times out). Used by the canvas-dependent specs
@@ -91,7 +91,7 @@ export async function startLocalGameOrSkip(page: Page): Promise<void> {
   }
 }
 
-/** #100 — mount an ONLINE 1v1 telling in the canvas shell with NO live server: inject a
+/** #100 — mount an ONLINE 1v1 match in the canvas shell with NO live server: inject a
  *  sample redacted `welcome` (the real wire shape the server sends — a `PlayerView` for
  *  `seat` + the legal list) through the same `onServerMsg` path the socket drives. The
  *  live socket is browser-verify; this covers the headless-testable online rendering /
@@ -111,12 +111,12 @@ export async function startOnlineGame(
     },
     [seat, moves, seed] as const,
   );
-  // The online shell is live: the status line names the online telling, and the a11y
+  // The online shell is live: the status line names the online match, and the a11y
   // tree's End Turn button proves the actionable mirror is built (when it's your turn).
   await expect(page.locator("#status")).toContainText(/online/i, { timeout: 15_000 });
 }
 
-/** Mount an online 1v1 telling whose board has a STANDING-FADED form (rescuable) on tile
+/** Mount an online 1v1 match whose board has a STANDING-FADED form (rescuable) on tile
  *  12 with the matching base in hand — so the canvas DEVOLVE (recede) affordance is live.
  *  Injected through the production `onServerMsg` path (no live server). Returns once the
  *  online shell is up. Used by the devolve-affordance specs. */
@@ -130,9 +130,9 @@ export async function startDevolveGame(page: Page, seed = 7): Promise<void> {
   await expect(page.locator("#status")).toContainText(/online/i, { timeout: 15_000 });
 }
 
-/** #100 — mount an ONLINE 2v2 telling (a 6×6 `TeamView`) in the canvas shell, no live
+/** #100 — mount an ONLINE 2v2 match (a 6×6 `TeamView`) in the canvas shell, no live
  *  server. Injects a sample redacted `team_welcome` through the production `onServerMsg`
- *  path. Returns once the status names the 2v2 telling. */
+ *  path. Returns once the status names the 2v2 match. */
 export async function startTeamGame(page: Page, seed = 7): Promise<void> {
   await openPicker(page);
   await page.evaluate((seed) => {

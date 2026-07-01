@@ -20,7 +20,7 @@ pub mod verbs;
 
 use recollect_core::{Engine, Seat};
 
-/// The numbered "Legal tellings" menu for `seat`, as a `String` — the same block
+/// The numbered "Legal plays" menu for `seat`, as a `String` — the same block
 /// [`local`]'s interactive prompt prints (every legal command through the canonical
 /// labeler, plus the input hint). Exposed for the `tui_capture` example so it can
 /// snapshot the Glimpse / Mulligan menus without a TTY; the underlying builder stays

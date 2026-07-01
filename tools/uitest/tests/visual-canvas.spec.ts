@@ -163,10 +163,10 @@ test.describe("wgpu canvas visual goldens @visual-canvas", () => {
   test("the opening Mulligan modal renders its golden", async ({ page }, testInfo) => {
     await freezeSeed(page);
     // Reach the opening Mulligan WITHOUT dismissing it (startLocalGame would keep the
-    // hand): open the picker, pick a telling, and capture the canvas with the modal up
+    // hand): open the picker, pick a deck, and capture the canvas with the modal up
     // — the blocking-overlay set-piece (scrim + Mulligan/Keep). Guard on a GL surface.
     await page.goto("/client/");
-    const heading = page.getByRole("heading", { name: "Choose your telling" });
+    const heading = page.getByRole("heading", { name: "Choose your match" });
     try {
       await expect(heading).toBeVisible({ timeout: 30_000 });
     } catch (_) {

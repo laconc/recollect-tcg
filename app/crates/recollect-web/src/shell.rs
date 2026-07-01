@@ -283,18 +283,18 @@ pub struct ShellModel {
 
     // ── Phase D: the Dusk / Nightfall set-piece + the result screen ───────────
     /// The animated **Dusk / Nightfall set-piece** to draw over the board, when the
-    /// telling crosses one of the binding beats (Phase D). `Some` only for the brief
+    /// match crosses one of the binding beats (Phase D). `Some` only for the brief
     /// set-piece frames the JS pacer animates (the round-boundary flourish — the rim
     /// contracting/darkening, the clock face lit, the seal); `None` on a normal frame.
     /// Pairs with the `#status` live-region announcement Phase C already wired
     /// (`round_announcement`) — this is the *visual* half of "Dusk falls" / "Nightfall".
     #[serde(default)]
     pub dusk: Option<DuskSetPiece>,
-    /// The in-canvas **result screen** to draw, once the telling has ended (Phase D).
+    /// The in-canvas **result screen** to draw, once the match has ended (Phase D).
     /// `Some` only at the verdict; the shell then draws the verdict (in the game's
     /// voice), the score breakdown (board + the Solace's erasure tally), and the
     /// action affordances (Rematch / New opponent / Back to site). A scrim sits behind
-    /// it so the final board still shows through. `None` mid-telling.
+    /// it so the final board still shows through. `None` mid-match.
     #[serde(default)]
     pub result: Option<ResultScreen>,
 
@@ -311,7 +311,7 @@ pub struct ShellModel {
 }
 
 impl ShellModel {
-    /// Whether a **blocking modal** is up — the in-canvas result screen (the telling has
+    /// Whether a **blocking modal** is up — the in-canvas result screen (the match has
     /// ended) or an active Glimpse / Mulligan choice. These overlays take over the
     /// surface as a focused decision, so the live chrome (the board affordances + the FAB
     /// lane + the inspect panel) is suppressed beneath them and nothing actionable bleeds
@@ -816,8 +816,8 @@ pub fn build_shell(model: &ShellModel, vw: f32, vh: f32) -> ShellScene {
     }
 
     // ── The live chrome — the board affordances, the HUD band, the hand tray, the FABs,
-    // and the inspect panel — is drawn while the telling is LIVE. It is suppressed whenever a
-    // **blocking modal** is up (item 5): the result screen (Phase D, the telling has ended) OR
+    // and the inspect panel — is drawn while the match is LIVE. It is suppressed whenever a
+    // **blocking modal** is up (item 5): the result screen (Phase D, the match has ended) OR
     // an active Glimpse / Mulligan choice. Those overlays are a focused decision, so the
     // affordance layer (the green action dots / evolve chevrons) and the FAB lane (End Turn /
     // Glimpse) MUST NOT bleed through them — drawing them above the modal scrim would invite a
@@ -900,7 +900,7 @@ pub fn build_shell(model: &ShellModel, vw: f32, vh: f32) -> ShellScene {
     }
     // ── the Glimpse / Mulligan choice prompt — a modal card over the board, drawn
     // ABOVE the live chrome (it's a focused decision) but BELOW the result screen (the
-    // telling can't end mid-choice, so they never co-occur — but the order is honoured).
+    // match can't end mid-choice, so they never co-occur — but the order is honoured).
     if let Some(choice) = &model.choice
         && model.result.is_none()
     {
@@ -3512,7 +3512,7 @@ pub struct ReplayCaption {
 pub struct ReplayBeat {
     /// The subtle on-canvas caption naming the action ("The Solace tells an
     /// Unwriting", "Lorekeepers move a spirit"). Short, in the game's register —
-    /// *banished*, never killed; only the Solace *Unwrites*.
+    /// *banished*, never killed; only the Solace *unwrites*.
     pub caption: String,
     /// The a11y live-region text for this beat — the same fact as [`caption`](Self::caption),
     /// phrased for narration (it IS the `#status` announcement). One source for the visual
@@ -3623,7 +3623,7 @@ pub fn beat_for_command(
 
     // The anchor — the headline action. Pick the FIRST event that names a discrete
     // play, in the order the engine emits them (the command's primary effect leads).
-    // The phrasing stays in-register: spirits are *banished*; only the Solace *Unwrites*.
+    // The phrasing stays in-register: spirits are *banished*; only the Solace *unwrites*.
     let headline: Option<(&str, &str)> = events.iter().find_map(|e| match e {
         E::SpiritPlayed {
             face_down: true, ..
@@ -3704,15 +3704,15 @@ pub fn beat_for_command(
 
 /// The match-start announcement: **who opens** (and always the first player), in the
 /// game's register. Local 1v1 always opens the human (seat A), so this reads "You open
-/// the telling" from the human's vantage; the opponent-opens phrasing is here for the
+/// the match" from the human's vantage; the opponent-opens phrasing is here for the
 /// spectator / future-opener paths. Pure so it's native-tested and shared with the
 /// `#status` live region.
 pub fn opener_announcement(you_seat: Seat, first_seat: Seat, opp_name: &str) -> String {
     if you_seat == first_seat {
-        "You open the telling — the first word is yours.".to_string()
+        "You open the match — the first word is yours.".to_string()
     } else {
         let opp = opp_register(opp_name, first_seat);
-        format!("{opp} opens the telling — they take the first word.")
+        format!("{opp} opens the match — they take the first word.")
     }
 }
 
@@ -3786,11 +3786,11 @@ pub struct DuskSetPiece {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResultScreen {
     /// The headline verdict, in the game's voice — "The Memory keeps the Lorekeepers" /
-    /// "The Memory is forgotten" (the Solace wins — erasure carried the telling) / "Both
+    /// "The Memory is forgotten" (the Solace wins — erasure carried the match) / "Both
     /// are kept — a draw". Built by the caller so the register adapts to who won + which
     /// faction (and to PvP, where it names the human winner).
     pub verdict: String,
-    /// A one-line elaboration under the verdict (what carried the telling), e.g. "Held
+    /// A one-line elaboration under the verdict (what carried the match), e.g. "Held
     /// to the last — your spirits stand in the Memory." / "Erased faster than you could
     /// hold — the never-remembered won the page." A quiet second line; may be empty.
     #[serde(default)]
@@ -3945,7 +3945,7 @@ fn dusk_set_piece(set: &DuskSetPiece, s: &mut ShellScene, bx: f32, by: f32, side
         let dot = (clock_r * 0.13).max(1.5);
         let dx = ccx + ang.cos() * pr;
         let dy = ccy + ang.sin() * pr;
-        // Hours 9..12 are "past the Dusk" (the failing edge of the telling); they read dark.
+        // Hours 9..12 are "past the Dusk" (the failing edge of the match); they read dark.
         let failing = h >= 8;
         let col = if failing {
             DUSK
@@ -4203,7 +4203,7 @@ pub fn result_action_rects(res: &ResultScreen, vw: f32, vh: f32) -> Vec<(String,
         .collect()
 }
 
-/// Compose the [`ResultScreen`] for a finished telling (Phase D) — the verdict in the
+/// Compose the [`ResultScreen`] for a finished match (Phase D) — the verdict in the
 /// game's voice, the score breakdown, and the mode-adapted actions. The verdict register:
 ///
 ///  • A **Lorekeeper** wins ⇒ *the Memory keeps them* — what is loved is kept. From the
@@ -4248,7 +4248,7 @@ pub fn build_result_screen(
     let (verdict, flavor, draw, winner) = match result {
         MatchResult::Draw => (
             "Both are kept — a draw.".to_string(),
-            "Neither telling overtook the other; the Memory holds them both.".to_string(),
+            "Neither story overtook the other; the Memory holds them both.".to_string(),
             true,
             None,
         ),
@@ -4256,7 +4256,7 @@ pub fn build_result_screen(
             let won = faction_of(seat) == Faction::Solace;
             if won {
                 // The Solace wins by erasure — the page is forgotten. (Never "killed/
-                // destroyed"; only the Solace Unwrites — the register is Solace-only.)
+                // destroyed"; only the Solace unwrites — the register is Solace-only.)
                 let v = if human == seat {
                     "The Memory is forgotten — you let it slip.".to_string()
                 } else {
@@ -4273,9 +4273,9 @@ pub fn build_result_screen(
                     format!("The Memory keeps {}.", word_of(seat))
                 };
                 let f = if human == seat {
-                    "Held to the last — your spirits still stand in the telling.".to_string()
+                    "Held to the last — your spirits still stand in the Memory.".to_string()
                 } else {
-                    "Held to the last — their spirits still stand in the telling.".to_string()
+                    "Held to the last — their spirits still stand in the Memory.".to_string()
                 };
                 (v, f, false, Some(seat))
             }
@@ -4367,7 +4367,7 @@ pub fn result_a11y_tree(res: &ResultScreen) -> Vec<A11yNode> {
     nodes.push(A11yNode {
         id: "section-result".into(),
         role: "group".into(),
-        label: format!("The telling has ended. {}", res.verdict),
+        label: format!("The match has ended. {}", res.verdict),
         target: None,
         enabled: false,
         level: 2,
@@ -5386,7 +5386,7 @@ mod tests {
         // The recede affordance is reachable by keyboard / screen reader (invariant 7): the
         // standing-Faded form's tile button announces it can recede, the base card announces
         // it recedes a faded form, and both speak the faction's word. A Lorekeeper REVERTS.
-        let mut m = model(); // model() is a Lorekeeper telling (you_faction = "Lorekeepers")
+        let mut m = model(); // model() is a Lorekeeper match (you_faction = "Lorekeepers")
         m.devolvable_tiles = vec![12];
         m.actionable_tiles = vec![12];
         m.devolve_bases = vec![0];
@@ -6128,7 +6128,7 @@ mod tests {
     fn beat_counts_the_solace_erasure_tally_on_an_unwriting() {
         // An Unwriting that erases an impression → the Solace register ("erases an
         // impression" / "tells an Unwriting") AND the post-command tally is reported so
-        // the strip counts up. Never "killed/destroyed" — only the Solace *Unwrites*.
+        // the strip counts up. Never "killed/destroyed" — only the Solace *unwrites*.
         let evs = vec![
             E::UnwritingTold {
                 seat: Seat::B,
@@ -6389,7 +6389,7 @@ mod tests {
                 "the {label} action button is drawn"
             );
         }
-        // The live chrome is SUPPRESSED at the result screen (the telling has ended): the
+        // The live chrome is SUPPRESSED at the result screen (the match has ended): the
         // FAB labels + the HUD's SCORE/ANIMA captions must not bleed through the result card.
         for chrome in ["End Turn", "Glimpse", "SCORE", "ANIMA"] {
             assert!(

@@ -74,7 +74,7 @@ fn glimpse_opens_a_pending_peek_redacted_from_the_opponent() {
     );
     assert!(
         matches!(e.state().phase, Phase::Acting),
-        "the telling resumes"
+        "the match resumes"
     );
 }
 

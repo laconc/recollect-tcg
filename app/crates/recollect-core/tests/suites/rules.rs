@@ -302,10 +302,10 @@ fn hand_cap_opens_release_window_and_bottoms_the_choice() {
     );
 }
 
-// ---- Rooted Telling --------------------------------------------------------
+// ---- Rooted Play -----------------------------------------------------------
 
 #[test]
-fn rooted_telling_home_rows_reach_and_impressions() {
+fn rooted_play_home_rows_reach_and_impressions() {
     let mut st = blank();
     put(&mut st, t(2, 1), 0, Seat::A, None); // Dawnling: cross projects (2,2)
     st.board[t(2, 3) as usize].impressions = vec![Seat::A]; // impressions are expansion fuel

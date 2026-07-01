@@ -17,7 +17,7 @@
 //! inspect, special, 2v2, online-1v1, online-2v2, glimpse-burn, glimpse-keep, mulligan}. Writes
 //! `<out_prefix>.png` (the gallery script passes the committed path as <out_prefix>). The Glimpse +
 //! Mulligan trio render the in-canvas choice modals; `online-1v1` / `online-2v2` render the
-//! FULL canvas shell for an ONLINE telling, built from the server's REDACTED view (no engine).
+//! FULL canvas shell for an ONLINE match, built from the server's REDACTED view (no engine).
 
 use ab_glyph::{Font, FontRef, Glyph, PxScale, ScaleFont};
 use recollect_web::scene::Color as SColor;
@@ -42,10 +42,10 @@ fn main() {
 
     // Scenario routing:
     //  • `2v2`         — the bare 6×6 TeamView BOARD full-frame (the legacy local-2v2-WATCH look).
-    //  • `online-1v1`  — the FULL canvas shell for an ONLINE 1v1 telling, built from the server's
+    //  • `online-1v1`  — the FULL canvas shell for an ONLINE 1v1 match, built from the server's
     //                    REDACTED PlayerView + legal list (no engine) via `online::shell_model_for_*`
-    //                    — the same shell a local telling draws, the opponent counts/backs only.
-    //  • `online-2v2`  — the FULL canvas shell for an ONLINE 2v2 telling over the 6×6 TeamView.
+    //                    — the same shell a local match draws, the opponent counts/backs only.
+    //  • `online-2v2`  — the FULL canvas shell for an ONLINE 2v2 match over the 6×6 TeamView.
     //  • `special`     — the tricky board states (items 12–14): a Landmark with a spirit, a held
     //                    lamplit spirit on a faded Dusk tile that can still act.
     //  • everything else — the full 1v1 LOCAL shell.
@@ -273,12 +273,12 @@ fn build_team_board_scene(vw: f32, vh: f32) -> ShellScene {
     s
 }
 
-/// Build the FULL canvas shell model for an **online 1v1** telling — the launch-critical path. A
+/// Build the FULL canvas shell model for an **online 1v1** match — the launch-critical path. A
 /// real engine plays a few opening moves so the board shows placed cards, then we take its
 /// **redacted** `PlayerView` (seat A's vantage — you see only your seat) + the legal-move list and
 /// feed `online::shell_model_for_player_view`, exactly as the live client does over the wire (no
 /// engine on the client). The still proves the online shell renders the same HUD · hand ·
-/// affordances a local telling does, with the opponent as counts/backs only (redaction).
+/// affordances a local match does, with the opponent as counts/backs only (redaction).
 fn build_online_model() -> ShellModel {
     use recollect_core::cards::canon_catalog;
     use recollect_core::types::{CardId, CardKind, Seat};
@@ -315,7 +315,7 @@ fn build_online_model() -> ShellModel {
     shell_model_for_player_view(view, &legal, "Warden Ames", "Corin Ashe")
 }
 
-/// Build the FULL canvas shell model for an **online 2v2** telling over the 6×6 `TeamView` — the
+/// Build the FULL canvas shell model for an **online 2v2** match over the 6×6 `TeamView` — the
 /// active slot's vantage (your hand + affordances; the opposing team as combined counts). Built
 /// from the engine's redacted `view_for_slot` + the slot's legal list via
 /// `online::shell_model_for_team_view`, the exact wire path. The still shows the 6×6 board in the

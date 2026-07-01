@@ -219,7 +219,7 @@ test.describe("accessibility", () => {
 
     // Resolving the recede (pick up the base, activate the form) ANNOUNCES the move in the
     // live region as a worded, glyph-free phrase — "Revert … with … — the rescue", never the
-    // canvas's ← / ⚔ glyphs. (Driven here, in the same loaded telling, so no extra cold start.)
+    // canvas's ← / ⚔ glyphs. (Driven here, in the same loaded match, so no extra cold start.)
     await base.press("Enter");
     await tile.press("Enter");
     const status = page.locator("#status");

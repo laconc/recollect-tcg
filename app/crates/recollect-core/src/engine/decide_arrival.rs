@@ -86,7 +86,7 @@ pub(crate) fn decide_play_spirit(
             return Err(Reject::FirstPlacementHomeRows);
         }
     }
-    // Rooted Telling + the Margin Rule.
+    // Rooted Play + the Margin Rule.
     let proj = projection(state, actor, &ctx.catalog);
     if !proj[*tile as usize] && any_projected_placement(state, actor, &ctx.catalog) {
         return Err(Reject::OutsideProjection);

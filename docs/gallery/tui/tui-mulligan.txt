@@ -1,5 +1,5 @@
 
-Legal tellings:
+Legal plays:
     0. Glimpse (burn a hand card, then peek your top card)
     1. End turn
     2. Mulligan (redraw a fresh hand, bottom one — once, at the opening)

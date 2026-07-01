@@ -78,7 +78,7 @@ fn different_seeds_diverge() {
     let mut e2 = new_match(8);
     drive_first_legal(&mut e1, 60);
     drive_first_legal(&mut e2, 60);
-    assert_ne!(e1.state(), e2.state(), "shuffles differ; tellings differ");
+    assert_ne!(e1.state(), e2.state(), "shuffles differ; matches differ");
 }
 
 #[test]

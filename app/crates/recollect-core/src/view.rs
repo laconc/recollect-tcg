@@ -58,7 +58,7 @@ pub struct TileView {
     /// the rendered contract is one mark per tile (we tried stacking and opted against it).
     pub impression: Option<Seat>,
     pub faded: bool,
-    /// Your ink wash: a tile your telling can reach.
+    /// Your ink wash: a tile your play can reach.
     pub in_your_projection: bool,
     /// The terrain on this tile, if any — a Landmark (always shown)
     /// or a Fabrication (shown openly to its owner; an enemy's face-down lie
@@ -155,7 +155,7 @@ pub struct TeamView {
     pub moved_this_turn: Vec<u8>,
     /// Mulligan (§5): the public per-seat mulligan beat — see
     /// [`PlayerView::mulliganed`]. The mulligan is a 1v1 opening mechanic, so in a
-    /// 2v2 telling this stays `[false, false]`; the field rides the view for one
+    /// 2v2 match this stays `[false, false]`; the field rides the view for one
     /// uniform shape across modes.
     #[serde(default)]
     pub mulliganed: [bool; 2],

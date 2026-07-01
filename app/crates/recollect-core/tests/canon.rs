@@ -8,7 +8,7 @@ use recollect_core::state::Phase;
 use recollect_core::types::{CardKind, Resonance};
 
 #[test]
-fn the_full_telling_card_count_and_architecture_math_holds() {
+fn the_full_match_card_count_and_architecture_math_holds() {
     let cat = canon_catalog();
     assert_eq!(
         cat.len(),

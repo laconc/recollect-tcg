@@ -207,7 +207,7 @@ button.end-turn:hover { background: var(--seat-a); border-color: var(--seat-a); 
 /* The actionable style cards are real <button>s (keyboard-operable Tab stops);
    reset the browser chrome so they read as the cards they are (full-width, left-aligned,
    inheriting the page font) and carry the same visible focus ring as every other control. */
-button.style.telling {
+button.style.advance {
   display: block; width: 100%; text-align: left; font: inherit; line-height: 1.45;
 }
 .style:hover { border-color: var(--seat-a); }
@@ -258,7 +258,7 @@ button:hover { transform: translateY(-1px); }
 button:active { transform: translateY(0); }
 /* The full-width style cards settle in place — the border-color shift is their hover
    affordance (matching the rest of the picker); a 1px lift on a wide card reads as jitter. */
-button.style.telling:hover, button.style.telling:active { transform: none; }
+button.style.advance:hover, button.style.advance:active { transform: none; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
@@ -298,7 +298,7 @@ button.style.telling:hover, button.style.telling:active { transform: none; }
   button, #hand .chip { padding: 10px 14px; display: inline-flex; align-items: center; }
   /* The full-width style cards stay block (the inline-flex above is for compact buttons);
      keep their roomy card padding rather than the compact button padding. */
-  button.style.telling { display: block; padding: 12px 14px; }
+  button.style.advance { display: block; padding: 12px 14px; }
   .host-form input, .host-form select, select, #diff { padding: 9px 10px; }
   #hand, #moves, #actions { gap: 10px; }
   /* Hover-lift is sticky on touch (the tap leaves the element "hovered"); drop it. */

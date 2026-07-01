@@ -6,7 +6,7 @@
 2 [   ::   ][   ::   ][   ::   ][   ::   ][   ::   ]
 1 [   ::   ][   ::   ][   ::   ][   ::   ][   ::   ]
    a         b         c         d         e      (:: yours · .. theirs · ~ fading · ^ can evolve · ! Echo · ° held/lamplit · ⌂ landmark · ▒ fabrication · ░ dusk)
-(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)
+(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered plays below)
 Score if Nightfall struck now: A 0 — B 0
 You: 2 anima (your play budget — no fixed action count; End Turn when ready) · deck 14 · hand:
    0. Frenzy Kit             2c 45/ 5/50 Cross Fury
@@ -16,7 +16,7 @@ You: 2 anima (your play budget — no fixed action count; End Turn when ready) �
    4. Wrong-Way Skylark      2c 45/10/40 Wide Wonder
 Them: 0 anima · hand 5 · deck 15
 
-Legal tellings:
+Legal plays:
     0. Keep Flarewing Drake on top
     1. Bottom Flarewing Drake for +1 anima
   (type a number to act · or a verb: p/o/m/v/dv/rc/g/r/end · 'i N' inspect hand card N · 'i <tile>' e.g. 'i c3' inspect a board card)

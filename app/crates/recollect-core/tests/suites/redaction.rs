@@ -286,5 +286,5 @@ fn the_ink_wash_is_per_seat() {
     );
     let a_wash: Vec<bool> = va.tiles.iter().map(|t| t.in_your_projection).collect();
     let b_wash: Vec<bool> = vb.tiles.iter().map(|t| t.in_your_projection).collect();
-    assert_ne!(a_wash, b_wash, "each Narrator sees her own telling's edge");
+    assert_ne!(a_wash, b_wash, "each Narrator sees her own play's edge");
 }

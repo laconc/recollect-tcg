@@ -116,8 +116,8 @@ and extend it to 1v1 and the std-deck path.
 | metric | measured | target band | source |
 |---|---|---|---|
 | 1v1 fair anchor (A win share, cr12) | 50.3% | 30–70% (fair ~50%) | `one_v_one_is_a_fair_anchor` |
-| PvE Hard mirror, player-win | ~71–73% | wide gate 25–86% (reports 50–60) | `char_sweep` / `the_solace_pve_fight_is_winnable_and_fair` |
-| PvE Expert mirror, player-win | ~37–38% | 30–40% | `char_sweep` |
+| PvE Hard mirror, player-win | ~46% | wide gate 25–86% (reports 50–60) | `char_sweep` / `the_solace_pve_fight_is_winnable_and_fair` |
+| PvE Expert mirror, player-win | ~51% | 30–40% (reports; measured near-even) | `char_sweep` |
 | difficulty ladder (Expert vs Easy) | > 62% | monotone | `the_difficulty_ladder_is_monotonic` |
 
 ## Reproduce

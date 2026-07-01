@@ -334,7 +334,7 @@ impl Engine {
         )
     }
 
-    /// A 2v2 telling — 6×6, four players A1→B1→A2→B2, two teams.
+    /// A 2v2 match — 6×6, four players A1→B1→A2→B2, two teams.
     /// Each player has their own deck/hand/anima; projection and score are
     /// shared per team.
     /// 2v2 entry that opens A1. For a chosen opener use [`Engine::new_2v2_with_opener`].
@@ -799,7 +799,7 @@ impl Engine {
         // opening window (round 1, this seat untouched, once per seat; 1v1 only —
         // see `mulligan_window`). It IS a player choice, so unlike the system
         // forfeit it belongs in the menu; the window gate keeps it from ever
-        // appearing mid-telling or twice.
+        // appearing mid-match or twice.
         if mulligan_window(st, seat) {
             out.push(Command::Mulligan { seat });
         }

@@ -707,7 +707,7 @@ fn the_gnawing_stilled_calms_adjacent_enemies_attack_and_their_echo() {
     );
 }
 
-// ── Lore completeness: every Deepening has its §9.9 "Telling Completed" entry ──
+// ── Lore completeness: every Deepening has its §9.9 "Cards Completed" entry ──
 
 #[test]
 fn every_deepening_has_full_lore_and_physical_in_the_toml_source() {

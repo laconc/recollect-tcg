@@ -9,8 +9,9 @@ the Docker files). The `make` targets below run `cargo` inside `app/` for you;
 to call `cargo` directly, `cd app` first.
 
     make test                # fast suite, no infra (model-check: make test-verify)
-    make up                  # local stack: Postgres + Grafana LGTM + server
-    make server              # run the server (= cd app && cargo run -p recollect-server)
+    make up                  # the FULL local stack: website + game + Grafana (:8080 + :3000)
+    make dev-up              # fast dev loop: db + Grafana + API server (no site build)
+    make server              # run the server alone (= cd app && cargo run -p recollect-server)
     ./scripts/kind-integration.sh   # ephemeral-cluster integration (CI parity)
 
 
@@ -137,7 +138,7 @@ Start at **[AGENTS.md](AGENTS.md)** (CLAUDE.md points there). The design and
 cards documents in `docs/` are the law; `docs/testing.md` and
 `docs/operations.md` cover the test taxonomy and the ops stack. `make help`
 lists every entry point — notably `make server` + `make client` for network
-play, `make up` for the full compose stack with Grafana, and `make test`
+play, `make up` for the full local stack (website + game + Grafana), and `make test`
 + `make catalog-check` as the gate before any change lands.
 
 Security: see **[SECURITY.md](SECURITY.md)** for the threat model and how to

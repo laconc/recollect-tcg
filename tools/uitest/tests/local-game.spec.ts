@@ -18,7 +18,7 @@ async function activate(page: Page, locator: Locator): Promise<void> {
 // for this mode; the a11y tree's buttons fire the same engine commands.)
 
 test.describe("local game vs the AI", () => {
-  test("starting a telling mounts the board canvas", async ({ page }) => {
+  test("starting a match mounts the board canvas", async ({ page }) => {
     await startLocalGame(page);
     const canvas = page.locator("#board");
     await expect(canvas).toBeVisible();
@@ -97,7 +97,7 @@ test.describe("local game vs the AI", () => {
     await activate(page, endTurn(page));
     // The client stays responsive: the status live region is present, and once the bot's
     // paced turn hands back, the actionable a11y tree returns (the End Turn FAB, or — if the
-    // telling ended — the result section). The DOM "New game" control is retired for the
+    // match ended — the result section). The DOM "New game" control is retired for the
     // canvas-native shell (it's an in-canvas affordance now), so we assert the canvas-native
     // responsiveness instead. No crash; the turn advanced.
     await expect(page.locator("#status")).toBeAttached();
@@ -105,7 +105,7 @@ test.describe("local game vs the AI", () => {
       .poll(
         async () => {
           const tree = a11yTree(page);
-          const ended = (await tree.locator("h2", { hasText: /telling has ended/i }).count()) > 0;
+          const ended = (await tree.locator("h2", { hasText: /match has ended/i }).count()) > 0;
           const fab = (await endTurn(page).count()) > 0;
           return ended || fab;
         },

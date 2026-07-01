@@ -187,7 +187,7 @@ impl SeedCommitment {
         hex::encode(self.commit)
     }
 
-    /// The reveal payload, disclosed when the telling ends: the seed and the salt,
+    /// The reveal payload, disclosed when the match ends: the seed and the salt,
     /// each hex, so an observer can recompute and verify the published commitment.
     pub(crate) fn reveal(&self) -> SeedReveal {
         SeedReveal {

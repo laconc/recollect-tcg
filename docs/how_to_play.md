@@ -1,6 +1,6 @@
 # How to play Recollect
 
-A player's guide to the two ways you can sit down at a telling — in your
+A player's guide to the two ways you can sit down at a match — in your
 **terminal** (the `recollect` command-line client) or in your **browser** (the
 web client) — and to what you can actually *do* on your turn.
 
@@ -13,8 +13,8 @@ falls. This guide covers the *interfaces and controls*. For the rules themselves
 interface, see the [terminal player guide](how_to_play_cli.md) (the `recollect`
 CLI) or the [website player guide](../site/guide.html) (the browser client).
 
-> A note on words. Spirits are **banished** from a telling, never "killed."
-> Only the Solace **Unwrites**, and only the Solace's register speaks of
+> A note on words. Spirits are **banished** from a match, never "killed."
+> Only the Solace **unwrites**, and only the Solace's register speaks of
 > "forgetting." The interfaces use this language; so does this guide.
 
 ---
@@ -325,14 +325,14 @@ looks like this:
 1 [        ][        ][        ][        ][        ]
    a         b         c         d         e      (:: yours · .. theirs · ~ fading · ^ can evolve · ! Echo · ° held/lamplit · ⌂ landmark · ▒ fabrication · ░ dusk)
  ▸c3 A Cinderling             A2   D1   HP   3/3   Adjacent Fire ⇢ can step
-(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)
+(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered plays below)
 Score if Nightfall struck now: A 1 — B 0
 You: 4 anima (your play budget — no fixed action count; End Turn when ready) · deck 14 · hand:
    0. Tide-Caller            3c  2/ 2/ 4 Adjacent Water
    1. Hush                   1c  0/ 0/ 1 Self     Calm
 Them: 4 anima · hand 5 · deck 14
 
-Legal tellings:
+Legal plays:
     0. Play Tide-Caller → b3
     1. Move c3 → c4
     2. Glimpse (burn a hand card, then peek your top card)
@@ -379,7 +379,7 @@ Reading the board:
 
 | You type | What happens |
 |---|---|
-| a number, e.g. `1` | Take that move from the numbered **Legal tellings** menu |
+| a number, e.g. `1` | Take that move from the numbered **Legal plays** menu |
 | a **verb**, e.g. `m c3 c4` | Act directly — the faster path (see *Optional verb shortcuts* below) |
 | `i N`, e.g. `i 0` | Inspect hand card **N** (stats, keywords, rules text, reach grid) |
 | `i <tile>`, e.g. `i c3` | Inspect the card on board tile **c3** |

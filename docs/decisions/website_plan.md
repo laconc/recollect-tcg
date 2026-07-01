@@ -14,7 +14,7 @@ The frontend site: a **marketing landing**, a **play page** (the wasm client), a
   button (→ form). Carries the accessible + responsive shell.
 - **`/cards`** — the 419-card catalog: filter (kind / rarity / resonance / cost / keywords),
   search by name; each card shows stats + rules + keywords. **Build-generated** semantic
-  HTML from `catalog.json` (SEO + a11y; no 144 KB client fetch).
+  HTML from `catalog.json` (SEO + a11y; no 160 KB client fetch).
 - **`/rules`** — rules in brief, from the design-doc summary.
 - **`/lore`** — the world &amp; story, drawn from the Lore Bible (`lore.md`). May grow to
   multiple pages (the Memory, the factions, the Unwritten / ill intent, the resonances).

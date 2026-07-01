@@ -2,12 +2,12 @@
 
 A screen-by-screen guide to the **`recollect`** command-line client — the
 interactive text UI and its controls, plus the headless JSON mode for scripts
-and bots. If you've never sat down at a telling, read
+and bots. If you've never sat down at a match, read
 [How to play](how_to_play.md) first for the lay of the land; this is the
 terminal-specific companion, written for the person at the keyboard.
 
 > A note on words. Spirits are **banished** from a match, never "killed." Only
-> the Solace **Unwrites**, and only the Solace's register speaks of "forgetting."
+> the Solace **unwrites**, and only the Solace's register speaks of "forgetting."
 > The screens below use this language; so does this guide. The Memory's final
 > rounds are the **Dusk**, then **Nightfall**.
 
@@ -91,7 +91,7 @@ board.
 │5                                           ││══ Round 1/12 · Seat A to act ··· ══   │
 │4                                           ││ … the rich seat's-eye render …        │
 │3         [  ]                              │└───────────────────────────────────────┘
-│2 <  ><  ><  ><  ><  >                      │┌ Legal tellings (number / : verb …) ──┐
+│2 <  ><  ><  ><  ><  >                      │┌ Legal plays (number / : verb …) ─────┐
 │1 <  ><  ><  ><  ><  >                      ││  0. Glimpse (burn a hand card …)      │
 │   a  b  c  d  e                            ││  3. Play Frenzy Kit → a1              │
 └────────────────────────────────────────────┘└───────────────────────────────────────┘
@@ -120,7 +120,7 @@ pickup → place. (The matching deterministic `.txt` stills live there too.)
 | **Tab** | Toggle focus between the **board** and your **hand**. |
 | **i** | **Inspect** — a passive overlay with the full card (stats · keywords · rules · the reach grid) for whatever the cursor points at. |
 | **:** | Open the **verb mini-buffer** — type a verb (`m c3 c4`, `p 0 c1`, …) and Enter. The same shared grammar the line mode uses. |
-| a **number** | Pick that entry from the numbered **Legal tellings** list, then Enter (the list is always available, like the web's accessible button list). |
+| a **number** | Pick that entry from the numbered **Legal plays** list, then Enter (the list is always available, like the web's accessible button list). |
 | **?** | Show the key legend. **q** quits (the seed resumes the match). |
 
 Picking a piece highlights its **targets** (what you can act on *now*); **inspect**
@@ -157,7 +157,7 @@ RECOLLECT — quick play · seed 7042 (keep it to replay this exact match)
 
 ---
 
-## Screen 2 — Choose your telling (the deck pick)
+## Screen 2 — Choose your match (the deck pick)
 
 You're offered **three** deck styles. Each prints its name and a one-line voice
 ("All teeth. Arrive loudly, chain hard…"), then the **objective selection-info** —
@@ -167,7 +167,7 @@ runs, its cost curve, and the cards it tends to open with — so you can choose
 informedly, not just on flavour. (The web picker shows the same selection-info as chips.)
 
 ```
-Seat A — the Memory offers three tellings:
+Seat A — the Memory offers three plays:
   1. Embertide          All teeth. Arrive loudly, chain hard…
      Fury · Aggressive · even tempo · balanced bodies
      14 spirits · 6 spellbook · cost curve 1:3 2:4 3:5 4:2 5:1
@@ -222,14 +222,14 @@ Anima and hand, and then the numbered list of everything you may legally do.
 1 [        ][        ][        ][        ][        ]
    a         b         c         d         e      (:: yours · .. theirs · ~ fading · ^ can evolve · ! Echo · ° held/lamplit · ⌂ landmark · ▒ fabrication · ░ dusk)
  ▸c3 A Cinderling             A2   D1   HP   3/3   Adjacent Fire ⇢ can step
-(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered tellings below)
+(▸ = action available · ⇢ = a Mobile spirit can still step · ⊘ = rested · use the numbered plays below)
 Score if Nightfall struck now: A 1 — B 0
 You: 4 anima (your play budget — no fixed action count; End Turn when ready) · deck 14 · hand:
    0. Tide-Caller            3c  2/ 2/ 4 Adjacent Water
    1. Hush                   1c  0/ 0/ 1 Self     Calm
 Them: 4 anima · hand 5 · deck 14
 
-Legal tellings:
+Legal plays:
     0. Play Tide-Caller → b3
     1. Step c3 c3→c4
     2. Glimpse (burn a hand card, then peek your top card)
@@ -271,7 +271,7 @@ omitted from the menu when your hand or deck is empty.
 
 ### Acting
 
-The numbered **Legal tellings** menu *is* your move set — playing a spirit,
+The numbered **Legal plays** menu *is* your move set — playing a spirit,
 stepping, evolving, overwriting, reclaiming, glimpsing, making a choice an effect
 offers, and ending your turn are all just entries, each spelled out in a readable
 label (often with a combat forecast, e.g.
@@ -281,7 +281,7 @@ verb shortcuts* below), the same grammar both human modes share.
 
 | You type | What happens |
 |---|---|
-| a number, e.g. `1` | Take that move from the numbered **Legal tellings** menu |
+| a number, e.g. `1` | Take that move from the numbered **Legal plays** menu |
 | a **verb**, e.g. `m c3 c4` | Act directly — the faster path (see *Optional verb shortcuts* below) |
 | `i N`, e.g. `i 0` | Inspect hand card **N** — stats, keywords, rules text, and a reach grid (★ the card, ● each tile it threatens) |
 | `i <tile>`, e.g. `i c3` | Inspect the card on board tile **c3** |

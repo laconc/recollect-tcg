@@ -13,8 +13,8 @@ for the website's CSS custom properties):
 
 | Token | rgba (renderer) | hex (web CSS) | use |
 |---|---|---|---|
-| `PAPER` | 0.96, 0.94, 0.89 | `#F5F0E3` | the page / board ground |
-| `NIGHT` | 0.09, 0.09, 0.12 @ .92 | `#17171F` | ink text, the Dusk/Nightfall overlay |
+| `PAPER` | 0.949, 0.918, 0.847 | `#F2EAD8` | the page / board ground |
+| `NIGHT` | 0.067, 0.063, 0.094 @ .94 | `#111018` | ink text, the Dusk/Nightfall overlay |
 | `SEAT_A` (Lorekeepers) | 0.18, 0.36, 0.62 | `#2E5C9E` | ink-blue |
 | `SEAT_B` (the Solace) | 0.66, 0.24, 0.20 | `#A83D33` | ink-red |
 | accents | gold / green / grey | — | resolve pips / growth / hidden·fabrication |

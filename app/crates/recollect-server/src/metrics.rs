@@ -36,7 +36,7 @@
 //! - `recollect.throughline_completed` → `recollect_throughline_completed_total` —
 //!   one per Throughline completion (a `ThroughlineCompleted` event).
 //! - `recollect.match_length_turns` → `recollect_match_length_turns_bucket` — a
-//!   histogram of a telling's length in TURNS (count of `TurnEnded` over the match),
+//!   histogram of a match's length in TURNS (count of `TurnEnded` over the match),
 //!   recorded once at match end.
 //! - the winrate-when-leading-at-contraction signal rides as the two boolean labels
 //!   on `recollect.matches.finished`: `led_at_contraction` (a side held a strict
@@ -113,7 +113,7 @@ pub(crate) fn match_created(mode: &str, vs_bot: bool, difficulty: &str, faction:
 /// `recollect.matches.finished`, so a forfeit is distinguishable from a played-out win.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FinishReason {
-    /// The telling reached a normal terminal (`MatchEnded` — the Memory faded out, a
+    /// The match reached a normal terminal (`MatchEnded` — the Memory faded out, a
     /// resignation-free score result).
     PlayedOut,
     /// A human seat/slot abandoned (disconnected past the grace) — `Event::MatchAbandoned`,
@@ -247,7 +247,7 @@ fn throughline_completed() {
     M.throughline_completed.add(1, &[]);
 }
 
-/// §16: a telling's length in turns, recorded once at match end.
+/// §16: a match's length in turns, recorded once at match end.
 fn match_length_turns(turns: u64) {
     M.match_length_turns.record(turns, &[]);
 }
@@ -287,7 +287,7 @@ impl ContractionLead {
 }
 
 /// The per-match §16 accumulator. The [`Session`](crate::session::Session) owns one
-/// per telling and feeds it every applied event batch (human AND bot moves, 1v1 and
+/// per match and feeds it every applied event batch (human AND bot moves, 1v1 and
 /// 2v2, in-memory and journaled — `Session` is the single writer that sees them all).
 /// It counts evolutions/Throughlines as they stream, tallies the turn count, and
 /// captures the contraction leader; at match end it records the length histogram and
@@ -309,7 +309,7 @@ impl MatchMetrics {
     }
 
     /// The contraction leader captured so far — handed to [`match_finished`] at the
-    /// seam when the telling ends (and read by the tests).
+    /// seam when the match ends (and read by the tests).
     pub(crate) fn contraction_lead(&self) -> ContractionLead {
         self.lead_at_contraction
     }

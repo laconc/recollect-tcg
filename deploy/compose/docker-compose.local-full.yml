@@ -1,0 +1,55 @@
+# Recollect — LOCAL-FULL overlay for the deploy stack: the production mirror you run with `make up`.
+#
+# Identical to the LEAN local overlay (docker-compose.local.yml) — the single-origin site + game at
+# http://localhost:8080, on-box Postgres, no Cloudflare Tunnel — BUT it KEEPS the self-hosted
+# observability (the `lgtm` Grafana/Tempo/Loki/Prometheus container, with the Recollect dashboards),
+# so you also get Grafana + the RED/game-design boards at http://localhost:3000. This is the closest
+# thing to production you can run on a laptop: website + game + journal + observability, one command.
+#
+# `make up` runs this; `make deploy-local` runs the lean (no-observability) sibling; `make dev-up`
+# (the root docker-compose.yml) is the fast inner loop — db + Grafana + the API server, no site build.
+#
+# Use the make target:   make up    → http://localhost:8080 (site) + http://localhost:3000 (Grafana)
+#                        make down   → tear down
+# The `up` target exports OBS_DATA_DIR=obsdata, so lgtm's `${OBS_DATA_DIR:-/data/observability}:/data`
+# mount resolves to a docker-managed NAMED volume (a laptop has no /data EBS mount the box uses).
+
+services:
+  # Publish the server port; point the play client's origin back here; KEEP OTLP at the on-box lgtm
+  # (the lean local overlay disables it — here we run the full observability stack).
+  server:
+    ports:
+      - "8080:8080"
+    environment:
+      SITE_ORIGIN: http://localhost:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317
+
+  site-builder:
+    build:
+      args:
+        SITE_ORIGIN: http://localhost:8080
+        CF_WEB_ANALYTICS_TAG: ""
+
+  # A laptop has no durable EBS /data volume — use an ordinary named volume for Postgres (same as the
+  # lean overlay + the dev stack).
+  postgres:
+    volumes:
+      - "pgdata:/var/lib/postgresql"
+
+  # The Cloudflare Tunnel is meaningless locally — off.
+  cloudflared:
+    deploy:
+      replicas: 0
+
+  # node-exporter (bind-mounts host /proc|/sys) and blackbox (its probe targets are the box's compose
+  # services) are BOX-only — off locally. `lgtm` STAYS (the whole point of `make up`).
+  node-exporter:
+    deploy:
+      replicas: 0
+  blackbox:
+    deploy:
+      replicas: 0
+
+volumes:
+  pgdata:
+  obsdata:

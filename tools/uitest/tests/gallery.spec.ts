@@ -4,7 +4,7 @@ import { activate, firstPlayable } from "./gallery-helpers";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VISUAL GALLERY (stills) — a committed media RECORD of the canvas-native client
-// (#100 Phases A+B): the local 1v1 telling where the wgpu canvas owns the whole
+// (#100 Phases A+B): the local 1v1 match where the wgpu canvas owns the whole
 // surface (HUD · opponent strip · hand tray · End-Turn/Study FABs) and the
 // in-canvas affordances drive every action (a quiet green action dot on a playable
 // piece/card, legal-target glows, the lifted hand card). See

@@ -15,26 +15,26 @@ test.describe("play page + picker", () => {
     await expect(launch).toHaveAttribute("href", "client/");
   });
 
-  test("the client loads and the picker offers the three tellings", async ({ page }) => {
+  test("the client loads and the picker offers the three decks", async ({ page }) => {
     await openPicker(page);
     // F-29: the three offered styles (decks) the seed derives.
     const styles = page.locator("#picker .style b");
     await expect(styles.nth(0)).toBeVisible();
-    // First three are the tellings; "Watch a 2v2" + "Play online" follow.
+    // First three are the decks; "Watch a 2v2" + "Play online" follow.
     const labels = await styles.allTextContents();
     expect(labels.length).toBeGreaterThanOrEqual(5);
     expect(labels).toContain("Watch a 2v2");
     expect(labels).toContain("Play online");
-    // The three telling cards each preview a deck (spirits / spellbook / curve).
+    // The three deck cards each preview a deck (spirits / spellbook / curve).
     await expect(page.locator("#picker .style").first()).toContainText(/spirits/);
   });
 
-  test("each telling surfaces the OBJECTIVE selection-info chips", async ({ page }) => {
+  test("each deck surfaces the OBJECTIVE selection-info chips", async ({ page }) => {
     await openPicker(page);
     // The picker must show the deck's SHAPE, not just the subjective blurb: the four
     // SelectionInfo facets (resonance lean · tempo · aggression · body-mix), computed
-    // in core over many deck-gen seeds, render as chips on each telling card.
-    const first = page.locator("#picker .style.telling").first();
+    // in core over many deck-gen seeds, render as chips on each deck card.
+    const first = page.locator("#picker .style.advance").first();
     const chips = first.locator(".facet");
     await expect(chips).toHaveCount(4);
     // Each chip carries its dimension heading and a value word.
@@ -43,8 +43,8 @@ test.describe("play page + picker", () => {
       expect(chipText, `the chips name the ${dim} dimension`).toContain(dim);
     }
     // The values are the authored vocabulary — a tempo word and an aggression word
-    // appear across the three offered tellings (the seed always offers a mix).
-    const allChips = await page.locator("#picker .style.telling .facet").allTextContents();
+    // appear across the three offered decks (the seed always offers a mix).
+    const allChips = await page.locator("#picker .style.advance .facet").allTextContents();
     const joined = allChips.join(" ");
     expect(joined).toMatch(/Fast|Even|Grindy/); // a tempo word
     expect(joined).toMatch(/Defensive|Measured|Aggressive/); // an aggression word
@@ -52,7 +52,7 @@ test.describe("play page + picker", () => {
     await expect(first.locator(".facet").first()).toHaveAttribute("title", /.+/);
   });
 
-  test("the telling cards are keyboard-operable buttons that read the shape as words", async ({
+  test("the deck cards are keyboard-operable buttons that read the shape as words", async ({
     page,
   }) => {
     // Invariant 7: the picker's actionable cards are real <button>s (Tab stops with a
@@ -61,7 +61,7 @@ test.describe("play page + picker", () => {
     // unlabelled colour. (The chips themselves are aria-hidden; the label is the
     // curated roll-up.)
     await openPicker(page);
-    const first = page.locator("#picker .style.telling").first();
+    const first = page.locator("#picker .style.advance").first();
     await expect(first).toHaveJSProperty("tagName", "BUTTON");
     // The accessible name names the style, the tempo/aggression shape, and the deck stats.
     const label = (await first.getAttribute("aria-label")) ?? "";

@@ -13,7 +13,7 @@ Enter
 Wait+Screen@20s /choose a style/
 Type "1"
 Enter
-Wait+Screen@20s /Legal tellings/
+Wait+Screen@20s /Legal plays/
 Sleep 500ms
 Show
 

@@ -210,7 +210,7 @@ pub(crate) fn targeting_reach(
     tiles
 }
 
-/// Rooted Telling: reach of your spirits ∪ adjacency of your impressions ∪ your
+/// Rooted Play: reach of your spirits ∪ adjacency of your impressions ∪ your
 /// home rows (while they exist). Landmarks join in M-next.
 /// Team-shared by construction: `seat` is the TEAM, so both teammates'
 /// spirits (owner == seat) feed one projection. Width-aware for 2v2.

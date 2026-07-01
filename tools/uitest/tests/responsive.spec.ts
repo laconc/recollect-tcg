@@ -13,7 +13,7 @@ import {
 // fluid; these tests assert it holds: no horizontal scroll, the board fits, and
 // the canvas-native shell (#100) keeps the action controls reachable.
 //
-// #100 Phase B: the local 1v1 telling is canvas-native — the HUD, hand, FABs +
+// #100 Phase B: the local 1v1 match is canvas-native — the HUD, hand, FABs +
 // affordances are drawn IN the canvas, and the actionable accessible mirror is the
 // off-screen a11y tree (not the old #moves button list). So the responsive checks
 // assert the canvas fits + the a11y controls are reachable, not the (retired) move
