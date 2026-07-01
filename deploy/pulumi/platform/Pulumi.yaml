@@ -1,8 +1,5 @@
 name: recollect-platform
-runtime:
-  name: nodejs
-  options:
-    packagemanager: npm
+runtime: go
 description: >-
   Recollect — PLATFORM (run PER RELEASE): the lean launch host (tech-design §10.1). One free-tier
   AWS EC2 box in the configured region running the deploy Docker Compose stack (recollect-server —
@@ -115,9 +112,9 @@ config:
       30 GiB fit entirely in the 30 GB/12-month EBS free tier ($0) — the #31 cost fix.
     default: 10
   # Two secrets are intentionally NOT typed config keys here:
-  #  - the on-box Postgres password — Pulumi GENERATES it (random.RandomPassword in index.ts), since
+  #  - the on-box Postgres password — Pulumi GENERATES it (random.RandomPassword in main.go), since
   #    Postgres is compose-internal (no published port) and needs no operator-managed credential.
   #  - cfBeaconToken (Cloudflare Web Analytics) — an OPTIONAL secret. Pulumi rejects a `secret: true`
   #    key that also carries a (plaintext) `default` ("must be encrypted as it's secret"), so rather
-  #    than declare it, index.ts reads it with `cfg.getSecret("cfBeaconToken") ?? ""` (empty ⇒ no
+  #    than declare it, main.go reads it with `cfg.GetSecret("cfBeaconToken")` (a secret "" when unset ⇒ no
   #    beacon). Set it ENCRYPTED to enable analytics: `pulumi config set --secret cfBeaconToken <token>`.

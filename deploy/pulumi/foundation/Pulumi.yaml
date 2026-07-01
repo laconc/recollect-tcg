@@ -1,8 +1,5 @@
 name: recollect-foundation
-runtime:
-  name: nodejs
-  options:
-    packagemanager: npm
+runtime: go
 description: >-
   Recollect — FOUNDATION (run ONCE, with short-lived admin creds). The account-level,
   rarely-changing scaffolding the per-release PLATFORM stack and CI depend on: an ECR
