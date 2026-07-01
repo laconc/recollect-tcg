@@ -90,9 +90,12 @@ jobs:
         with:
           toolchain: "1.96.0"
           targets: "wasm32-unknown-unknown, wasm32-wasip1"
+      # Share one wasm build cache with `uitest` (both build the same wasm site),
+      # so the wasm dependency graph is compiled once, not twice, run-over-run.
       - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
         with:
           workspaces: app
+          shared-key: wasm
       - name: web shell compiles for wasm
         run: cargo build -p recollect-web --target wasm32-unknown-unknown
         working-directory: app
@@ -134,8 +137,17 @@ jobs:
   docker:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # Gate the deployable image on the full green suite: don't build (and, on
+    # push to main, publish) an image if any correctness / security / wasm / UI /
+    # manifest gate failed. Only the always-on jobs are listed — the manual
+    # workflow_dispatch jobs (freshness, mutants) are intentionally excluded.
     needs:
       - test
+      - supply-chain
+      - wasm
+      - helm
+      - model-check
+      - uitest
     permissions:
       contents: read
       packages: write
@@ -242,9 +254,11 @@ jobs:
         with:
           toolchain: "1.96.0"
           targets: "wasm32-unknown-unknown"
+      # Share the wasm build cache with the `wasm` job (same wasm site build).
       - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
         with:
           workspaces: app
+          shared-key: wasm
       - name: install trunk
         run: curl -fsSL https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C "$HOME/.cargo/bin"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
