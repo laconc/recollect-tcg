@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Preflight for the Pulumi make targets (`make foundation-* / deploy-*`). Makes each lifecycle command
+# Preflight for the Pulumi make targets (`make foundation-* / platform-*`). Makes each lifecycle command
 # SELF-SUFFICIENT: instead of failing mid-apply on a missing passphrase / unset config, it ensures
 # everything Pulumi needs is present FIRST — prompting for whatever's missing — then `exec`s the command
 # in the project dir. Running in ONE process is deliberate: a passphrase prompted here is exported into
@@ -22,11 +22,11 @@
 #   ENVVARS="PULUMI_CONFIG_PASSPHRASE" DEFAULTS="region=us-east-2" \
 #     preflight.sh deploy/pulumi/foundation pulumi up
 #
-#   # deploy-up — also ensure the Cloudflare token; prompts for any of PLATFORM's required inputs:
+#   # platform-up — also ensure the Cloudflare token; prompts for any of PLATFORM's required inputs:
 #   ENVVARS="PULUMI_CONFIG_PASSPHRASE CLOUDFLARE_API_TOKEN" DEFAULTS="region=us-east-2" \
 #     preflight.sh deploy/pulumi/platform pulumi up
 #
-#   # deploy-ssm — just need the passphrase + stack; exec an arbitrary command:
+#   # platform-ssm — just need the passphrase + stack; exec an arbitrary command:
 #   ENVVARS="PULUMI_CONFIG_PASSPHRASE" \
 #     preflight.sh deploy/pulumi/platform bash -c 'eval "$(pulumi stack output ssmSession)"'
 #

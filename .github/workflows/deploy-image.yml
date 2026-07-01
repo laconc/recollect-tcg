@@ -114,6 +114,6 @@ jobs:
             echo "- \`${{ vars.ECR_REPO_URL }}:sha-${{ github.sha }}\` (immutable — deploy this)"
             echo "- \`${{ vars.ECR_REPO_URL }}:latest\`"
             echo ""
-            echo "Deploy it: set PLATFORM's \`serverImage\` to the \`sha-\` tag and \`make deploy-up\`,"
+            echo "Deploy it: set PLATFORM's \`serverImage\` to the \`sha-\` tag and \`make platform-up\`,"
             echo "or on the box: \`sudo recollect-update <git-ref>\`."
           } >> "$GITHUB_STEP_SUMMARY"

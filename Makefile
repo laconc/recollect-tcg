@@ -217,7 +217,7 @@ deploy-local-logs: ## tail the local deploy stack's server logs
 pulumi-state-bucket: ## create + harden the S3 bucket backing Pulumi state, then `pulumi login` (BUCKET=, REGION=)
 	bash deploy/pulumi/create-state-bucket.sh
 
-# --- Pulumi preflight (deploy/pulumi/preflight.sh): the foundation-*/deploy-* LIFECYCLE targets run it
+# --- Pulumi preflight (deploy/pulumi/preflight.sh): the foundation-*/platform-* LIFECYCLE targets run it
 # --- FIRST so they're self-sufficient — it ensures the secret env vars (passphrase; +Cloudflare token
 # --- for PLATFORM), selects/creates the stack (STACK=, default prod), defaults region=us-east-2, and
 # --- PROMPTS for any required config that's unset (githubRepo; PLATFORM's domain/repoUrl/…), then runs
@@ -255,21 +255,21 @@ foundation-destroy: ## TEAR DOWN FOUNDATION (rare — retires the ECR repo + CI 
 # --- the preflight; see deploy/README.md "PLATFORM" for what each input means. ------------------
 PULUMI := cd deploy/pulumi/platform &&
 PLATFORM_DIR := deploy/pulumi/platform
-deploy-install: ## install the PLATFORM Pulumi program's deps (run once)
+platform-install: ## install the PLATFORM Pulumi program's deps (run once)
 	$(PULUMI) npm install
-deploy-typecheck: ## type-check the PLATFORM program (no cloud calls)
+platform-typecheck: ## type-check the PLATFORM program (no cloud calls)
 	$(PULUMI) npx tsc --noEmit
-deploy-preview: ## preview the live infra plan (prompts for passphrase/Cloudflare token + any unset config)
+platform-preview: ## preview the live infra plan (prompts for passphrase/Cloudflare token + any unset config)
 	@STACK=$(STACK) ENVVARS="$(P_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi preview
-deploy-up: ## CREATE/UPDATE the live infra (EC2 + Cloudflare Tunnel + DNS + budgets); the box PULLS the image
+platform-up: ## CREATE/UPDATE the live infra (EC2 + Cloudflare Tunnel + DNS + budgets); the box PULLS the image
 	@STACK=$(STACK) ENVVARS="$(P_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi up
-deploy-refresh: ## reconcile Pulumi state with real cloud resources
+platform-refresh: ## reconcile Pulumi state with real cloud resources
 	@STACK=$(STACK) ENVVARS="$(P_CREDS)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi refresh
-deploy-outputs: ## print stack outputs (site URL, instance id, SSM session command)
+platform-outputs: ## print stack outputs (site URL, instance id, SSM session command)
 	@STACK=$(STACK) ENVVARS="PULUMI_CONFIG_PASSPHRASE" $(PREFLIGHT) $(PLATFORM_DIR) pulumi stack output
-deploy-ssm: ## open a keyless admin shell on the box via SSM Session Manager
+platform-ssm: ## open a keyless admin shell on the box via SSM Session Manager
 	@STACK=$(STACK) ENVVARS="PULUMI_CONFIG_PASSPHRASE" $(PREFLIGHT) $(PLATFORM_DIR) bash -c 'eval "$$(pulumi stack output ssmSession)"'
-deploy-destroy: ## TEAR DOWN the PLATFORM infra (EC2 + Cloudflare; asks first). FOUNDATION stays up.
+platform-destroy: ## TEAR DOWN the PLATFORM infra (EC2 + Cloudflare; asks first). FOUNDATION stays up.
 	@read -p "This destroys the EC2 box + Cloudflare tunnel/DNS. Type 'unwrite' to confirm: " c && [ "$$c" = "unwrite" ]
 	@STACK=$(STACK) ENVVARS="$(P_CREDS)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi destroy
 
@@ -302,4 +302,4 @@ helm-lint: ## lint the chart (requires helm)
 helm-template: ## render manifests locally (requires helm)
 	helm template recollect deploy/helm/recollect
 
-.PHONY: help test test-verify test-all fuzz soak mutants audit nightly sim probes server client client-join fmt lint doc tui tui-gallery tui-shots web-gallery catalog catalog-check cards-validate site site-serve uitest uitest-update uitest-visual uitest-visual-update determinism-check up dev-up dev-down seed db-test db-backup down nuke logs helm-lint helm-template deploy-local deploy-smoke deploy-local-down deploy-local-logs pulumi-state-bucket foundation-install foundation-typecheck foundation-preview foundation-up foundation-outputs foundation-destroy deploy-install deploy-typecheck deploy-preview deploy-up deploy-refresh deploy-outputs deploy-ssm deploy-destroy
+.PHONY: help test test-verify test-all fuzz soak mutants audit nightly sim probes server client client-join fmt lint doc tui tui-gallery tui-shots web-gallery catalog catalog-check cards-validate site site-serve uitest uitest-update uitest-visual uitest-visual-update determinism-check up dev-up dev-down seed db-test db-backup down nuke logs helm-lint helm-template deploy-local deploy-smoke deploy-local-down deploy-local-logs pulumi-state-bucket foundation-install foundation-typecheck foundation-preview foundation-up foundation-outputs foundation-destroy platform-install platform-typecheck platform-preview platform-up platform-refresh platform-outputs platform-ssm platform-destroy

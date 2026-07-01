@@ -94,12 +94,12 @@ setup, the Cloudflare token's exact scopes, every Pulumi config key) is in
 4. **CI builds + pushes the server image** to ECR — automatic on every push to `main`
    (`.github/workflows/deploy-image.yml`), or **Actions → deploy-image → Run workflow**. Note the
    `sha-<commit>` tag PLATFORM deploys.
-5. **PLATFORM** (per release — the EC2 box that PULLS the image + Cloudflare). `make deploy-up` runs
+5. **PLATFORM** (per release — the EC2 box that PULLS the image + Cloudflare). `make platform-up` runs
    the preflight (creates the stack, defaults `region`, prompts for `PULUMI_CONFIG_PASSPHRASE`,
    `CLOUDFLARE_API_TOKEN`, and any required input you didn't pre-seed below):
    ```
    export CLOUDFLARE_API_TOKEN='<scoped token: Tunnel+Access+Pages+DNS edit — see deploy/README.md>'
-   make deploy-install
+   make platform-install
    (cd deploy/pulumi/platform \
       && pulumi config set domain recollect-tcg.com \
       && pulumi config set repoUrl https://github.com/laconc/recollect-tcg.git \
@@ -108,7 +108,7 @@ setup, the Cloudflare token's exact scopes, every Pulumi config key) is in
       && pulumi config set cloudflareAccountId <CF_ACCOUNT_ID> \
       && pulumi config set cloudflareZoneId <CF_ZONE_ID> \
       && pulumi config set maintainerEmail you@example.com)
-   make deploy-preview && make deploy-up && make deploy-outputs
+   make platform-preview && make platform-up && make platform-outputs
    ```
 6. **Wire the static-site Pages deploy** (GitHub SECRETS + a var) so `site-deploy.yml` uploads `dist/`:
    ```
@@ -120,8 +120,8 @@ setup, the Cloudflare token's exact scopes, every Pulumi config key) is in
    (Grafana behind Cloudflare Access — your `maintainerEmail` + a one-time PIN), then walk
    `docs/manual_verification.md`.
 
-**Redeploy:** push to `main` → CI pushes a new image → bump `gitRef`+`serverImage` + `make deploy-up`
-(or in place: `make deploy-ssm` → `sudo recollect-update <SHA>`). **Teardown:** `make deploy-destroy`
+**Redeploy:** push to `main` → CI pushes a new image → bump `gitRef`+`serverImage` + `make platform-up`
+(or in place: `make platform-ssm` → `sudo recollect-update <SHA>`). **Teardown:** `make platform-destroy`
 (PLATFORM only; FOUNDATION stays up across releases).
 
 ### Launch host — EC2 + Cloudflare Tunnel (the lean §10.1 target)
@@ -154,9 +154,9 @@ per-resource `Name`); the `environment` config (default `production`) sets the `
 - `make foundation-typecheck` / `make foundation-preview` / `make foundation-up` /
   `make foundation-outputs` / `make foundation-destroy` — the run-once FOUNDATION stack
   (`foundation-outputs` prints `repoUrl` + `ciRoleArn` to wire into GitHub Actions variables).
-- `make deploy-typecheck` / `make deploy-preview` — gate the PLATFORM plan (no cloud calls / a dry run)
-- `make deploy-up` / `make deploy-outputs` / `make deploy-ssm` / `make deploy-destroy` — live infra
-  (`deploy-outputs` prints the `grafanaUrl`, `alarmTopicArn`, `ssmSession`, …)
+- `make platform-typecheck` / `make platform-preview` — gate the PLATFORM plan (no cloud calls / a dry run)
+- `make platform-up` / `make platform-outputs` / `make platform-ssm` / `make platform-destroy` — live infra
+  (`platform-outputs` prints the `grafanaUrl`, `alarmTopicArn`, `ssmSession`, …)
 - `make deploy-local` — run the single-origin stack locally, the **LEAN** variant (no tunnel,
   observability scaled to zero) and play the real website end-to-end at `http://localhost:8080`;
   `make deploy-local-down` tears it down. For the site **with** observability use **`make up`** (the
