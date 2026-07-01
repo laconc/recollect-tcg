@@ -66,41 +66,23 @@ test.describe("site navigation — rules page", () => {
 });
 
 test.describe("site navigation — lore page", () => {
-  test("has a TOC + a section per resonance, all anchors resolving", async ({ page }) => {
+  test("has a TOC + the Bible's parts and sections, all anchors resolving", async ({ page }) => {
     desktopOnly();
     await page.goto("/lore.html");
     const toc = page.locator("nav.lore-toc");
     await expect(toc).toBeVisible();
-    // The §9-mirroring sections: the six resonances, Remnants & Neutral, the Solace,
-    // the Foundlings. Each is a TOC link AND a real <section> with that id.
-    const sections = [
-      "wonder",
-      "fear",
-      "sorrow",
-      "harmony",
-      "fury",
-      "resolve",
-      "remnants",
-      "solace",
-      "foundlings",
-    ];
-    for (const id of sections) {
-      await expect(toc.locator(`a[href="#${id}"]`)).toHaveCount(1);
-      await expect(page.locator(`section.lore-section#${id}`)).toHaveCount(1);
-    }
-    const { dangling } = await inPageLinkIntegrity(page);
+    // The lore page is generated from the Lore Bible (docs/lore.md): four PARTs and
+    // the numbered §sections, each a real <section> the TOC jumps to. (Per-card lore
+    // now lives INLINE on the cards page — the lore page carries no `#lore-<key>`
+    // entries; see tools/gen_lore_page.py.)
+    await expect(page.locator("section.lore-part")).toHaveCount(4);
+    expect(await page.locator("section.lore-section").count()).toBeGreaterThan(15);
+    // Every in-page link (the TOC + the back-to-top links) points at a real anchor.
+    const { count, dangling } = await inPageLinkIntegrity(page);
+    expect(count).toBeGreaterThan(15);
     expect(dangling, `dangling in-page links: ${dangling.join(", ")}`).toEqual([]);
-    // The lore is real prose: hundreds of anchored card entries to jump to.
-    expect(await page.locator("article.lore-entry[id^='lore-']").count()).toBeGreaterThan(300);
-  });
-
-  test("each lore entry links back to its catalog tile", async ({ page }) => {
-    desktopOnly();
-    await page.goto("/lore.html");
-    // A known card entry: its heading links to cards.html#card-<key>.
-    const entry = page.locator("#lore-cloudling");
-    await expect(entry).toHaveCount(1);
-    await expect(entry.locator('a[href="cards.html#card-cloudling"]')).toHaveCount(1);
+    // The redesign moved per-card lore onto the cards page — none remain here.
+    await expect(page.locator("article.lore-entry[id^='lore-']")).toHaveCount(0);
   });
 });
 
@@ -130,7 +112,7 @@ test.describe("site navigation — cards evolution cross-navigation", () => {
     await expect(wisp).toContainText("Fabled");
   });
 
-  test("every cards-page anchor resolves (evolution links + lore links are clean)", async ({
+  test("every cards-page anchor resolves (evolution links clean; lore is inline)", async ({
     page,
   }) => {
     desktopOnly();
@@ -140,43 +122,10 @@ test.describe("site navigation — cards evolution cross-navigation", () => {
     expect(count).toBeGreaterThan(50);
     expect(dangling, `dangling evolution anchors: ${dangling.join(", ")}`).toEqual([]);
 
-    // The lore cross-link is gated on authored prose: a procedural card has NO
-    // link (so it can never dangle), a card with lore DOES.
-    await expect(page.locator("#card-cloudling .card-lore-link")).toHaveCount(1);
-    await expect(page.locator("#card-the-slammed-door .card-lore-link")).toHaveCount(0);
-  });
-});
-
-test.describe("site navigation — cross-page links resolve both ways", () => {
-  test("every cards→lore and lore→cards link points at a real anchor", async ({ page }) => {
-    desktopOnly();
-    // Gather the link sets from each page, and the id sets, then assert closure.
-    await page.goto("/cards.html");
-    const cards = await page.evaluate(() => ({
-      ids: Array.from(document.querySelectorAll("article.card[id]"), (e) => e.id),
-      toLore: Array.from(
-        document.querySelectorAll('a[href^="lore.html#"]'),
-        (a) => (a.getAttribute("href") || "").split("#")[1],
-      ),
-    }));
-    await page.goto("/lore.html");
-    const lore = await page.evaluate(() => ({
-      ids: Array.from(document.querySelectorAll("article.lore-entry[id]"), (e) => e.id),
-      toCards: Array.from(
-        document.querySelectorAll('a[href^="cards.html#"]'),
-        (a) => (a.getAttribute("href") || "").split("#")[1],
-      ),
-    }));
-
-    const cardIds = new Set(cards.ids);
-    const loreIds = new Set(lore.ids);
-    const danglingCardsToLore = cards.toLore.filter((id) => !loreIds.has(id));
-    const danglingLoreToCards = lore.toCards.filter((id) => !cardIds.has(id));
-
-    expect(cards.toLore.length).toBeGreaterThan(300);
-    expect(lore.toCards.length).toBeGreaterThan(300);
-    expect(danglingCardsToLore, `cards→lore with no anchor: ${danglingCardsToLore.slice(0, 5)}`).toEqual([]);
-    expect(danglingLoreToCards, `lore→cards with no tile: ${danglingLoreToCards.slice(0, 5)}`).toEqual([]);
+    // Lore now lives INLINE on each tile, gated on authored prose: a card with lore
+    // carries a `.card-lore` block; a procedural card (no authored prose) does not.
+    await expect(page.locator("#card-cloudling .card-lore")).toHaveCount(1);
+    await expect(page.locator("#card-the-slammed-door .card-lore")).toHaveCount(0);
   });
 });
 
