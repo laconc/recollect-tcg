@@ -39,18 +39,46 @@ permissions:
   contents: read
 
 jobs:
-  deploy-site:
-    name: build + deploy static site to Cloudflare Pages
+  # Gate the deploy on THREE things: (a) the Pages project var is set — the ON switch; a public clone
+  # with no Cloudflare setup just SKIPS, never fails red (a job-level `if:` reads `vars` not `secrets`);
+  # (b) the trigger was a SUCCESSFUL ci run (or a manual dispatch) — a failed/cancelled ci never reaches
+  # here; and (c) this commit actually touched the BUILT site. (c) restores the path-scoping that the old
+  # push-trigger `paths:` gave us — `workflow_run` can't express `paths`, so we diff the commit instead.
+  detect:
+    name: detect site changes
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    # Deploy only when BOTH hold: (a) the Pages project var is configured — the ON switch; a public
-    # clone with no Cloudflare setup just SKIPS, never fails red (a job-level `if:` reads `vars` not
-    # `secrets`, so this non-secret var is the gate); and (b) the trigger was a SUCCESSFUL ci run (or a
-    # manual dispatch) — a failed/cancelled ci never reaches here.
     if: >-
       ${{ vars.CF_PAGES_PROJECT != ''
           && (github.event_name == 'workflow_dispatch'
               || github.event.workflow_run.conclusion == 'success') }}
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          show-progress: false
+          fetch-depth: 2 # need HEAD~1 to diff the (squash) commit against its parent
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: check
+        run: |
+          # A manual dispatch always deploys (you asked for it explicitly).
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"; echo "manual dispatch — deploying."; exit 0
+          fi
+          # Otherwise deploy only when this commit changed something that changes the BUILT site — the
+          # same set the old push-trigger `paths:` filter used.
+          if git diff --name-only HEAD~1 HEAD | grep -qE '^(site/|tools/gen_cards_page\.py|tools/gen_lore_page\.py|tools/lore_extract\.py|app/crates/recollect-core/data/catalog\.json|app/crates/recollect-core/data/cards\.toml|app/crates/recollect-web/|\.github/workflows/site-deploy\.yml)'; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"; echo "site sources changed — deploying."
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"; echo "no site-relevant changes — skipping deploy."
+          fi
+
+  deploy-site:
+    name: build + deploy static site to Cloudflare Pages
+    needs: detect
+    if: ${{ needs.detect.outputs.deploy == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
