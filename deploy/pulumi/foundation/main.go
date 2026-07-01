@@ -10,12 +10,15 @@
 // Provisions, in one `pulumi up`:
 //
 //	ECR          an ecr.Repository for the server image — SCAN-ON-PUSH (CVE scan each push) +
-//	             IMMUTABLE tags (a pushed `sha-…` tag can't be overwritten; `latest` excepted) + a
+//	             IMMUTABLE tags (a pushed commit-SHA tag can't be overwritten; `latest` excepted) + a
 //	             LIFECYCLE POLICY that expires untagged churn and caps retained release images.
 //	GitHub OIDC  an iam.OpenIdConnectProvider for token.actions.githubusercontent.com — keyless
 //	             federation so GitHub Actions mints SHORT-LIVED AWS creds with NO stored secret.
 //	CI role      a tightly-scoped iam.Role CI assumes via that OIDC provider. Trust pinned to THIS
-//	             repo's MAIN branch; permissions ECR-PUSH to THIS repo ONLY, and nothing else.
+//	             repo's MAIN branch; permissions ECR-PUSH to THIS repo, plus ssm:SendCommand of the
+//	             `recollect-update` document to the box (the in-place CD rollout) — and nothing else.
+//	SSM doc      a locked-down ssm.Document ("recollect-update") CI sends to the box to roll it to a
+//	             new image in place (runs the on-box recollect-update helper; hex-SHA-constrained param).
 //
 // Every resource is TAGGED via the AWS provider's defaultTags (Project/Environment/ManagedBy/Stack/
 // Repository) + a per-resource Name. Outputs the ECR repo URL + the CI role ARN (CI's role-to-assume;
@@ -32,6 +35,7 @@ import (
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/ecr"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
@@ -135,20 +139,20 @@ func main() {
 			return err
 		}
 
-		// Lifecycle policy: bound the repo's storage. Rule 1 caps retained sha-tagged RELEASE images
-		// (older ones expire — generous enough to roll back several releases); rule 2 sweeps untagged
-		// churn (the dangling layers a re-push leaves behind). ECR evaluates rules low→high priority,
-		// so the `tagPrefixList` rule must precede the broad untagged rule.
+		// Lifecycle policy: bound the repo's storage. Rule 1 keeps the N most-recent images — release
+		// images are tagged with the bare commit SHA (plus a floating `latest` on the newest), which share
+		// no tag prefix to filter on, so this is a count over ANY tag status; rule 2 sweeps untagged churn
+		// (the dangling layers a re-push leaves behind). ECR evaluates rules low→high priority, so the
+		// count rule precedes the broad untagged rule.
 		lifecyclePolicy, err := json.Marshal(map[string]any{
 			"rules": []any{
 				map[string]any{
 					"rulePriority": 1,
-					"description":  fmt.Sprintf("Keep the %d most recent sha-tagged release images.", keepReleaseImages),
+					"description":  fmt.Sprintf("Keep the %d most recent release images.", keepReleaseImages),
 					"selection": map[string]any{
-						"tagStatus":     "tagged",
-						"tagPrefixList": []string{"sha-"},
-						"countType":     "imageCountMoreThan",
-						"countNumber":   keepReleaseImages,
+						"tagStatus":   "any",
+						"countType":   "imageCountMoreThan",
+						"countNumber": keepReleaseImages,
 					},
 					"action": map[string]any{"type": "expire"},
 				},
@@ -241,11 +245,44 @@ func main() {
 			return err
 		}
 
-		// PERMISSIONS: ECR-push to THIS repo's ARN, and nothing else. `ecr:GetAuthorizationToken` (the
-		// `docker login` step) is account-level and AWS requires it on Resource `*` — it grants only a
-		// short-lived registry auth token. Every CONTENT action (cache reads + the push) is scoped to
-		// the ONE repo ARN. No delete, no other repo, no `*` on content.
-		rolePolicy := repo.Arn.ApplyT(func(repoArn string) (string, error) {
+		// A locked-down SSM Command document CI invokes to roll the box to a new image IN PLACE (no box
+		// replacement): it runs the on-box `recollect-update <GitRef>` helper, which re-pulls the image
+		// tagged <GitRef> and recreates the server container. `GitRef` is constrained to a hex SHA
+		// (allowedPattern), so a caller can't smuggle shell through the parameter — CI can run THIS one
+		// action and nothing else on the box (the SendCommand grant below is scoped to this doc + the box).
+		updateDoc, err := ssm.NewDocument(ctx, "recollect-update", &ssm.DocumentArgs{
+			Name:           pulumi.String("recollect-update"),
+			DocumentType:   pulumi.String("Command"),
+			DocumentFormat: pulumi.String("YAML"),
+			Content: pulumi.String(`schemaVersion: "2.2"
+description: "Roll the recollect server to a git commit's image, in place (no box replacement)."
+parameters:
+  GitRef:
+    type: String
+    description: "The git commit SHA to deploy (also the image tag CI pushes)."
+    allowedPattern: "^[0-9a-fA-F]{7,40}$"
+mainSteps:
+  - action: aws:runShellScript
+    name: recollectUpdate
+    inputs:
+      runCommand:
+        - "sudo /usr/local/bin/recollect-update '{{ GitRef }}'"
+`),
+			Tags: pulumi.StringMap{"Name": pulumi.String("recollect-update")},
+		}, awsProviderOpt)
+		if err != nil {
+			return err
+		}
+
+		// PERMISSIONS: (1) ECR-push to THIS repo's ARN — `ecr:GetAuthorizationToken` (the `docker login`
+		// step) is account-level so AWS requires it on Resource `*` (a short-lived registry token only);
+		// every CONTENT action (cache reads + the push) is scoped to the ONE repo ARN. (2) SSM: send ONLY
+		// the `recollect-update` document, ONLY to the box (instances tagged Name=recollect-server), plus
+		// read the command result — the deploy-image.yml CD rollout. No delete, no other repo, no `*` on
+		// content, no arbitrary SSM/shell.
+		rolePolicy := pulumi.All(repo.Arn, updateDoc.Arn).ApplyT(func(args []any) (string, error) {
+			repoArn := args[0].(string)
+			docArn := args[1].(string)
 			doc := map[string]any{
 				"Version": "2012-10-17",
 				"Statement": []any{
@@ -268,6 +305,27 @@ func main() {
 							"ecr:PutImage",
 						},
 						"Resource": repoArn,
+					},
+					map[string]any{
+						"Sid":      "SsmSendToRecollectBoxOnly",
+						"Effect":   "Allow",
+						"Action":   "ssm:SendCommand",
+						"Resource": "arn:aws:ec2:*:*:instance/*",
+						"Condition": map[string]any{
+							"StringEquals": map[string]any{"ssm:resourceTag/Name": "recollect-server"},
+						},
+					},
+					map[string]any{
+						"Sid":      "SsmSendRecollectUpdateDocOnly",
+						"Effect":   "Allow",
+						"Action":   "ssm:SendCommand",
+						"Resource": docArn,
+					},
+					map[string]any{
+						"Sid":      "SsmReadCommandResult",
+						"Effect":   "Allow",
+						"Action":   []string{"ssm:GetCommandInvocation", "ssm:ListCommandInvocations"},
+						"Resource": "*",
 					},
 				},
 			}
@@ -297,6 +355,8 @@ func main() {
 		ctx.Export("githubOidcProviderArn", githubOidc.Arn)
 		// The region the foundation lives in — handy when wiring CI / PLATFORM to match.
 		ctx.Export("ecrRegion", pulumi.String(region))
+		// The SSM document CI sends to the box to roll it in place (deploy-image.yml → recollect-update).
+		ctx.Export("ssmUpdateDocument", updateDoc.Name)
 
 		return nil
 	})
