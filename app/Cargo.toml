@@ -47,9 +47,9 @@ ratatui = "0.30"
 # CORS for the HTTP surface, so a browser-served web client (different origin in
 # dev: trunk :8088 → server :8080) can reach POST /matches; `fs` lets the deploy
 # build serve the static site + wasm client itself (STATIC_DIR, §10.1 single-origin).
-tower-http = { version = "0.6", features = ["cors", "fs"] }
+tower-http = { version = "0.7", features = ["cors", "fs"] }
 # UniFFI: native (iOS/Android) bindings over recollect-core (D-25).
-uniffi = "0.28"
+uniffi = "0.32"
 # Postgres event journal
 tokio-postgres = "0.7"
 postgres = "0.19" # blocking client — test-only, for the sync Journal contract twin

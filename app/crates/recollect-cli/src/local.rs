@@ -332,9 +332,8 @@ fn move_for_line(line: &str, legal: &[Command], w: u8) -> Result<Command, String
         });
     }
     match verbs::parse(line, w) {
-        Some(intent) => verbs::resolve(intent, legal).ok_or_else(|| {
-            "no legal Evolve/Reclaim on that tile — read the numbered plays".into()
-        }),
+        Some(intent) => verbs::resolve(intent, legal)
+            .ok_or_else(|| "no legal Evolve/Reclaim on that tile — read the numbered plays".into()),
         None => Err(verbs::USAGE.into()),
     }
 }
