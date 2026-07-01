@@ -173,7 +173,7 @@ SEC[6] = """
           light is fully gone; the Memory is night. What was held to the end was held; the rest is
           forgotten.</li>
       </ul>
-      <p>One thing the dark never touches: <strong>the wild keeps to the heart of the page.</strong> The
+      <p>One thing the dark never touches: <strong>the wild keeps to the heart of the board.</strong> The
         Memory's own spontaneous resurfacings appear only on inner tiles, never the rim, so the encroaching
         dark never strands a wild thing. The forgetting is relentless at the edges and gentle at the center
         — true to how memory behaves, the vivid core outlasting the details at the margin.</p>"""
@@ -186,7 +186,7 @@ SEC[7] = """
       <p>To spend Anima is to spend <em>the effort of remembering</em> — the warmth and attention it costs to
         hold a thing clearly. A storyteller who runs out of Anima has not run out of money; they have run out
         of the strength to keep insisting. The two storytellers' Anima reads in their own colors, their inks
-        contesting the page, and where the washes overlap is the front line: two ways of remembering the same
+        contesting the board, and where the washes overlap is the front line: two ways of remembering the same
         place, neither yet winning.</p>"""
 
 SEC[8] = """
@@ -335,7 +335,7 @@ SEC[14] = """
       <p>Not everything in a Memory is told by a storyteller. Sometimes the Memory <em>stirs on its own</em> — a stray
         recollection rising of its own accord into an empty inner tile, called by no one. These are the
         <strong>Strays</strong>: the world's wild spirits, Resonance-less, beholden to no side, scoring for no one
-        while unclaimed. They surface rarely (about one Memory in seven), always from the heart of the page, always a
+        while unclaimed. They surface rarely (about one Memory in seven), always from the heart of the board, always a
         beat ahead — <em>the clearing where something is about to be remembered.</em></p>
       <p>A Stray can be <strong>banished</strong> like anything else (a normal Impression — the Archive notes it,
         without comment) or <strong>befriended</strong> — and a befriended Stray becomes a <strong>Foundling</strong>,
@@ -439,7 +439,7 @@ SEC[18] = """
           not alive in the moment it is in. The keepers face backward forever, tending the dead, and never <em>live.</em>
           <em>&ldquo;The dead have had their moment. This one is ours.&rdquo;</em></li>
         <li><strong>Room to become.</strong> A world that remembers everything can never be anything <em>new</em> — every
-          space occupied by what was. Forgetting clears the ground. <em>&ldquo;The page must be cleared before it can be
+          space occupied by what was. Forgetting clears the ground. <em>&ldquo;The Memory must be cleared before it can be
           written again.&rdquo;</em></li>
       </ul>
       <p>And two conditions make the act possible. <strong>Faith</strong> — the Solace cannot <em>prove</em> letting go
@@ -487,7 +487,7 @@ SEC[20] = """
       <p>What the Solace calls are the <strong>Unwritten:</strong> beings <em>made of everything that was never
         remembered.</em> This is literal — an Unwritten is not a dead thing or a destroyed thing but a thing that
         <em>genuinely never existed</em>, never held a memory of its own, never got to matter: the almost-said that was
-        never said, the page that stayed blank, the name forgotten before it was ever spoken.</p>
+        never said, the Memory that stayed blank, the name forgotten before it was ever spoken.</p>
       <p>This is <em>why</em> an <strong>Unwritten leaves no Impression.</strong> An Impression is the mark a thing leaves
         by having been here and been lost — and a thing that never was here cannot leave a mark of having been. Where a
         keeper banishes and the Memory keeps a trace, an Unwritten erases and <em>nothing remains.</em> They are an
