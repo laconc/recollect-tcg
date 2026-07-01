@@ -99,10 +99,9 @@ jobs:
       - name: web shell compiles for wasm
         run: cargo build -p recollect-web --target wasm32-unknown-unknown
         working-directory: app
-      - name: install wasmtime
-        run: |
-          curl -sSf https://wasmtime.dev/install.sh | bash
-          echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+      - uses: taiki-e/install-action@16b05812d776ae1dfaabc8277e421fb6d2506419 # v2.82.7
+        with:
+          tool: wasmtime
       # D-26: the engine must be bit-identical native vs wasm. Run the fixed seeded
       # playout both ways and diff the hashes — any float/UB/iteration drift fails.
       - name: wasm32 determinism differential (native == wasm)
