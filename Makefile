@@ -236,10 +236,10 @@ REGION_DEFAULT := region=us-east-2
 # --- deploy/README.md "FOUNDATION" for the SSO admin login + wiring the outputs into GitHub. ----
 FOUNDATION := cd deploy/pulumi/foundation &&
 FOUNDATION_DIR := deploy/pulumi/foundation
-foundation-install: ## install the FOUNDATION Pulumi program's deps (run once)
-	$(FOUNDATION) npm install
-foundation-typecheck: ## type-check the FOUNDATION program (no cloud calls)
-	$(FOUNDATION) npx tsc --noEmit
+foundation-install: ## fetch the FOUNDATION Pulumi program's Go modules (run once)
+	$(FOUNDATION) go mod download
+foundation-typecheck: ## compile + vet the FOUNDATION program (no cloud calls)
+	$(FOUNDATION) go vet ./...
 foundation-preview: ## preview the FOUNDATION plan (ECR + OIDC + CI role; prompts for passphrase + githubRepo if unset)
 	@STACK=$(STACK) ENVVARS="$(F_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(FOUNDATION_DIR) pulumi preview
 foundation-up: ## CREATE/UPDATE FOUNDATION (run once; prompts for passphrase + githubRepo if unset; admin SSO creds)
@@ -255,10 +255,10 @@ foundation-destroy: ## TEAR DOWN FOUNDATION (rare — retires the ECR repo + CI 
 # --- the preflight; see deploy/README.md "PLATFORM" for what each input means. ------------------
 PULUMI := cd deploy/pulumi/platform &&
 PLATFORM_DIR := deploy/pulumi/platform
-platform-install: ## install the PLATFORM Pulumi program's deps (run once)
-	$(PULUMI) npm install
-platform-typecheck: ## type-check the PLATFORM program (no cloud calls)
-	$(PULUMI) npx tsc --noEmit
+platform-install: ## fetch the PLATFORM Pulumi program's Go modules (run once)
+	$(PULUMI) go mod download
+platform-typecheck: ## compile + vet the PLATFORM program (no cloud calls)
+	$(PULUMI) go vet ./...
 platform-preview: ## preview the live infra plan (prompts for passphrase/Cloudflare token + any unset config)
 	@STACK=$(STACK) ENVVARS="$(P_CREDS)" DEFAULTS="$(REGION_DEFAULT)" $(PREFLIGHT) $(PLATFORM_DIR) pulumi preview
 platform-up: ## CREATE/UPDATE the live infra (EC2 + Cloudflare Tunnel + DNS + budgets); the box PULLS the image

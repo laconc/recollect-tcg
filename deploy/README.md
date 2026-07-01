@@ -98,7 +98,7 @@ the rest have generic defaults. Nothing real is committed — it lands in your g
 `deploy/pulumi/foundation/Pulumi.<stack>.yaml`.
 
 ```bash
-make foundation-install                 # once: (cd deploy/pulumi/foundation && npm install)
+make foundation-install                 # once: (cd deploy/pulumi/foundation && go mod download)
 make foundation-typecheck               # tsc --noEmit (no cloud calls)
 make foundation-preview                 # review every resource before creating anything
 make foundation-up                      # CREATE the ECR repo + OIDC provider + CI role
@@ -171,7 +171,7 @@ PLATFORM deploys.
 > **Main-only by design.** The workflow triggers on push-to-`main` + manual dispatch, **not**
 > pull_request — the CI role's trust is pinned to this repo's `main` (the OIDC `sub`), so a PR's token
 > couldn't assume it anyway, and a fork PR can never push. To also push on tags/PRs, broaden the `sub`
-> in `foundation/index.ts` and add the matching trigger.
+> in `foundation/main.go` and add the matching trigger.
 
 > **The site-deploy workflow's GitHub inputs come after PLATFORM.** `site-deploy.yml` also needs a
 > Cloudflare token + account id + the `CF_PAGES_PROJECT` name — but that name is a **PLATFORM** output
@@ -223,7 +223,7 @@ the server image CI pushed to FOUNDATION's ECR (it never builds Rust on the 1 GB
 aws sso login                           # the DEFAULT profile (no --profile/AWS_PROFILE); named profile? add `--profile <name> && export AWS_PROFILE=<name>`
 export CLOUDFLARE_API_TOKEN=…           # the scoped custom token (Tunnel+Access+Pages+DNS) — see below
 
-make platform-install                     # once: (cd deploy/pulumi/platform && npm install)
+make platform-install                     # once: (cd deploy/pulumi/platform && go mod download)
 
 # REQUIRED, all deployment-unique (no committed defaults) — pre-seed them so you're not prompted for
 # seven values; they land in your gitignored Pulumi.<stack>.yaml. (cd to the project for config set.)
@@ -339,7 +339,7 @@ Pages** — a separate origin; see [`deploy/site/README.md`](site/README.md).)
 **No inbound ports.** The Cloudflare Tunnel (`cloudflared`) dials *out* to Cloudflare, so the
 EC2 security group has **zero inbound rules**. Admin is keyless via **SSM Session Manager**
 (`make platform-ssm`) — no SSH key, no port 22. (Want SSH instead? Add a key pair + a port-22
-ingress rule to `deploy/pulumi/platform/index.ts`; the tunnel means you don't need to.)
+ingress rule to `deploy/pulumi/platform/main.go`; the tunnel means you don't need to.)
 
 **Edge TLS, and why no Origin CA cert.** §10.1 mentions a Cloudflare Origin CA cert for
 Full(strict). That applies when Cloudflare connects to a *public* origin over the internet. With
@@ -375,7 +375,7 @@ for both). user-data mounts `/data` generically; each service gets a subdir unde
 
 How it works, end to end:
 
-- **A separate volume (Pulumi).** `index.ts` creates an `aws.ebs.Volume` — **gp3, encrypted**,
+- **A separate volume (Pulumi).** `main.go` creates an `aws.ebs.Volume` — **gp3, encrypted**,
   `dataVolumeSizeGb` GiB (default **20**), in the **same AZ as the instance** (EBS is AZ-local) — and
   an `aws.ec2.VolumeAttachment` at `/dev/sdf`. Because it is a standalone volume (not the instance's
   `rootBlockDevice`, not an `ebsBlockDevice` on the instance), **nothing sets delete-on-termination on
@@ -491,13 +491,13 @@ Cloudflare's own guidance is explicit that you **should** validate the token at 
 that bypass Access are rejected
 ([Validate JWTs](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/)).
 
-**It is now wired — CONDITIONAL on `cfTeamName`.** `index.ts` captures the Grafana Access app in
+**It is now wired — CONDITIONAL on `cfTeamName`.** `main.go` captures the Grafana Access app in
 `const grafanaAccessApp` and, **when you set the `cfTeamName` stack config**, adds an
 `originRequest.access` block to the `grafana.<domain>` tunnel ingress so the **connector itself** (not
 just the edge) rejects any L7 request lacking a valid Access JWT for that app's AUD:
 
 ```ts
-// deploy/pulumi/platform/index.ts — built once, then attached to the grafana ingress:
+// deploy/pulumi/platform/main.go — built once, then attached to the grafana ingress:
 const cfTeamName = cfg.get("cfTeamName");                       // OPTIONAL — your Zero Trust team name
 const grafanaOriginRequest = cfTeamName
   ? { access: { required: true, teamName: cfTeamName, audTags: [grafanaAccessApp.aud] } }
@@ -721,7 +721,7 @@ sudo cat /opt/recollect/.env                                        # the 0600 r
 
 This works because the instance has the **SSM instance role** (`AmazonSSMManagedInstanceCore`) and
 the SSM agent ships in AL2023 — your AWS session (SSO or keys, below) is the only credential. (Want
-SSH instead? Add a key pair + a port-22 ingress rule to `platform/index.ts`; the tunnel means you don't need
+SSH instead? Add a key pair + a port-22 ingress rule to `platform/main.go`; the tunnel means you don't need
 to.)
 
 ### 4. CloudWatch alarms + the SNS email subscription
@@ -753,7 +753,7 @@ The out-of-band alarms live in **CloudWatch** in `us-east-2`:
 ## Prerequisites (install once)
 
 - **Pulumi CLI** — `brew install pulumi` (or see pulumi.com/docs/install).
-- **Node 20+** — both Pulumi programs are TypeScript.
+- **Go** (a recent toolchain — see each program's `go.mod`) — both Pulumi programs are Go.
 - **AWS access** to an account that can create **ECR** + **IAM** (incl. the OIDC provider — FOUNDATION)
   and EC2/IAM/Budgets/**CloudWatch**/**SNS** (PLATFORM) in your region (default `us-east-2`).
   **Use IAM Identity Center (SSO)** — a short-lived **admin** session via `aws sso login` for BOTH
@@ -771,8 +771,8 @@ The out-of-band alarms live in **CloudWatch** in `us-east-2`:
 Install each program's dependencies (once per stack):
 
 ```bash
-make foundation-install    # = (cd deploy/pulumi/foundation && npm install)
-make platform-install        # = (cd deploy/pulumi/platform   && npm install)
+make foundation-install    # = (cd deploy/pulumi/foundation && go mod download)
+make platform-install        # = (cd deploy/pulumi/platform   && go mod download)
 ```
 
 ---
@@ -917,10 +917,10 @@ ID**) as the `cloudflareAccountId` / `cloudflareZoneId` stack config below.
 ### Granting Grafana access to more people
 The Cloudflare Access allow policy includes exactly one email by default (`maintainerEmail`). To add
 or change who can reach Grafana, **add emails to the policy** — the canonical (IaC) way is to widen
-the `includes` in `index.ts` (the `grafanaAccessPolicy` resource) to a list and `make platform-up`:
+the `includes` in `main.go` (the `grafanaAccessPolicy` resource) to a list and `make platform-up`:
 
 ```ts
-// in deploy/pulumi/platform/index.ts — the ZeroTrustAccessPolicy "grafana-maintainer":
+// in deploy/pulumi/platform/main.go — the ZeroTrustAccessPolicy "grafana-maintainer":
 includes: [
   { email: { email: maintainerEmail } },
   { email: { email: "teammate@example.com" } },
@@ -1256,12 +1256,12 @@ deploy/
 ├── smoke_game.py                          the game half of the smoke — drives a real PvP match via two headless `recollect online --json` clients
 ├── pulumi/
 │   ├── foundation/                        FOUNDATION (run ONCE): the account-level scaffolding
-│   │   ├── index.ts                       the IaC: ECR repo (scan-on-push, immutable tags, lifecycle) + GitHub OIDC provider + the scoped CI push role (ECR-push only, trusted to this repo's main). Outputs repoUrl + ciRoleArn
-│   │   └── Pulumi.yaml  package.json  package-lock.json  tsconfig.json  .gitignore (Pulumi.*.yaml stack config, node_modules/, bin/)
+│   │   ├── main.go                       the IaC: ECR repo (scan-on-push, immutable tags, lifecycle) + GitHub OIDC provider + the scoped CI push role (ECR-push only, trusted to this repo's main). Outputs repoUrl + ciRoleArn
+│   │   └── Pulumi.yaml  go.mod  go.sum  .gitignore (Pulumi.*.yaml stack config, the built binary)
 │   └── platform/                          PLATFORM (run PER RELEASE): the box that pulls the image
-│       ├── index.ts                       the IaC: EC2 + SG + SSM/CloudWatch/ECR-read-only role + durable EBS data volume + Cloudflare tunnel/DNS (game on play.<domain>) + Access(app+policy, optional R2-1 origin-JWT) for Grafana + the static-website Cloudflare PAGES project + apex/www domains + DNS + budgets + CloudWatch alarms/SNS
+│       ├── main.go                       the IaC: EC2 + SG + SSM/CloudWatch/ECR-read-only role + durable EBS data volume + Cloudflare tunnel/DNS (game on play.<domain>) + Access(app+policy, optional R2-1 origin-JWT) for Grafana + the static-website Cloudflare PAGES project + apex/www domains + DNS + budgets + CloudWatch alarms/SNS
 │       ├── user-data.sh                   cloud-init: mount /data (format-only-if-empty) + swap on /data + Docker + CloudWatch agent + ECR login + PULL server image + compose up (server/postgres/cloudflared/lgtm/node-exporter/blackbox), idempotent
-│       └── Pulumi.yaml  package.json  package-lock.json  tsconfig.json  .gitignore (Pulumi.*.yaml stack config, node_modules/, bin/)
+│       └── Pulumi.yaml  go.mod  go.sum  .gitignore (Pulumi.*.yaml stack config, the built binary)
 └── compose/
     ├── docker-compose.deploy.yml          the deploy stack (postgres + site-builder + server [PULLED from ECR] + cloudflared + lgtm + node-exporter + blackbox synthetic-probe exporter)
     ├── docker-compose.build.yml           BUILD overlay (local/smoke only): adds the server `build:` block back so the image is compiled locally (prod pulls)

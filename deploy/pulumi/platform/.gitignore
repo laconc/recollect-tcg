@@ -1,7 +1,5 @@
-# Pulumi / Node build artifacts — never committed.
-node_modules/
-bin/
-*.tsbuildinfo
+# Pulumi / Go build artifacts — never committed (Pulumi builds the program at runtime).
+/recollect-platform
 
 # Pulumi keeps stack STATE in your configured backend (Pulumi Cloud or a self-managed
 # backend), never in the repo. Per-stack config (Pulumi.<stack>.yaml) is created locally by
