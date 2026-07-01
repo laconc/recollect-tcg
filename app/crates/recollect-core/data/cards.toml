@@ -9609,10 +9609,10 @@ hp = 50
 reach = "Wide"
 imprints = []
 keywords = []
-rules = "enemies adjacent get −10 Defense (the page gives way around it)"
+rules = "enemies adjacent get −10 Defense (the board gives way around it)"
 lore_source = "§9"
 lore = """
-*Stand next to it and you become easier to get through. The page gives way around it, politely, and so do you.*"""
+*Stand next to it and you become easier to get through. The board gives way around it, politely, and so do you.*"""
 physical_source = "§9"
 physical = """
 a person-shaped void with very good manners; the world dented inward at its edges; person-tall, hollow."""
@@ -9801,10 +9801,10 @@ hp = 70
 reach = "Cross"
 imprints = []
 keywords = ["Steadfast"]
-rules = "[signature reach: ✶Bastion] Steadfast; immune to interception (the page shuts over it)"
+rules = "[signature reach: ✶Bastion] Steadfast; immune to interception (the board shuts over it)"
 lore_source = "§9"
 lore = """
-*Step toward it and the page simply shuts over it before you arrive. No zone bites it. No interception finds it. It was never quite open to you.*"""
+*Step toward it and the board simply shuts over it before you arrive. No zone bites it. No interception finds it. It was never quite open to you.*"""
 physical_source = "§9"
 physical = """
 a low broad shape like a tome easing closed; its own edges curling protectively inward; lectern-sized, sealed."""
@@ -11372,10 +11372,10 @@ hp = 55
 reach = "Wide"
 imprints = []
 keywords = []
-rules = "Enemies adjacent get −20 Defense — the page gives way further"
+rules = "Enemies adjacent get −20 Defense — the board gives way further"
 lore_source = "§9"
 lore = """
-*The hole has learned it can be larger. The page does not merely give way around it now — it goes on giving, further out than its edges, so that whatever stands near is thinner than it meant to be, less able to keep the shape of itself. There is no malice in this and no mercy either; it is only that absence, once it knows the trick, sees no reason to stop at its own outline. Pell measured the dent twice and got two answers and stopped measuring.*"""
+*The hole has learned it can be larger. The board does not merely give way around it now — it goes on giving, further out than its edges, so that whatever stands near is thinner than it meant to be, less able to keep the shape of itself. There is no malice in this and no mercy either; it is only that absence, once it knows the trick, sees no reason to stop at its own outline. Pell measured the dent twice and got two answers and stopped measuring.*"""
 physical_source = "§9"
 physical = """
 the well-mannered void grown a wider rim of nothing, the inward dent of the world reaching past where the figure ends; the background bending toward it from further off; person-tall, hollow, and hollowing."""

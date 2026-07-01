@@ -1,8 +1,37 @@
-# Recollect — engine, server, and clients
+# Recollect
 
-Deterministic Rust core shared by server (authoritative), web (wasm), and
-mobile shells. Start here: `architecture.md` (how the code fits together) and
-`AGENTS.md` (the contributor guide).
+**Recollect is a competitive card game played on a board**, for 2 or 4 players (**1v1 or
+2v2**) or solo against the AI. Two sides play cards onto a shared board to claim territory
+while a **twelve-round clock** steadily closes the board in from the edges. Control more of
+the board than your opponent when the clock runs out and you win the match. You play a
+**Lorekeeper**, fighting to hold the board; your opponent is **another Lorekeeper** — or the
+**Solace**, an AI-only faction that wins by *erasing* the board instead of holding it.
+
+**Play it free at [recollect-tcg.com](https://recollect-tcg.com)** — in your browser,
+against the AI or friends (1v1 / 2v2). It also runs in a terminal or headless.
+
+This repo is the implementation: a **deterministic Rust core** (`recollect-core`) shared by
+an authoritative **server**, a **web (wasm)** client, a **CLI**, and native bindings — the
+same rules everywhere, so a client's preview can never diverge from the server's ruling.
+**The documents are the law and the code follows them.**
+
+## New here — the docs worth reading
+
+**The game & its rules**
+- **[docs/how_to_play.md](docs/how_to_play.md)** — the player-facing how-to: the CLI + web controls and the turn phases.
+- **[docs/design.md](docs/design.md)** — the rules reference and design law (the source of truth for every mechanic).
+- **[docs/lore.md](docs/lore.md)** — the world: the Memory, the two factions, and the Unwritten.
+- **[app/crates/recollect-core/data/cards.toml](app/crates/recollect-core/data/cards.toml)** — all 419 cards (the card truth); **[docs/cards_design.md](docs/cards_design.md)** is the design behind them.
+
+**The code**
+- **[architecture.md](architecture.md)** — how the workspace fits together: the engine shape and the invariants it holds.
+- **[docs/engine.md](docs/engine.md)** — a guided tour of `recollect-core` (decide/evolve, the event vocabulary) — start here to change rules.
+- **[AGENTS.md](AGENTS.md)** — the contributor guide (humans and agents alike): the tested invariants and the gate before any change lands.
+
+**Running, testing, operating**
+- **[docs/testing.md](docs/testing.md)** — the test taxonomy and conventions.
+- **[docs/operations.md](docs/operations.md)** — the make targets, the compose stacks, and the deploy runbook.
+- **[docs/roadmap.md](docs/roadmap.md)** — the prioritized backlog (what to do next).
 
 The Rust workspace lives in **`app/`** (the repo root holds the docs, ops, and
 the Docker files). The `make` targets below run `cargo` inside `app/` for you;
@@ -132,14 +161,24 @@ real deployment.
     cd app && cargo run -p recollect-bot --bin fleet   # the evidence fleet (fairness, texture, evolution)
 
 
+## Built on Ironstate
+
+The engine's lifecycle and journaling ride on **[Ironstate](https://github.com/kassian-dev/ironstate)**
+— a reusable event-sourced aggregate/journal framework, published on crates.io as the
+`ironstate`, `ironstate-aggregate`, and `ironstate-journal` crates. `recollect-core`'s
+`GameState` implements `ironstate_aggregate::AggregateRules` (the `decide`/`evolve` seam), and
+its counter-mode `Rng` implements `ironstate_aggregate::EntropySource` — checked against
+Ironstate's reusable `assert_entropy_contract`, so determinism is a *tested* property, not a
+convention. When `DATABASE_URL` is set, the server routes each command through
+`ironstate-journal`'s append-before-ack store: Postgres becomes authoritative, and a match
+resumes by replaying its journal. See **[AGENTS.md](AGENTS.md)** for the full contract.
+
 ## For contributors — humans and agents
 
-Start at **[AGENTS.md](AGENTS.md)** (CLAUDE.md points there). The design and
-cards documents in `docs/` are the law; `docs/testing.md` and
-`docs/operations.md` cover the test taxonomy and the ops stack. `make help`
-lists every entry point — notably `make server` + `make client` for network
-play, `make up` for the full local stack (website + game + Grafana), and `make test`
-+ `make catalog-check` as the gate before any change lands.
+Start at **[AGENTS.md](AGENTS.md)** (CLAUDE.md points there) and the reading list
+above. `make help` lists every entry point — notably `make server` + `make client`
+for network play, `make up` for the full local stack (website + game + Grafana), and
+`make test` + `make catalog-check` as the gate before any change lands.
 
 Security: see **[SECURITY.md](SECURITY.md)** for the threat model and how to
 report a vulnerability (the test-pinned per-threat table lives in

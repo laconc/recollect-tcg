@@ -5,7 +5,7 @@ A player's guide to the two ways you can sit down at a match — in your
 web client) — and to what you can actually *do* on your turn.
 
 Recollect is a game of a fading Memory: two storytellers, the **Lorekeepers**
-and the **Solace**, contend over a 5×5 page for who is remembered when night
+and the **Solace**, contend over a 5×5 board for who is remembered when night
 falls. This guide covers the *interfaces and controls*. For the rules themselves
 — scoring, the Dusk, keywords, what each card does — see the
 [design reference](design.md) and the in-browser
@@ -85,7 +85,7 @@ canvas regions are:
 ├─────────────────────────────────────────────────┤   panel: sound · reduced-motion · anim-speed
 │  𝗖 𝗖𝗼𝗿𝗶𝗻 𝗔𝘀𝗵𝗲 · the Solace  score 5 - 3 erased ▮▮│  opponent strip (bold name; hand = backs)
 │                ┌───────────────┐                  │
-│                │      · ·      │                  │  the board (5×5 page; 6×6 in 2v2) — a bright
+│                │      · ·      │                  │  the board (5×5; 6×6 in 2v2) — a bright
 │                │   the board ^ │       ┌───────┐  │  lit leaf on a dark mat; a quiet · dot = a
 │                │      ·        │       │Glimpse│  │  piece that can act; a ^ = a Fading base
 │                └───────────────┘       ├───────┤  │  that can evolve. The control buttons sit
@@ -102,7 +102,7 @@ canvas regions are:
     in the accessibility tree, invisible on screen; the canvas is the visible surface)
 ```
 
-- **Board (canvas).** The page itself — your spirits and the opponent's, terrain,
+- **Board (canvas).** The board itself — your spirits and the opponent's, terrain,
   impressions, and the Dusk edge as it darkens. It animates between states (unless
   your system prefers reduced motion, which it honors). At rest, a **quiet dot** sits
   on any of your pieces that has an available action, a **green chevron (^)** (upward)
@@ -178,7 +178,7 @@ canvas regions are:
   opponent** action (or **New game** off the shell).
 - **The Dusk & Nightfall (on-canvas set-pieces).** At the end of round 8 the **Dusk**
   falls and at round 12 it is **Nightfall** — each arrives as an animated set-piece over
-  the board: the rim **contracts and darkens** (the page failing at its edges), the
+  the board: the rim **contracts and darkens** (the board failing at its edges), the
   binding strip lights as a **clock face**, and a seal reads "Dusk falls" / "Nightfall"
   (announced aloud too). A spirit that still **holds** a darkened rim tile stands
   **lamplit** — a small pool of light around it, visibly different from the live board,
@@ -186,7 +186,7 @@ canvas regions are:
   the set-piece near-instant; the announcement always lands.)
 - **The result screen (on-canvas).** When the match ends, the canvas draws the
   **verdict** in the game's voice — *the Memory keeps [the winner]*, or *forgotten* (the
-  Solace's erasure carried the page), or *both are kept* (a draw) — with a **score
+  Solace's erasure carried the Memory), or *both are kept* (a draw) — with a **score
   breakdown** (each side's board points, and the Solace's off-board erasure tally folded
   in) over the final board. Three actions follow: **Rematch** (a fresh match, same
   styles), **New opponent** (back to the picker), **Back to site**. The verdict and the
@@ -552,8 +552,8 @@ the legal menu the same way. *(This is a 1v1 opening mechanic.)*
 
 4. **End turn.** When you're done, choose **End turn** (the button, or `end` /
    the menu entry). Play passes to your opponent. The match runs **twelve rounds**;
-   at the end of round 8 the **Dusk** falls and the page's empty edges go dark.
-   When the clock runs out it's **Nightfall**, and whoever holds more of the page
+   at the end of round 8 the **Dusk** falls and the board's empty edges go dark.
+   When the clock runs out it's **Nightfall**, and whoever holds more of the board
    wins. (See [§5](design.md) for the Dusk, Held Ground, and how the
    Solace scores its erasures apart.)
 
