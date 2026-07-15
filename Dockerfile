@@ -3,7 +3,7 @@
 # cargo-chef, shipped on distroless. Build context is the repo root; only app/
 # is sent (see .dockerignore). OpenTelemetry is always compiled in and gated at
 # runtime on OTEL_EXPORTER_OTLP_ENDPOINT (see telemetry.rs).
-FROM rust:1.96-alpine AS chef
+FROM rust:1.97-alpine AS chef
 RUN apk add --no-cache build-base musl-dev && cargo install cargo-chef --locked
 WORKDIR /src
 
