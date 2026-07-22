@@ -50,7 +50,7 @@ jobs:
       contents: read
       id-token: write # REQUIRED: mint the GitHub OIDC token configure-aws-credentials trades for AWS creds
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           show-progress: false
 
@@ -58,7 +58,7 @@ jobs:
       # No access keys are stored anywhere — the role's trust policy is pinned to this repo's main
       # branch (foundation/main.go), and the creds expire with the job.
       - name: configure AWS credentials (OIDC — no stored keys)
-        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
@@ -69,7 +69,7 @@ jobs:
       - name: log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
 
-      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       # Image metadata: the immutable commit-SHA tag the box pulls + a moving `latest`. No tag prefix —
       # the tag IS the git SHA, so the box's `recollect-update <sha>` can check out that ref AND pull its
@@ -90,7 +90,7 @@ jobs:
       # cache, so an unchanged dep graph reuses the cooked-deps layer across runs — the slow Rust
       # compile only re-runs when app/ actually changes. `mode=max` caches intermediate stages too.
       - name: build + push (BuildKit, GHA layer cache)
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: Dockerfile
